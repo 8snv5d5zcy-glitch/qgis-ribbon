@@ -142,7 +142,7 @@ class RibbonPlugin:
         else:
             # Beim QGIS-Start erst bauen, wenn alle Plugins geladen und der
             # Fensterzustand wiederhergestellt ist.
-            self.hub.connect(self.iface.initializationCompleted, self._build)
+            self.hub.connect(self.iface, "initializationCompleted", self._build)
 
     # Umschalter im QGIS-Menü „Ansicht“
     def _view_menu(self):

@@ -48,7 +48,7 @@ class LayerWatch(object):
 
     def start(self):
         self._running = True
-        self.hub.connect(self.iface.currentLayerChanged, self._on_layer_changed)
+        self.hub.connect(self.iface, "currentLayerChanged", self._on_layer_changed)
         self._watch(self.iface.activeLayer())
 
     def stop(self):
@@ -74,12 +74,11 @@ class LayerWatch(object):
         self.layer = layer
         if layer is None:
             return
-        self.layer_hub.connect(layer.willBeDeleted, self._on_layer_deleted)
+        self.layer_hub.connect(layer, "willBeDeleted", self._on_layer_deleted)
         names = LAYER_SIGNALS + (VECTOR_SIGNALS if isinstance(layer, QgsVectorLayer) else ())
         for name in names:
-            signal = getattr(layer, name, None)
-            if signal is not None:
-                self.layer_hub.connect(signal, self.schedule)
+            if getattr(layer, name, None) is not None:
+                self.layer_hub.connect(layer, name, self.schedule)
 
     def _on_layer_changed(self, layer):
         if layer is not self.layer:

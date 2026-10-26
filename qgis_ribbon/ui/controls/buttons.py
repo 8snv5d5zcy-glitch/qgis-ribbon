@@ -146,7 +146,7 @@ class ProxyAction(QAction):
         src = res.action
         if src is not None:
             self.setCheckable(src.isCheckable())
-            ctx.hub.connect(src.changed, self.sync)
+            ctx.hub.connect(src, "changed", self.sync)
         ctx.register(self)
         self.sync()
         self.triggered.connect(self._run)

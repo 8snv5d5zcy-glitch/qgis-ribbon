@@ -293,8 +293,8 @@ class ExtensionCatalog(QObject):
         self._needed_state = self._needed_available()
         self._watch()
         reg = QgsApplication.processingRegistry()
-        self.hub.connect(reg.providerAdded, self._provider_added)
-        self.hub.connect(reg.providerRemoved, lambda _pid: self.schedule())
+        self.hub.connect(reg, "providerAdded", self._provider_added)
+        self.hub.connect(reg, "providerRemoved", lambda _pid: self.schedule())
         for provider in reg.providers():
             self._connect_provider(provider)
 
@@ -302,7 +302,7 @@ class ExtensionCatalog(QObject):
         if provider is None or provider.id() in self._providers:
             return
         self._providers.add(provider.id())
-        self.hub.connect(provider.algorithmsLoaded, self.schedule)
+        self.hub.connect(provider, "algorithmsLoaded", self.schedule)
 
     def _provider_added(self, pid):
         self._connect_provider(QgsApplication.processingRegistry().providerById(pid))

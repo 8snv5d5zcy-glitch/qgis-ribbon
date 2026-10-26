@@ -72,7 +72,7 @@ class TabPage(QScrollArea):
         self._width = None
         if any(v.kind == "gallery" for g in self.groups for v in g.views):
             size = builtin_commands.gallery_size(ctx.env)
-            ctx.hub.connect(size.changed, self.gallery_size_changed)
+            ctx.hub.connect(size, "changed", self.gallery_size_changed)
 
     def refresh_stale(self):
         """Steuerelemente nachlesen, die verborgen eine Änderung verpasst haben.

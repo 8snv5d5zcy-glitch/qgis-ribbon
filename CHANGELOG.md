@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 (2026-10-26)
+
+- Fix: QGIS could crash on exit (access violation) when a plugin whose commands the ribbon shows in the Extensions tab was unloaded before the ribbon.
+
 ## 1.2.0 (2026-10-26)
 
 - Edit tab, Editing: **Save** and **Discard** act on the active layer only and keep editing on; **Discard** asks first. **Save All** and **Discard All** (formerly Save Edits and Discard Edits) act on all layers being edited and show a layer stack in their icons.

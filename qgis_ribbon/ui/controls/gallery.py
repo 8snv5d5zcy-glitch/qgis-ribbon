@@ -285,7 +285,7 @@ class RibbonGallery(QWidget):
         self._state = _CommandState(command, self, ctx)
         self.visible = None
         size = builtin_commands.gallery_size(ctx.env)
-        ctx.hub.connect(size.changed, self.set_compact)
+        ctx.hub.connect(size, "changed", self.set_compact)
         self.set_compact(size.compact())
 
     def tile_width(self):

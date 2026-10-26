@@ -498,7 +498,7 @@ class ToolAction(StateAction):
         self._suitable = suitable
         StateAction.__init__(self, env, text, self._read_tool, self._run_tool)
         if env.hub is not None:
-            env.hub.connect(self._canvas.mapToolSet, self._on_tool_set)
+            env.hub.connect(self._canvas, "mapToolSet", self._on_tool_set)
 
     def _read_tool(self, layer):
         return self._suitable(layer), self._canvas.mapTool() is self.tool

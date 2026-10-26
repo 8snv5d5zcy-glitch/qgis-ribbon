@@ -61,7 +61,7 @@ class ContextState(object):
     def start(self):
         """Signale verbinden und den Ausgangszustand sofort liefern."""
         self._running = True
-        self.hub.connect(self.iface.currentLayerChanged, self._on_layer_changed)
+        self.hub.connect(self.iface, "currentLayerChanged", self._on_layer_changed)
         self._watch(self.iface.activeLayer())
         self._flush()
 
@@ -78,11 +78,11 @@ class ContextState(object):
         self.layer = layer
         if layer is None:
             return
-        self.layer_hub.connect(layer.willBeDeleted, self._on_layer_deleted)
+        self.layer_hub.connect(layer, "willBeDeleted", self._on_layer_deleted)
         if isinstance(layer, QgsVectorLayer):
-            self.layer_hub.connect(layer.editingStarted, self._on_editing_started)
-            self.layer_hub.connect(layer.editingStopped, self.schedule)
-            self.layer_hub.connect(layer.selectionChanged, self.schedule)
+            self.layer_hub.connect(layer, "editingStarted", self._on_editing_started)
+            self.layer_hub.connect(layer, "editingStopped", self.schedule)
+            self.layer_hub.connect(layer, "selectionChanged", self.schedule)
 
     def _on_layer_changed(self, layer):
         if layer is not self.layer:

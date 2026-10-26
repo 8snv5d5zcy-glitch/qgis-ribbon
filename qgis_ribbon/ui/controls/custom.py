@@ -327,7 +327,7 @@ class LabelClassControl(LabelControl):
     def __init__(self, env, command, ctx, parent=None, size="medium"):
         self.state = builtin_commands.label_class_state(env)
         LabelControl.__init__(self, env, command, ctx, parent, size)
-        ctx.hub.connect(self.state.changed, self.refresh)
+        ctx.hub.connect(self.state, "changed", self.refresh)
 
     def create_editor(self):
         w = QComboBox(self)
@@ -359,7 +359,7 @@ class LabelClassActiveControl(LabelControl):
     def __init__(self, env, command, ctx, parent=None, size="medium"):
         self.state = builtin_commands.label_class_state(env)
         LabelControl.__init__(self, env, command, ctx, parent, size)
-        ctx.hub.connect(self.state.changed, self.refresh)
+        ctx.hub.connect(self.state, "changed", self.refresh)
 
     def create_editor(self):
         w = QCheckBox(self.command.label, self)
@@ -383,7 +383,7 @@ class LabelFieldControl(LabelControl):
     def __init__(self, env, command, ctx, parent=None, size="medium"):
         self.state = builtin_commands.label_class_state(env)
         LabelControl.__init__(self, env, command, ctx, parent, size)
-        ctx.hub.connect(self.state.changed, self.refresh)
+        ctx.hub.connect(self.state, "changed", self.refresh)
 
     def create_editor(self):
         w = QgsFieldExpressionWidget(self)
@@ -419,7 +419,7 @@ class CanvasControl(LayerControl):
     def __init__(self, env, command, ctx, parent=None, size="medium"):
         self.canvas = env.iface.mapCanvas()
         LayerControl.__init__(self, env, command, ctx, parent, size)
-        ctx.hub.connect(getattr(self.canvas, self.canvas_signal), self._on_canvas)
+        ctx.hub.connect(self.canvas, self.canvas_signal, self._on_canvas)
 
     def _on_canvas(self, *_args):
         self.refresh()
