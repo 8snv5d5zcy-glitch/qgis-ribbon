@@ -106,6 +106,16 @@ def set_blend_mode(layer, mode):
     changed(layer)
 
 
+def feature_blend_mode(layer):
+    """Mischmodus der Objekte untereinander (nur Vektorlayer)."""
+    return layer.featureBlendMode()
+
+
+def set_feature_blend_mode(layer, mode):
+    layer.setFeatureBlendMode(mode)
+    changed(layer)
+
+
 # -- Beschriftung -----------------------------------------------------------
 
 def _rules(labeling):

@@ -56,6 +56,11 @@ else:
             self._canvas = QgsMapCanvas(mw)
             self.active_layer = None
             self.calls = []
+            # Layerliste wie in QGIS von Anfang an vorhanden (zählt zum Ausgangszustand)
+            from qgis.core import QgsLayerTreeModel, QgsProject
+            from qgis.gui import QgsLayerTreeView
+            self._view = QgsLayerTreeView(mw)
+            self._view.setModel(QgsLayerTreeModel(QgsProject.instance().layerTreeRoot(), self._view))
 
         def mainWindow(self):
             return self._mw
@@ -73,6 +78,16 @@ else:
             """Wie QGIS: aktiven Layer setzen und ``currentLayerChanged`` senden."""
             self.active_layer = layer
             self.currentLayerChanged.emit(layer)
+
+        def layerTreeView(self):
+            return self._view
+
+        def select_group(self, group):
+            """Wie ein Klick auf eine Gruppe der Layerliste: kein aktiver Layer, Gruppe aktuell."""
+            view = self.layerTreeView()
+            self.active_layer = None
+            view.setCurrentIndex(view.node2index(group))
+            self.currentLayerChanged.emit(None)
 
         def showLayerProperties(self, layer, page=""):
             self.calls.append(("showLayerProperties", layer, page))

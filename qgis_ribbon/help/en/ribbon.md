@@ -33,9 +33,20 @@ Some tabs only appear when they fit the active layer in the Layers panel. They s
 
 - **Vector Layer:** Appearance, Labeling, Data
 - **Table** (layer without geometry): Data
-- **Raster Layer:** Appearance
+- **Raster Layer**, **Vector Tiles**, **Point Cloud**, **Mesh:** Appearance
+- **Group** (a group selected in the Layers panel): Appearance
 
 ![Contextual tab Appearance of a vector layer](../images/en/contextual.png)
+
+**Appearance** starts with the same groups in every context:
+
+- **Visibility Range:** the largest and smallest scale at which the layer is drawn.
+- **Effects:** opacity and blending mode of the layer with the layers below (for example *Multiply* for a hillshade under a map). **Feature Blending** (vector layers only) blends the features of the layer with each other.
+- **Compare:** **Swipe** is a map tool: drag across the map with the mouse button pressed; behind the edge the layer is hidden and reveals the layers below. The direction of the drag decides whether the edge is vertical or horizontal; when you release the button the whole layer is shown again. **Flicker** hides and shows the layer at the set interval (milliseconds) until you switch it off or select another layer. Neither changes the layer list or the project.
+
+The groups for the layer type follow, for example **Aggregation** for point layers (point cluster, point displacement, heatmap; **None** restores the previous symbology), the **Renderer**, **Point Size** and **Max. Error** of a point cloud, or the displayed datasets (**Scalar**, **Vectors**) and the **Mesh Frame** of a mesh.
+
+**Group:** opacity, blending mode and visibility range apply to the whole group. QGIS only has them when the group is *rendered as a group*; the first change switches that on (button **Render as Group**; switching it off removes the group's settings). **Exclusive** keeps only one layer of the group visible, **Zoom to Group** shows all of its layers.
 
 **Labeling** for a vector layer: **Label** switches the labels on. A line layer then gets the placement *Parallel*, because QGIS does not draw line labels with *Around point*. A layer can have several **label classes**, each for its own features with its own text and style. Choose a class in the list; the buttons next to it create a **new class** (a copy of the selected one) or **delete** the selected class. **Filter** decides which features a class labels, **Label Class Features** switches the class on or off, and **Field** chooses the field for the text; its button ε opens the expression editor for a text built from several fields.
 

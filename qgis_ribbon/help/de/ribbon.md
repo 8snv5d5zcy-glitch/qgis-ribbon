@@ -33,9 +33,20 @@ Manche Tabs erscheinen nur, wenn sie zum aktiven Layer im Bedienfeld Layer passe
 
 - **Vektorlayer:** Darstellung, Beschriftung, Daten
 - **Tabelle** (Layer ohne Geometrie): Daten
-- **Rasterlayer:** Darstellung
+- **Rasterlayer**, **Vektorkacheln**, **Punktwolke**, **Netz:** Darstellung
+- **Gruppe** (eine Gruppe im Bedienfeld Layer gewählt): Darstellung
 
 ![Kontext-Tab Darstellung eines Vektorlayers](../images/de/contextual.png)
+
+**Darstellung** hat in jedem Kontext dieselben ersten Gruppen:
+
+- **Sichtbarkeitsbereich:** größter und kleinster Maßstab, in dem der Layer gezeichnet wird.
+- **Effekte:** Deckkraft und Mischmodus des Layers mit den Layern darunter (zum Beispiel *Multiplizieren* für ein Relief unter einer Karte). **Objekt-Mischmodus** (nur Vektorlayer) mischt die Objekte des Layers untereinander.
+- **Vergleichen:** **Wischen** ist ein Kartenwerkzeug: Mit gedrückter Maustaste über die Karte ziehen, hinter der Kante ist der Layer ausgeblendet und gibt den Blick auf die Layer darunter frei. Die Zugrichtung bestimmt, ob die Kante senkrecht oder waagerecht liegt; beim Loslassen ist der Layer wieder ganz zu sehen. **Flimmern** blendet den Layer im eingestellten Takt (Millisekunden) aus und ein, bis es wieder ausgeschaltet oder ein anderer Layer gewählt wird. Beides ändert weder die Layerliste noch das Projekt.
+
+Danach folgen die Gruppen des Layertyps, zum Beispiel **Aggregation** für Punktlayer (Punktcluster, Punktverdrängung, Heatmap; **Keine** stellt die vorige Darstellung wieder her), die **Darstellungsart**, **Punktgröße** und der **maximale Fehler** einer Punktwolke oder die dargestellten Datensätze (**Skalar**, **Vektoren**) und das **Netzgitter** eines Netzes.
+
+**Gruppe:** Deckkraft, Mischmodus und Sichtbarkeitsbereich gelten für die ganze Gruppe. QGIS kennt sie nur, wenn die Gruppe *als Gruppe dargestellt* wird; die erste Änderung schaltet das ein (Knopf **Als Gruppe darstellen**, ausschalten nimmt die Einstellungen der Gruppe zurück). **Exklusiv** lässt immer nur einen Layer der Gruppe sichtbar, **Auf Gruppe zoomen** zeigt alle ihre Layer.
 
 **Beschriftung** eines Vektorlayers: **Beschriften** schaltet die Beschriftung ein. Ein Linienlayer bekommt dabei die Platzierung *Parallel*, weil QGIS Linien mit *Um Punkt* nicht beschriftet. Ein Layer kann mehrere **Beschriftungsklassen** haben, jede für eigene Objekte mit eigenem Text und Stil. Die Klasse wählt die Liste; die Knöpfe daneben legen eine **neue Klasse** an (Kopie der gewählten) oder **löschen** die gewählte. **Filter** legt fest, welche Objekte eine Klasse beschriftet, **Klasse beschriften** schaltet sie ein oder aus, und **Feld** wählt das Feld für den Text; sein Knopf ε öffnet den Ausdruckseditor für einen Text aus mehreren Feldern.
 

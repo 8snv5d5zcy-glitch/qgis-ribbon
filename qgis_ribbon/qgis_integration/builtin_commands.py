@@ -17,7 +17,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import (QAction, QActionGroup, QApplication, QDialog, QDockWidget, QInputDialog,
                                  QMessageBox)
 
-from . import custom_commands, layer_ops, raster_ops
+from . import compare, custom_commands, kontext_ops, layer_ops, raster_ops
 from .custom_commands import GalleryEntry
 from .map_tools import SelectByLineTool
 from ..core.i18n import tr
@@ -119,11 +119,23 @@ def locator_fokus(env, command):
     return run
 
 
+def _group(env):
+    """Gewählte Gruppe der Layerliste (kein Layer aktiv) oder None."""
+    return env.layers.group() if env.layers is not None else None
+
+
 def layer_massstab_schalten(env, command):
+    """Sichtbarkeitsbereich an/aus; bei gewählter Gruppe für die Gruppenebene."""
     def read(layer):
-        return layer is not None, layer is not None and layer.hasScaleBasedVisibility()
+        if layer is None:
+            group = _group(env)
+            target = kontext_ops.group_layer(group)
+            return group is not None, target is not None and target.hasScaleBasedVisibility()
+        return True, layer.hasScaleBasedVisibility()
 
     def run(layer, checked):
+        if layer is None and _group(env) is not None:
+            layer = env.layers.ensure_group_layer()
         if layer is not None:
             layer_ops.set_scale_range_enabled(layer, checked)
 
@@ -631,6 +643,174 @@ def raster_kanaele(env, command):
     return entries
 
 
+# -- Kontext-Tabs ----------------------------------------------------------
+
+def _compare_targets(env):
+    """Layer, die Wischen und Flimmern ausblenden: aktiver Layer oder Layer der Gruppe."""
+    layer = env.layers.active_layer() if env.layers is not None else env.iface.activeLayer()
+    if layer is not None:
+        return [layer]
+    group = _group(env)
+    if group is None:
+        return []
+    out = kontext_ops.group_layers(group)
+    if group.groupLayer() is not None:
+        out.append(group.groupLayer())
+    return out
+
+
+def comparison(env):
+    """Gemeinsamer Zustand von Wischen, Flimmern und Takt."""
+    return env.shared("vergleich", lambda: compare.Comparison(
+        env.iface.mapCanvas(), lambda: _compare_targets(env), env.settings, env.layers))
+
+
+def _comparable(env):
+    return lambda layer: layer is not None or _group(env) is not None
+
+
+def wischen(env, command):
+    state = comparison(env)
+    tool = env.keep(compare.SwipeTool(env.iface.mapCanvas(), state))
+    return env.keep(ToolAction(env, command.label, tool, _comparable(env)))
+
+
+def flimmern(env, command):
+    state = comparison(env)
+    comparable = _comparable(env)
+
+    def read(layer):
+        return comparable(layer), state.flickering
+
+    def run(_layer, checked):
+        if checked:
+            state.start_flicker()
+        else:
+            state.stop_flicker()
+
+    act = env.keep(StateAction(env, command.label, read, run))
+    if env.hub is not None:
+        env.hub.connect(state, "changed", act.refresh)
+    return act
+
+
+def aggregation_galerie(env, command):
+    saved = env.shared("aggregation_vorher", dict)
+
+    def entries():
+        layer = env.iface.activeLayer()
+        usable = kontext_ops.can_aggregate(layer)
+        current = kontext_ops.aggregation(layer)
+        out = []
+        for name, label in kontext_ops.AGGREGATIONS:
+            def apply(name=name):
+                target = env.iface.activeLayer()
+                if not kontext_ops.can_aggregate(target):
+                    _push(env, tr("Aggregation is only available for point layers."), Qgis.Warning)
+                    return
+                kontext_ops.set_aggregation(target, name, saved)
+                if name != "none":
+                    _show_styling_dock(env)
+            out.append(GalleryEntry(label, apply if usable else None,
+                                    icon=layer_ops.renderer_icon(name) if name != "none" else None,
+                                    checked=(name == current)))
+        return out
+
+    return entries
+
+
+def punktwolke_renderer_galerie(env, command):
+    def entries():
+        layer = env.iface.activeLayer()
+        current = kontext_ops.point_cloud_renderer_type(layer)
+        out = []
+        for name, label in kontext_ops.point_cloud_choices(layer):
+            def apply(name=name):
+                target = env.iface.activeLayer()
+                if kontext_ops.is_point_cloud(target):
+                    kontext_ops.set_point_cloud_renderer(target, name)
+                    _show_styling_dock(env)
+            out.append(GalleryEntry(label, apply, checked=(name == current)))
+        return out
+
+    return entries
+
+
+def vektorkacheln_beschriftung(env, command):
+    def read(layer):
+        return kontext_ops.vector_tile_labels(layer)
+
+    def run(layer, checked):
+        if kontext_ops.is_vector_tile(layer):
+            kontext_ops.set_vector_tile_labels(layer, checked)
+
+    return env.keep(StateAction(env, command.label, read, run))
+
+
+def netz_gitter(env, command):
+    def read(layer):
+        mesh = kontext_ops.is_mesh(layer)
+        return mesh, mesh and kontext_ops.mesh_frame(layer)
+
+    def run(layer, checked):
+        if kontext_ops.is_mesh(layer):
+            kontext_ops.set_mesh_frame(layer, checked)
+
+    return env.keep(StateAction(env, command.label, read, run))
+
+
+def gruppe_als_ebene(env, command):
+    """Gruppe als Gruppe darstellen (Gruppenebene mit eigener Deckkraft, Mischmodus ...)."""
+    def read(_layer):
+        group = _group(env)
+        return group is not None, group is not None and group.groupLayer() is not None
+
+    def run(_layer, checked):
+        group = _group(env)
+        if group is None:
+            return
+        if checked:
+            env.layers.ensure_group_layer()
+        else:
+            kontext_ops.remove_group_layer(group)
+            env.layers.rewatch()
+
+    return env.keep(StateAction(env, command.label, read, run))
+
+
+def gruppe_exklusiv(env, command):
+    """Gruppe exklusiv: Es ist immer nur ein Layer der Gruppe sichtbar."""
+    def read(_layer):
+        group = _group(env)
+        return group is not None, group is not None and group.isMutuallyExclusive()
+
+    def run(_layer, checked):
+        group = _group(env)
+        if group is not None:
+            group.setIsMutuallyExclusive(bool(checked))
+
+    return env.keep(StateAction(env, command.label, read, run))
+
+
+def gruppe_zoomen(env, command):
+    def read(_layer):
+        return _group(env) is not None, False
+
+    def run(_layer, _checked):
+        group = _group(env)
+        if group is None:
+            return
+        canvas = env.iface.mapCanvas()
+        extent = kontext_ops.group_extent(group, canvas.mapSettings().destinationCrs())
+        if extent.isNull():
+            _push(env, tr("The group contains no layers with an extent."), Qgis.Warning)
+            return
+        canvas.zoomToFeatureExtent(extent)
+        canvas.refresh()
+
+    return env.keep(StateAction(env, command.label, read, run, checkable=False))
+
+
 BUTTONS = {
     "ribbon.abfragemodus": abfragemodus,
     "ribbon.locator_fokus": locator_fokus,
@@ -649,6 +829,13 @@ BUTTONS = {
     "ribbon.beschriftung_regel_loeschen": beschriftung_regel_loeschen,
     "ribbon.layer_aenderungen_verwerfen": layer_aenderungen_verwerfen,
     "ribbon.auswahl_linie": auswahl_linie,
+    "ribbon.swipe": wischen,
+    "ribbon.flimmern": flimmern,
+    "ribbon.vektorkacheln_beschriftung": vektorkacheln_beschriftung,
+    "ribbon.netz_gitter": netz_gitter,
+    "ribbon.gruppe_als_ebene": gruppe_als_ebene,
+    "ribbon.gruppe_exklusiv": gruppe_exklusiv,
+    "ribbon.gruppe_zoomen": gruppe_zoomen,
 }
 
 GALLERIES = {
@@ -661,6 +848,8 @@ GALLERIES = {
     "ribbon.raster_renderer_galerie": raster_renderer_galerie,
     "ribbon.raster_resampling": raster_resampling,
     "ribbon.raster_kanaele": raster_kanaele,
+    "ribbon.aggregation_galerie": aggregation_galerie,
+    "ribbon.punktwolke_renderer_galerie": punktwolke_renderer_galerie,
 }
 
 

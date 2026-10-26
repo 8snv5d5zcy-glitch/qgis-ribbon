@@ -478,6 +478,32 @@ MOTIFS = {
     # Ansicht
     "farbsehen": EYE,
     "deuteranopie": add(EYE, M(k=[P("M4 20L20 4")])),
+
+    # Kontext-Tabs
+    "objekt_mischmodus": M(k=[R(3, 3, 10, 10, 1.5), C(15.5, 9, 5.5), P("M8.5 21l5-8.6 5 8.6z")],
+                           f=[C(15.5, 9, 5.5)]),
+    "wischen": M(k=[R(3, 4, 18, 16, 2)], a=[P("M12 2.5v19"), P("M15 12h4.5M17.5 10l2 2-2 2")],
+                 f=[P("M5 4h7v16H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z")]),
+    "flimmern": M(k=[P("M3 12.5l9 4.5 9-4.5"), P("M3 16.8l9 4.5 9-4.5")], a=[P(LAYERS_TOP, DASH)],
+                  f=[P(LAYERS_TOP)]),
+    "takt": M(k=[C(12, 13.2, 7.8), P("M10 2.8h4M12 2.8v2.6")], a=[P("M12 9.2v4l2.8 1.8")], f=[C(12, 13.2, 7.8)]),
+    "aggregation": M(k=[C(9, 9, 5.5)], a=[C(16.8, 15.8, 1.4), C(19.6, 10.8, 1.2), C(13.6, 20.2, 1.2), P("M7.6 9h2.8")],
+                     f=[C(9, 9, 5.5)]),
+    "kacheln_beschriften": badge(M(k=[LETTER_A]), M(a=[R(14.5, 14.5, 8, 8, 1), P("M18.5 14.5v8M14.5 18.5h8")])),
+    "punktwolke": M(k=[C(5.5, 15, 1.6), C(10, 8.5, 1.6), C(14, 14, 1.6), C(18.5, 7.5, 1.6), C(8.5, 19.5, 1.6),
+                       C(18.5, 18.5, 1.6)],
+                    f=[C(10, 8.5, 1.6), C(14, 14, 1.6), C(18.5, 18.5, 1.6)]),
+    "punktgroesse": M(k=[C(5, 17.5, 1.3), C(10.5, 14.5, 2.4), C(17, 9.5, 4)], f=[C(17, 9.5, 4)]),
+    "punktfehler": M(k=[C(12, 12, 8.5, DASH)], a=[C(9, 10, 1.3), C(14.5, 9, 1.3), C(12, 15, 1.3)],
+                     f=[C(12, 12, 8.5)]),
+    "netz_skalar": M(k=MESH["k"], f=[P("M3 19.5L12 4l9 15.5z")]),
+    "netz_vektor": badge(MESH, M(a=[P("M14.5 22l7-7M16.5 15H22v5.5")])),
+    "netz_gitter": M(k=MESH["k"]),
+    "gruppe_als_ebene": badge(FOLDER, LAYER_STACK),
+    "gruppe_exklusiv": badge(FOLDER, M(a=[C(18.5, 18.5, 3.6), C(18.5, 18.5, 1.1)])),
+    "gruppe_zoomen": M(k=[FRAME], a=[P("M7 9.5a1 1 0 0 1 1-1h2.5l1.2 1.3H16a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H8"
+                                        "a1 1 0 0 1-1-1z")],
+                       f=[P("M7 9.5a1 1 0 0 1 1-1h2.5l1.2 1.3H16a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1z")]),
 }
 
 # Befehls-ID -> Motiv
@@ -568,6 +594,13 @@ COMMANDS = {
     "wms_wmts_server": "server_karte", "xy_tabelle_zu_punkten": "punkte_aus_tabelle", "z_wert": "z_wert",
     "zentroide": "zentroide", "zur_auswahl_zoomen": "zur_auswahl", "zusammenfuehren": "zusammenfuehren",
     "zuschneiden": "zuschneiden",
+    # Kontext-Tabs
+    "objekt_mischmodus": "objekt_mischmodus", "wischen": "wischen", "flimmern": "flimmern",
+    "flimmer_intervall": "takt", "aggregation_galerie": "aggregation",
+    "vektorkacheln_beschriftung": "kacheln_beschriften", "punktwolke_renderer_galerie": "punktwolke",
+    "punktwolke_punktgroesse": "punktgroesse", "punktwolke_fehler": "punktfehler", "netz_skalar": "netz_skalar",
+    "netz_vektor": "netz_vektor", "netz_gitter": "netz_gitter", "gruppe_als_ebene": "gruppe_als_ebene",
+    "gruppe_exklusiv": "gruppe_exklusiv", "gruppe_zoomen": "gruppe_zoomen",
 }
 
 # Menü-Elemente ohne eigenen Befehl (nach Beschriftung)

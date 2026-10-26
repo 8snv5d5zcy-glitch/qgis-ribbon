@@ -285,6 +285,11 @@ contextual_tabs:
         items:
           - {command: "layer_deckkraft", size: "medium"}
           - {command: "layer_mischmodus", size: "medium"}
+          - {command: "objekt_mischmodus", size: "medium"}
+      - id: "vergleichen"
+        label: "Compare"
+        items:
+          - row: ["wischen", "flimmern", "flimmer_intervall"]
       - id: "zeichnen"
         label: "Drawing"
         items:
@@ -293,6 +298,7 @@ contextual_tabs:
             size: "large"
           - {command: "masken", size: "medium"}
           - {command: "stil_importieren", size: "medium"}
+          - {command: "aggregation_galerie", size: "large"}
   - id: "vektor_beschriftung"
     label: "Labeling"
     context: "Vector Layer"
@@ -429,6 +435,10 @@ contextual_tabs:
         items:
           - {command: "layer_deckkraft", size: "medium"}
           - {command: "layer_mischmodus", size: "medium"}
+      - id: "vergleichen"
+        label: "Compare"
+        items:
+          - row: ["wischen", "flimmern", "flimmer_intervall"]
       - id: "symbolisierung"
         label: "Symbology"
         items:
@@ -446,6 +456,111 @@ contextual_tabs:
           - {command: "raster_helligkeit", size: "medium"}
           - {command: "raster_kontrast", size: "medium"}
           - {command: "raster_gamma", size: "medium"}
+  - id: "vektorkacheln_darstellung"
+    label: "Appearance"
+    context: "Vector Tiles"
+    visible_when: ["active_layer_is_vector_tile"]
+    groups:
+      - id: "sichtbarkeitsbereich"
+        label: "Visibility Range"
+        items:
+          - {command: "layer_massstab_schalten", size: "large"}
+          - {command: "layer_massstab_max", size: "medium"}
+          - {command: "layer_massstab_min", size: "medium"}
+      - id: "effekte"
+        label: "Effects"
+        items:
+          - {command: "layer_deckkraft", size: "medium"}
+          - {command: "layer_mischmodus", size: "medium"}
+      - id: "vergleichen"
+        label: "Compare"
+        items:
+          - row: ["wischen", "flimmern", "flimmer_intervall"]
+      - id: "zeichnen"
+        label: "Drawing"
+        items:
+          - {command: "symbolisierung", size: "large"}
+          - {command: "vektorkacheln_beschriftung", size: "large"}
+  - id: "punktwolke_darstellung"
+    label: "Appearance"
+    context: "Point Cloud"
+    visible_when: ["active_layer_is_point_cloud"]
+    groups:
+      - id: "sichtbarkeitsbereich"
+        label: "Visibility Range"
+        items:
+          - {command: "layer_massstab_schalten", size: "large"}
+          - {command: "layer_massstab_max", size: "medium"}
+          - {command: "layer_massstab_min", size: "medium"}
+      - id: "effekte"
+        label: "Effects"
+        items:
+          - {command: "layer_deckkraft", size: "medium"}
+          - {command: "layer_mischmodus", size: "medium"}
+      - id: "vergleichen"
+        label: "Compare"
+        items:
+          - row: ["wischen", "flimmern", "flimmer_intervall"]
+      - id: "zeichnen"
+        label: "Drawing"
+        items:
+          - {command: "symbolisierung", size: "large"}
+          - {command: "punktwolke_renderer_galerie", size: "large"}
+          - {command: "punktwolke_punktgroesse", size: "large"}
+          - {command: "punktwolke_fehler", size: "large"}
+  - id: "netz_darstellung"
+    label: "Appearance"
+    context: "Mesh"
+    visible_when: ["active_layer_is_mesh"]
+    groups:
+      - id: "sichtbarkeitsbereich"
+        label: "Visibility Range"
+        items:
+          - {command: "layer_massstab_schalten", size: "large"}
+          - {command: "layer_massstab_max", size: "medium"}
+          - {command: "layer_massstab_min", size: "medium"}
+      - id: "effekte"
+        label: "Effects"
+        items:
+          - {command: "layer_deckkraft", size: "medium"}
+          - {command: "layer_mischmodus", size: "medium"}
+      - id: "vergleichen"
+        label: "Compare"
+        items:
+          - row: ["wischen", "flimmern", "flimmer_intervall"]
+      - id: "zeichnen"
+        label: "Drawing"
+        items:
+          - {command: "symbolisierung", size: "large"}
+          - {command: "netz_skalar", size: "large"}
+          - {command: "netz_vektor", size: "large"}
+          - {command: "netz_gitter", size: "large"}
+  - id: "gruppe_darstellung"
+    label: "Appearance"
+    context: "Group"
+    visible_when: ["active_node_is_group"]
+    groups:
+      - id: "sichtbarkeitsbereich"
+        label: "Visibility Range"
+        items:
+          - {command: "layer_massstab_schalten", size: "large"}
+          - {command: "layer_massstab_max", size: "medium"}
+          - {command: "layer_massstab_min", size: "medium"}
+      - id: "effekte"
+        label: "Effects"
+        items:
+          - {command: "layer_deckkraft", size: "medium"}
+          - {command: "layer_mischmodus", size: "medium"}
+      - id: "vergleichen"
+        label: "Compare"
+        items:
+          - row: ["wischen", "flimmern", "flimmer_intervall"]
+      - id: "gruppe"
+        label: "Group"
+        items:
+          - {command: "gruppe_als_ebene", size: "large"}
+          - {command: "gruppe_exklusiv", size: "large"}
+          - {command: "gruppe_zoomen", size: "large"}
 
 commands:
   einfuegen:
@@ -1109,13 +1224,35 @@ commands:
     kind: "control"
     icon: "/propertyicons/transparency.svg"
     description: "Opacity of the active layer."
-    enabled_when: ["active_layer"]
+    enabled_when: ["active_layer_or_group"]
   layer_mischmodus:
     label: "Blending Mode"
     source: {type: "custom", id: "ribbon.layer_mischmodus"}
     kind: "control"
     icon: "/mIconPaintEffects.svg"
     description: "How the layer is blended with the layers below."
+  objekt_mischmodus:
+    label: "Feature Blending"
+    source: {type: "custom", id: "ribbon.objekt_mischmodus"}
+    kind: "control"
+    icon: "/mIconPaintEffects.svg"
+    description: "How the features of the layer blend with each other."
+  wischen:
+    label: "Swipe"
+    source: {type: "custom", id: "ribbon.swipe"}
+    icon: "/mActionSplitFeatures.svg"
+    description: "Drag across the map with the mouse button pressed: on one side of the edge the layer is hidden, so you can compare it with the layers below."
+    enabled_when: ["active_layer_or_group"]
+  flimmern:
+    label: "Flicker"
+    source: {type: "custom", id: "ribbon.flimmern"}
+    icon: "/mActionShowAllLayers.svg"
+    description: "Hide and show the layer at the set interval to compare it with the layers below."
+  flimmer_intervall:
+    label: "Interval"
+    source: {type: "custom", id: "ribbon.flimmer_intervall"}
+    kind: "control"
+    description: "Flicker interval in milliseconds."
   symbolisierung:
     label: "Symbology"
     source: {type: "dock", modus: "zeigen", object_name: "LayerStyling"}
@@ -1143,6 +1280,14 @@ commands:
     source: {type: "processing", algorithm: "native:setlayerstyle"}
     description: "Apply a style from a file to a layer."
     enabled_when: ["active_layer_is_vector"]
+  aggregation_galerie:
+    label: "Aggregation"
+    source: {type: "custom", id: "ribbon.aggregation_galerie"}
+    kind: "control"
+    icon: "/rendererPointClusterSymbol.svg"
+    description: "Combine points that lie close together: point cluster, point displacement or heatmap. Point layers only."
+    enabled_when: ["active_layer_is_vector"]
+    gallery: {display: "dropdown"}
   beschriftung_schalten:
     label: "Label"
     source: {type: "custom", id: "ribbon.beschriftung_schalten"}
@@ -1398,6 +1543,58 @@ commands:
     icon: "/mActionIncreaseGamma.svg"
     description: "Gamma correction of the raster layer (0.1 to 10)."
     enabled_when: ["active_layer_is_raster"]
+  vektorkacheln_beschriftung:
+    label: "Labels"
+    source: {type: "custom", id: "ribbon.vektorkacheln_beschriftung"}
+    icon: "/mActionLabeling.svg"
+    description: "Turn the labels of the vector tiles on or off."
+  punktwolke_renderer_galerie:
+    label: "Renderer"
+    source: {type: "custom", id: "ribbon.punktwolke_renderer_galerie"}
+    kind: "control"
+    icon: "/mIconPointCloudLayer.svg"
+    description: "Change how the point cloud is drawn (single color, classification, RGB, attribute)."
+    gallery: {display: "dropdown"}
+  punktwolke_punktgroesse:
+    label: "Point Size"
+    source: {type: "custom", id: "ribbon.punktwolke_punktgroesse"}
+    kind: "control"
+    description: "Size of the drawn points in millimeters."
+  punktwolke_fehler:
+    label: "Max. Error"
+    source: {type: "custom", id: "ribbon.punktwolke_fehler"}
+    kind: "control"
+    description: "How densely the points are drawn, in pixels: a smaller value draws more points and is slower."
+  netz_skalar:
+    label: "Scalar"
+    source: {type: "custom", id: "ribbon.netz_skalar"}
+    kind: "control"
+    description: "Dataset group drawn as colored surface."
+  netz_vektor:
+    label: "Vectors"
+    source: {type: "custom", id: "ribbon.netz_vektor"}
+    kind: "control"
+    description: "Dataset group drawn as arrows."
+  netz_gitter:
+    label: "Mesh Frame"
+    source: {type: "custom", id: "ribbon.netz_gitter"}
+    icon: "/mIconMeshLayer.svg"
+    description: "Show or hide the edges of the mesh."
+  gruppe_als_ebene:
+    label: "Render as Group"
+    source: {type: "custom", id: "ribbon.gruppe_als_ebene"}
+    icon: "/mActionAddGroup.svg"
+    description: "Draw the layers of the group together first. Opacity and blending mode then apply to the whole group."
+  gruppe_exklusiv:
+    label: "Exclusive"
+    source: {type: "custom", id: "ribbon.gruppe_exklusiv"}
+    icon: "/mActionShowAllLayers.svg"
+    description: "Mutually exclusive: only one layer of the group is visible at a time."
+  gruppe_zoomen:
+    label: "Zoom to Group"
+    source: {type: "custom", id: "ribbon.gruppe_zoomen"}
+    icon: "/mActionZoomToLayer.svg"
+    description: "Zoom to the extent of all layers in the group."
   neues_projekt:
     label: "New Project"
     source: {type: "qgis_action", object_name: "mActionNewProject"}

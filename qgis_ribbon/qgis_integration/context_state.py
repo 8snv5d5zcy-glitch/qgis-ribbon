@@ -16,7 +16,9 @@ Signalverbindungen:
 
 import time
 
-from qgis.core import QgsRasterLayer, QgsVectorLayer
+from qgis.core import (QgsLayerTreeGroup, QgsMeshLayer, QgsPointCloudLayer, QgsRasterLayer,
+                       QgsVectorLayer, QgsVectorTileLayer)
+from qgis.PyQt import sip
 from qgis.PyQt.QtCore import QTimer
 
 from ..core.conditions import Snapshot
@@ -30,11 +32,42 @@ def layer_kind(layer):
         return "vector" if layer.isSpatial() else "table"
     if isinstance(layer, QgsRasterLayer):
         return "raster"
+    if isinstance(layer, QgsVectorTileLayer):
+        return "vector_tile"
+    if isinstance(layer, QgsPointCloudLayer):
+        return "point_cloud"
+    if isinstance(layer, QgsMeshLayer):
+        return "mesh"
     return "other"
 
 
-def snapshot(layer):
-    """QGIS-Layer -> ``Snapshot``."""
+def current_group(iface):
+    """Gewählte Gruppe der Layerliste, wenn kein Layer aktiv ist, sonst None.
+
+    Ohne Auswahl meldet die Layerliste die Wurzel als aktuellen Knoten; sie
+    zählt nicht als Gruppe.
+    """
+    if iface.activeLayer() is not None or not hasattr(iface, "layerTreeView"):
+        return None
+    view = iface.layerTreeView()
+    node = view.currentNode() if view is not None else None
+    if isinstance(node, QgsLayerTreeGroup) and node.parent() is not None:
+        return node
+    return None
+
+
+def watch_tree_selection(iface, hub, slot):
+    """``slot`` bei jedem Wechsel des aktuellen Knotens der Layerliste (auch Gruppe zu Gruppe)."""
+    view = iface.layerTreeView() if hasattr(iface, "layerTreeView") else None
+    model = view.selectionModel() if view is not None else None
+    if model is not None:
+        hub.connect(model, "currentChanged", slot)
+
+
+def snapshot(layer, group=None):
+    """QGIS-Layer (oder gewählte Gruppe) -> ``Snapshot``."""
+    if layer is None and group is not None:
+        return Snapshot(layer_kind="group")
     kind = layer_kind(layer)
     if kind in ("vector", "table"):
         return Snapshot(layer_kind=kind, editable=layer.isEditable(),
@@ -62,6 +95,7 @@ class ContextState(object):
         """Signale verbinden und den Ausgangszustand sofort liefern."""
         self._running = True
         self.hub.connect(self.iface, "currentLayerChanged", self._on_layer_changed)
+        watch_tree_selection(self.iface, self.hub, self.schedule)
         self._watch(self.iface.activeLayer())
         self._flush()
 
@@ -75,6 +109,8 @@ class ContextState(object):
     # Signale
     def _watch(self, layer):
         self.layer_hub.disconnect_all()
+        if layer is not None and sip.isdeleted(layer):
+            layer = None
         self.layer = layer
         if layer is None:
             return
@@ -108,6 +144,6 @@ class ContextState(object):
             return
         start = time.perf_counter()
         events, self.events = tuple(self.events), []
-        self.listener(snapshot(self.layer), events)
+        self.listener(snapshot(self.layer, current_group(self.iface)), events)
         self.updates += 1
         self.last_update_ms = (time.perf_counter() - start) * 1000.0

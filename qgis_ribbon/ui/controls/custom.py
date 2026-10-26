@@ -21,13 +21,15 @@ from qgis.PyQt.QtGui import QFontDatabase, QIcon, QPainter
 from qgis.PyQt.QtWidgets import (QCheckBox, QComboBox, QFontComboBox, QHBoxLayout, QLabel,
                                  QSizePolicy, QWidget)
 
-from ...qgis_integration import builtin_commands, custom_commands, layer_ops, raster_ops
+from ...qgis_integration import (builtin_commands, compare, custom_commands, kontext_ops, layer_ops,
+                                 raster_ops)
 from .. import icons, theme
 from ..html_text import escape
 from ...core.i18n import tr
 
 EDITOR_WIDTHS = {"scale": 110, "opacity": 130, "blend": 120, "font": 140, "size": 52,
-                 "style": 90, "color": 36, "class": 120, "field": 150, "number": 72}
+                 "style": 90, "color": 36, "class": 120, "field": 150, "number": 72,
+                 "interval": 84, "dataset": 140}
 
 
 class IconLabel(QWidget):
@@ -50,6 +52,7 @@ class LayerControl(QWidget):
 
     editor_kind = None
     show_label = True       # False: der Editor trägt die Beschriftung selbst (Kontrollkästchen)
+    group_aware = False     # True: bei gewählter Gruppe wirkt es auf deren Gruppenebene
 
     def __init__(self, env, command, ctx, parent=None, size="medium"):
         QWidget.__init__(self, parent)
@@ -107,11 +110,20 @@ class LayerControl(QWidget):
     def read(self, layer):
         """Editor aus dem Layer füllen (Signale sind gesperrt)."""
 
+    def read_default(self):
+        """Gruppe ohne Gruppenebene: Editor auf den QGIS-Standardwert setzen."""
+
     # Ablauf
     def layer(self):
         if self.env.layers is not None:
             return self.env.layers.active_layer()
         return self.env.iface.activeLayer()
+
+    def group(self):
+        """Gewählte Gruppe, wenn das Steuerelement für Gruppen gilt und kein Layer aktiv ist."""
+        if not self.group_aware or self.env.layers is None or self.layer() is not None:
+            return None
+        return self.env.layers.group()
 
     def refresh(self, layer=None):
         # Nicht sichtbar (anderer Tab, Seite noch im Aufbau): erst beim Zeigen lesen.
@@ -122,18 +134,25 @@ class LayerControl(QWidget):
         self.stale = False
         layer = self.layer() if layer is None else layer
         self.sync()
-        if not self.suitable(layer):
+        group = self.group() if layer is None else None
+        if group is not None:
+            layer = kontext_ops.group_layer(group)
+        elif not self.suitable(layer):
             return
         self._reading = True
         self.editor.blockSignals(True)
         try:
-            self.read(layer)
+            if group is not None and layer is None:
+                self.read_default()
+            else:
+                self.read(layer)
         finally:
             self.editor.blockSignals(False)
             self._reading = False
 
     def sync(self):
-        self.setEnabled(self.suitable(self.layer()) and self._ctx.allowed(self.command))
+        usable = self.suitable(self.layer()) or self.group() is not None
+        self.setEnabled(usable and self._ctx.allowed(self.command))
 
     def refresh_if_stale(self):
         if self.stale:
@@ -144,11 +163,18 @@ class LayerControl(QWidget):
         self.refresh_if_stale()
 
     def write(self, change):
-        """``change(layer)`` auf den aktiven Layer anwenden (nicht während des Lesens)."""
-        layer = self.layer()
-        if self._reading or not self.suitable(layer):
+        """``change(layer)`` auf den aktiven Layer anwenden (nicht während des Lesens).
+
+        Bei gewählter Gruppe auf deren Gruppenebene; die Gruppe wird dazu als
+        Gruppe dargestellt, falls sie es noch nicht ist.
+        """
+        if self._reading:
             return
-        self._ctx.resolver.call(self.command, lambda: change(layer))
+        layer = self.layer()
+        if self.suitable(layer):
+            self._ctx.resolver.call(self.command, lambda: change(layer))
+        elif self.group() is not None:
+            self._ctx.resolver.call(self.command, lambda: change(self.env.layers.ensure_group_layer()))
 
 
 class ScaleControl(LayerControl):
@@ -159,6 +185,7 @@ class ScaleControl(LayerControl):
     def __init__(self, env, command, ctx, parent=None, size="medium", which="max", labels=False):
         self.which = which
         self.labels = labels
+        self.group_aware = not labels
         LayerControl.__init__(self, env, command, ctx, parent, size)
 
     def create_editor(self):
@@ -183,6 +210,9 @@ class ScaleControl(LayerControl):
         else:
             self.editor.setNull()
 
+    def read_default(self):
+        self.editor.setNull()
+
     def value(self):
         return 0.0 if self.editor.isNull() else self.editor.scale()
 
@@ -196,6 +226,7 @@ class ScaleControl(LayerControl):
 
 class OpacityControl(LayerControl):
     editor_kind = "opacity"
+    group_aware = True
 
     def create_editor(self):
         w = QgsOpacityWidget(self)
@@ -206,9 +237,13 @@ class OpacityControl(LayerControl):
     def read(self, layer):
         self.editor.setOpacity(layer_ops.opacity(layer))
 
+    def read_default(self):
+        self.editor.setOpacity(1.0)
+
 
 class BlendModeControl(LayerControl):
     editor_kind = "blend"
+    group_aware = True
 
     def create_editor(self):
         w = QgsBlendModeComboBox(self)
@@ -218,6 +253,27 @@ class BlendModeControl(LayerControl):
 
     def read(self, layer):
         self.editor.setBlendMode(layer_ops.blend_mode(layer))
+
+    def read_default(self):
+        self.editor.setBlendMode(QPainter.CompositionMode_SourceOver)
+
+
+class FeatureBlendModeControl(LayerControl):
+    """Mischmodus der Objekte eines Vektorlayers untereinander."""
+
+    editor_kind = "blend"
+
+    def create_editor(self):
+        w = QgsBlendModeComboBox(self)
+        w.currentIndexChanged.connect(lambda _i: self.write(
+            lambda layer: layer_ops.set_feature_blend_mode(layer, w.blendMode())))
+        return w
+
+    def suitable(self, layer):
+        return layer_ops.is_vector(layer)
+
+    def read(self, layer):
+        self.editor.setBlendMode(layer_ops.feature_blend_mode(layer))
 
 
 class LabelControl(LayerControl):
@@ -511,6 +567,98 @@ class RasterEnhanceControl(LayerControl):
                               "gamma": gamma}[self.which])
 
 
+class FlickerIntervalControl(LayerControl):
+    """Takt des Flimmerns in Millisekunden (Einstellung, gilt für alle Layer)."""
+
+    editor_kind = "interval"
+
+    def __init__(self, env, command, ctx, parent=None, size="medium"):
+        self.comparison = builtin_commands.comparison(env)
+        LayerControl.__init__(self, env, command, ctx, parent, size)
+
+    def create_editor(self):
+        w = QgsSpinBox(self)
+        w.setRange(*compare.FLICKER_RANGE)
+        w.setSingleStep(100)
+        w.setSuffix(" ms")
+        w.setClearValue(compare.FLICKER_DEFAULT)
+        w.valueChanged.connect(self._changed)
+        return w
+
+    def suitable(self, layer):
+        return True
+
+    def read(self, _layer):
+        self.editor.setValue(self.comparison.interval())
+
+    def _changed(self, value):
+        if not self._reading:
+            self._ctx.resolver.call(self.command, lambda: self.comparison.set_interval(value))
+
+
+class PointCloudControl(LayerControl):
+    """Punktgröße oder maximaler Bildschirmfehler der aktiven Punktwolke."""
+
+    editor_kind = "number"
+
+    def __init__(self, env, command, ctx, parent=None, size="medium", which="size"):
+        self.which = which
+        LayerControl.__init__(self, env, command, ctx, parent, size)
+
+    def suitable(self, layer):
+        return kontext_ops.is_point_cloud(layer) and layer.renderer() is not None
+
+    def create_editor(self):
+        w = QgsDoubleSpinBox(self)
+        if self.which == "size":
+            w.setRange(*kontext_ops.POINT_SIZE_RANGE)
+            setter = kontext_ops.set_point_size
+        else:
+            w.setRange(*kontext_ops.SCREEN_ERROR_RANGE)
+            setter = kontext_ops.set_max_screen_error
+        w.setDecimals(1)
+        w.setSingleStep(0.5)
+        w.valueChanged.connect(lambda value: self.write(lambda layer: setter(layer, value)))
+        return w
+
+    def read(self, layer):
+        if self.which == "size":
+            self.editor.setValue(kontext_ops.point_size(layer))
+        else:
+            self.editor.setValue(kontext_ops.max_screen_error(layer))
+
+
+class MeshGroupControl(LayerControl):
+    """Dargestellte Datensatzgruppe des aktiven Netzes (Skalar oder Vektor)."""
+
+    editor_kind = "dataset"
+
+    def __init__(self, env, command, ctx, parent=None, size="medium", vector=False):
+        self.vector = vector
+        LayerControl.__init__(self, env, command, ctx, parent, size)
+
+    def suitable(self, layer):
+        return kontext_ops.is_mesh(layer)
+
+    def create_editor(self):
+        w = QComboBox(self)
+        w.activated.connect(self._chosen)
+        return w
+
+    def read(self, layer):
+        self.editor.clear()
+        self.editor.addItem(tr("(none)"), -1)
+        active = kontext_ops.mesh_active_group(layer, self.vector)
+        for index, name in kontext_ops.mesh_groups(layer, self.vector):
+            self.editor.addItem(name, index)
+            if index == active:
+                self.editor.setCurrentIndex(self.editor.count() - 1)
+
+    def _chosen(self, row):
+        index = self.editor.itemData(row)
+        self.write(lambda layer: kontext_ops.set_mesh_active_group(layer, index, self.vector))
+
+
 def _factory(cls, **kwargs):
     def create(env, command, ctx, parent, size="medium"):
         return cls(env, command, ctx, parent, size, **kwargs)
@@ -524,6 +672,12 @@ CONTROLS = {
     "ribbon.beschriftung_massstab_min": _factory(ScaleControl, which="min", labels=True),
     "ribbon.layer_deckkraft": _factory(OpacityControl),
     "ribbon.layer_mischmodus": _factory(BlendModeControl),
+    "ribbon.objekt_mischmodus": _factory(FeatureBlendModeControl),
+    "ribbon.flimmer_intervall": _factory(FlickerIntervalControl),
+    "ribbon.punktwolke_punktgroesse": _factory(PointCloudControl, which="size"),
+    "ribbon.punktwolke_fehler": _factory(PointCloudControl, which="error"),
+    "ribbon.netz_skalar": _factory(MeshGroupControl, vector=False),
+    "ribbon.netz_vektor": _factory(MeshGroupControl, vector=True),
     "ribbon.beschriftung_schrift": _factory(FontControl),
     "ribbon.beschriftung_groesse": _factory(FontSizeControl),
     "ribbon.beschriftung_schriftschnitt": _factory(FontStyleControl),

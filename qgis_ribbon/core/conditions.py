@@ -21,8 +21,9 @@ from typing import Optional
 from .i18n import tr
 
 # Layerarten im Snapshot. QGIS kennt weniger Typen als ArcGIS Pro: WMS, WMTS
-# und XYZ sind Rasterlayer, WFS ist ein Vektorlayer.
-LAYER_KINDS = ("vector", "table", "raster", "other")
+# und XYZ sind Rasterlayer, WFS ist ein Vektorlayer. ``group``: in der
+# Layerliste ist eine Gruppe gewählt (kein aktiver Layer).
+LAYER_KINDS = ("vector", "table", "raster", "vector_tile", "point_cloud", "mesh", "other", "group")
 
 
 @dataclass(frozen=True)
@@ -30,8 +31,9 @@ class Snapshot:
     """Verdichteter Zustand des aktiven Layers.
 
     ``layer_kind``: ``vector`` (Vektorlayer mit Geometrie), ``table``
-    (Vektorlayer ohne Geometrie), ``raster``, ``other`` (Mesh, Punktwolke,
-    Vektorkacheln ...) oder ``None`` (kein aktiver Layer).
+    (Vektorlayer ohne Geometrie), ``raster``, ``vector_tile``,
+    ``point_cloud``, ``mesh``, ``other`` (Annotationen, Plugin-Layer ...),
+    ``group`` (Gruppe in der Layerliste gewählt) oder ``None`` (nichts gewählt).
     """
 
     layer_kind: Optional[str] = None
@@ -48,8 +50,11 @@ SNAPSHOT_FIELDS = tuple(f.name for f in fields(Snapshot))
 # Name -> (abhängige Felder, Prädikat, Beschreibung)
 CONDITIONS = {
     "active_layer": (
-        ("layer_kind",), lambda s: s.layer_kind is not None,
+        ("layer_kind",), lambda s: s.layer_kind not in (None, "group"),
         tr("A layer is active.")),
+    "active_layer_or_group": (
+        ("layer_kind",), lambda s: s.layer_kind is not None,
+        tr("A layer or a group is active.")),
     "active_layer_is_vector": (
         ("layer_kind",), lambda s: s.layer_kind == "vector",
         tr("The active layer is a vector layer with geometry.")),
@@ -62,6 +67,18 @@ CONDITIONS = {
     "active_layer_is_raster": (
         ("layer_kind",), lambda s: s.layer_kind == "raster",
         tr("The active layer is a raster layer.")),
+    "active_layer_is_vector_tile": (
+        ("layer_kind",), lambda s: s.layer_kind == "vector_tile",
+        tr("The active layer is a vector tile layer.")),
+    "active_layer_is_point_cloud": (
+        ("layer_kind",), lambda s: s.layer_kind == "point_cloud",
+        tr("The active layer is a point cloud layer.")),
+    "active_layer_is_mesh": (
+        ("layer_kind",), lambda s: s.layer_kind == "mesh",
+        tr("The active layer is a mesh layer.")),
+    "active_node_is_group": (
+        ("layer_kind",), lambda s: s.layer_kind == "group",
+        tr("A group is selected in the Layers panel.")),
     "active_layer_is_editable": (
         ("editable",), lambda s: s.editable,
         tr("The active layer is in edit mode.")),

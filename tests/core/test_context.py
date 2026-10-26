@@ -69,12 +69,14 @@ def test_every_condition_declares_known_fields():
 
 @pytest.mark.parametrize("snap, true", [
     (Snapshot(), set()),
-    (VECTOR, {"active_layer", "active_layer_is_vector", "active_layer_has_fields"}),
-    (TABLE, {"active_layer", "active_layer_is_table", "active_layer_has_fields"}),
-    (RASTER, {"active_layer", "active_layer_is_raster"}),
-    (Snapshot(layer_kind="other"), {"active_layer"}),
+    (VECTOR, {"active_layer", "active_layer_or_group", "active_layer_is_vector", "active_layer_has_fields"}),
+    (TABLE, {"active_layer", "active_layer_or_group", "active_layer_is_table", "active_layer_has_fields"}),
+    (RASTER, {"active_layer", "active_layer_or_group", "active_layer_is_raster"}),
+    (Snapshot(layer_kind="other"), {"active_layer", "active_layer_or_group"}),
+    (Snapshot(layer_kind="mesh"), {"active_layer", "active_layer_or_group", "active_layer_is_mesh"}),
+    (Snapshot(layer_kind="group"), {"active_layer_or_group", "active_node_is_group"}),
     (Snapshot("vector", editable=True, has_selection=True),
-     {"active_layer", "active_layer_is_vector", "active_layer_has_fields",
+     {"active_layer", "active_layer_or_group", "active_layer_is_vector", "active_layer_has_fields",
       "active_layer_is_editable", "active_layer_has_selection"}),
 ])
 def test_condition_values(snap, true):
@@ -83,7 +85,7 @@ def test_condition_values(snap, true):
 
 def test_snapshot_rejects_unknown_kind():
     with pytest.raises(ValueError):
-        Snapshot(layer_kind="mesh")
+        Snapshot(layer_kind="annotation")
 
 
 def test_initial_state_without_layer(logic):

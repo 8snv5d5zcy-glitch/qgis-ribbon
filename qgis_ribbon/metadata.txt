@@ -2,7 +2,7 @@
 name=QGIS Ribbon
 qgisMinimumVersion=3.44
 description=A ribbon interface for QGIS: tabs, contextual tabs, Quick Access Toolbar, KeyTips and command search instead of toolbars.
-version=1.2.1
+version=1.3.0
 author=Paul Liecke
 email=paul.liecke@gmx.de
 about=QGIS Ribbon replaces the QGIS toolbars with a ribbon. Commands are sorted into tabs and groups (Map, Insert, Analysis, View, Edit, Imagery, Share, Extensions). Contextual tabs appear for the active vector layer, table or raster. It includes a Quick Access Toolbar, KeyTips for keyboard use (Alt), a command search, a graphical editor to customize tabs, groups and galleries, saved and shareable arrangements, light and dark appearance, and a tab for the commands of installed plugins. The ribbon only calls existing QGIS functions; the menu bar and panels stay unchanged, and deactivating the plugin restores the QGIS toolbars exactly. User interface in English and German, with a built-in guide (Help > Plugins > QGIS Ribbon Guide). The layout follows the ribbon concept of ArcGIS Pro to help users switching to QGIS. This is an independent project, not affiliated with or endorsed by Esri, and it contains no Esri icons, texts or graphics. Tested on Windows with QGIS 3.44. No extra Python packages needed (uses PyYAML, which ships with QGIS).
@@ -10,6 +10,7 @@ tracker=https://github.com/8snv5d5zcy-glitch/qgis-ribbon/issues
 repository=https://github.com/8snv5d5zcy-glitch/qgis-ribbon
 homepage=https://github.com/8snv5d5zcy-glitch/qgis-ribbon#readme
 changelog=
+    1.3.0 Appearance tab for vector and raster layers with visibility range, effects (blending modes, feature blending), swipe and flicker; aggregation for point layers (cluster, displacement, heatmap). New contextual tabs for groups, vector tiles, point clouds and meshes.
     1.2.1 Fix: QGIS could crash on exit when another plugin was unloaded before the ribbon.
     1.2.0 Edit tab: Save and Discard for the active layer only (editing stays on), Save All and Discard All clearly named for all layers being edited. Labeling tab: create and delete label classes, Label sets a placement that fits the geometry (parallel for lines), duplicate Expression button removed (the Field box has its own expression button).
     1.1.0 Advanced Digitizing switch and Construction panel in the Edit tab (new Construction group), tracing, self-snapping and snapping to intersections in Snapping, label tools in Map > Labeling, 23 further QGIS commands from the hidden toolbars available in the ribbon editor, all with icons of the own icon set.

@@ -157,7 +157,8 @@ def test_sizes_have_fixed_heights(size):
 def test_controls_with_active_layer_and_clean_unload(fake_iface, settings, layers):
     """Steuerelemente aller Tabs mit aktivem Layer; Entladen hinterlässt nichts."""
     from qgis_ribbon.qgis_integration import custom_commands
-    from qgis_ribbon.ui.controls.custom import LayerControl, RasterEnhanceControl
+    from qgis_ribbon.ui.controls.custom import (LayerControl, MeshGroupControl, PointCloudControl,
+                                                RasterEnhanceControl)
 
     mw = fake_iface.mainWindow()
     settle()
@@ -170,8 +171,9 @@ def test_controls_with_active_layer_and_clean_unload(fake_iface, settings, layer
     settle()
     controls = plugin.widget.findChildren(LayerControl)
     assert len(controls) >= 10
-    # Vektorlayer: alle bedienbar außer den Raster-Reglern
-    assert all(c.isEnabled() != isinstance(c, RasterEnhanceControl) for c in controls)
+    # Vektorlayer: alle bedienbar außer den Reglern für Raster, Punktwolken und Netze
+    other = (RasterEnhanceControl, PointCloudControl, MeshGroupControl)
+    assert all(c.isEnabled() != isinstance(c, other) for c in controls)
     fake_iface.set_active_layer(layers["raster"])
     settle()
     raster = [c for c in controls if isinstance(c, RasterEnhanceControl)]

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0 (2026-10-26)
+
+- Appearance tab for vector and raster layers: visibility range, effects (opacity, blending mode, for vector layers also feature blending mode) and compare (swipe, flicker with adjustable interval).
+- Vector layers: aggregation for point layers (point cluster, point displacement, heatmap; None restores the previous symbology).
+- New contextual tabs: Group (render as group, mutually exclusive, zoom to group; opacity, blending mode and visibility range for the group), Vector Tiles (symbology, labels on/off), Point Cloud (rendering, point size, maximum error) and Mesh (scalar and vector dataset, mesh frame).
+- 15 new commands and controls with icons of the own icon set; guide extended in both languages.
+
 ## 1.2.1 (2026-10-26)
 
 - Fix: QGIS could crash on exit (access violation) when a plugin whose commands the ribbon shows in the Extensions tab was unloaded before the ribbon.
