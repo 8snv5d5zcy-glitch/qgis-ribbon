@@ -177,6 +177,101 @@ def test_filter_turns_simple_labeling_into_rule(layers):
     assert layer_ops.label_expression(layer_ops.label_class_settings(v, key)) == '"name"'
 
 
+def test_new_and_deleted_label_class(layers):
+    v = layers["vector"]
+    layer_ops.set_labels_enabled(v, True)
+    key = layer_ops.add_label_class(v, "", "Hauptorte")
+    assert isinstance(v.labeling(), QgsRuleBasedLabeling)
+    classes = layer_ops.label_classes(v)
+    assert [c[1] for c in classes] == ["Standard", "Hauptorte"] and classes[1][0] == key
+    assert layer_ops.label_class_filter(v, key) == ""
+    assert layer_ops.label_class_settings(v, key).fieldName == "name"      # Muster der gewählten Klasse
+    first = classes[0][0]
+    assert layer_ops.remove_label_class(v, first) == key
+    assert [c[1] for c in layer_ops.label_classes(v)] == ["Hauptorte"]
+    assert layer_ops.remove_label_class(v, key) is None                    # die letzte bleibt
+    # Ohne Beschriftung: neue Klasse legt Standard und die neue an und schaltet ein
+    other = polygons()
+    layer_ops.add_label_class(other, None, "Neu")
+    assert [c[1] for c in layer_ops.label_classes(other)] == ["Standard", "Neu"] and other.labelsEnabled()
+
+
+def test_label_on_gives_lines_parallel_placement():
+    line = QgsVectorLayer("LineString?crs=EPSG:25832&field=name:string", "Linien", "memory")
+    layer_ops.set_labels_enabled(line, True)
+    assert layer_ops.label_placement(line) == "Line"                       # „Parallel“
+    # Vorhandene Beschriftung mit „Um Punkt“ (QGIS beschriftet Linien damit nicht)
+    s = QgsPalLayerSettings()
+    s.fieldName = "name"
+    s.placement = Qgis.LabelPlacement.AroundPoint
+    line.setLabeling(QgsVectorLayerSimpleLabeling(s))
+    layer_ops.set_labels_enabled(line, True)
+    assert layer_ops.label_placement(line) == "Line"
+    # Punkte und Flächen behalten ihre (passende) Platzierung
+    poly = polygons()
+    layer_ops.set_labels_enabled(poly, True)
+    assert layer_ops.label_placement(poly) == "AroundPoint"
+
+
+def test_label_class_commands_update_class_list(ribbon, fake_iface, layers, monkeypatch):
+    from types import SimpleNamespace
+    w, _watch, env = ribbon
+    v = layers["vector"]
+    layer_ops.set_labels_enabled(v, True)
+    fake_iface.set_active_layer(v)
+    settle()
+    klasse = control(w, "klasse")
+    monkeypatch.setattr(builtin_commands.QInputDialog, "getText", lambda *a, **k: ("Groß", True))
+    builtin_commands.beschriftung_regel_neu(env, SimpleNamespace(label="Neue Klasse"))()
+    settle()
+    assert [klasse.editor.itemText(i) for i in range(klasse.editor.count())] == ["Standard", "Groß"]
+    assert klasse.editor.currentText() == "Groß"
+    delete = builtin_commands.beschriftung_regel_loeschen(env, SimpleNamespace(label="Klasse löschen"))
+    assert delete.isEnabled()
+    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.No)
+    delete.trigger()
+    assert len(layer_ops.label_classes(v)) == 2                            # abgelehnt
+    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.Yes)
+    delete.trigger()
+    settle()
+    assert [klasse.editor.itemText(i) for i in range(klasse.editor.count())] == ["Standard"]
+    assert not delete.isEnabled()                                          # die letzte bleibt
+
+
+def test_discard_edits_of_active_layer_only(ribbon, fake_iface, layers, monkeypatch):
+    from types import SimpleNamespace
+    _w, _watch, env = ribbon
+    v, other = layers["vector"], polygons()
+    fake_iface.set_active_layer(v)
+    settle()
+    discard = builtin_commands.layer_aenderungen_verwerfen(env, SimpleNamespace(label="Verwerfen"))
+    assert not discard.isEnabled()
+    v.startEditing()
+    other.startEditing()
+    settle()
+    assert not discard.isEnabled()                                         # nichts geändert
+    for layer, geom in ((v, "POINT(5 5)"), (other, "POLYGON((0 0, 1 0, 1 1, 0 0))")):
+        f = QgsFeature(layer.fields())
+        f.setGeometry(QgsGeometry.fromWkt(geom))
+        layer.addFeature(f)
+    settle()
+    assert discard.isEnabled()                                             # über layerModified
+    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.No)
+    discard.trigger()
+    assert v.isModified()                                                  # abgelehnt
+    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.Yes)
+    discard.trigger()
+    settle()
+    assert v.featureCount() == 3 and v.isEditable() and not v.isModified()
+    assert other.isModified()                                              # anderer Layer bleibt
+    assert not discard.isEnabled()
+    f = QgsFeature(v.fields())
+    f.setGeometry(QgsGeometry.fromWkt("POINT(6 6)"))
+    assert v.addFeature(f)                                                 # weiter bearbeitbar
+    v.rollBack()
+    other.rollBack()
+
+
 def test_label_placement(layers):
     v = layers["vector"]
     assert [n for n, _l in layer_ops.placement_choices(v)] == [

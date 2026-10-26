@@ -41,6 +41,19 @@ def is_vector(layer):
     return isinstance(layer, QgsVectorLayer) and layer.isSpatial()
 
 
+# -- Bearbeitung ------------------------------------------------------------
+
+def has_unsaved_edits(layer):
+    return isinstance(layer, QgsVectorLayer) and layer.isEditable() and layer.isModified()
+
+
+def discard_edits(layer):
+    """Ungespeicherte Änderungen verwerfen; die Bearbeitung bleibt eingeschaltet."""
+    ok = layer.rollBack(False)
+    layer.triggerRepaint()
+    return ok
+
+
 # -- Sichtbarkeitsbereich ---------------------------------------------------
 
 def scale_range(layer):
@@ -147,6 +160,7 @@ def default_label_settings(layer):
     fmt = QgsProject.instance().styleSettings().defaultTextFormat()
     if fmt.isValid():
         s.setFormat(fmt)
+    suit_placement(layer, s)
     return s
 
 
@@ -155,10 +169,14 @@ def labels_enabled(layer):
 
 
 def set_labels_enabled(layer, on):
+    """Beschriftung an/aus. Beim Einschalten bekommt jede Klasse eine Platzierung,
+    die zum Geometrietyp passt (sonst beschriftet QGIS z. B. Linien nicht)."""
     if not is_vector(layer):
         return
     if on and layer.labeling() is None:
         layer.setLabeling(QgsVectorLayerSimpleLabeling(default_label_settings(layer)))
+    elif on:
+        update_label_settings(layer, lambda s: suit_placement(layer, s))
     layer.setLabelsEnabled(bool(on))
     changed(layer)
 
@@ -317,6 +335,50 @@ def update_label_class(layer, key, change):
     return True
 
 
+def add_label_class(layer, key, name):
+    """Neue Beschriftungsklasse nach dem Muster der Klasse ``key``; gibt ihren Schlüssel zurück.
+
+    Einfache Beschriftung wird dafür regelbasiert, die bisherigen Einstellungen
+    bleiben als erste Klasse („Standard“). Die neue Klasse hat keinen Filter.
+    """
+    if not is_vector(layer):
+        return None
+    if layer.labeling() is None:
+        layer.setLabeling(QgsVectorLayerSimpleLabeling(default_label_settings(layer)))
+    lab = layer.labeling()
+    if isinstance(lab, QgsVectorLayerSimpleLabeling):
+        root = QgsRuleBasedLabeling.Rule(None)
+        first = QgsRuleBasedLabeling.Rule(QgsPalLayerSettings(lab.settings()))
+        first.setDescription(SIMPLE_NAME)
+        root.appendChild(first)
+        key = first.ruleKey()
+        layer.setLabeling(QgsRuleBasedLabeling(root))
+        lab = layer.labeling()
+    if not isinstance(lab, QgsRuleBasedLabeling):
+        return None
+    template = label_class_settings(layer, key) or default_label_settings(layer)
+    suit_placement(layer, template)
+    rule = QgsRuleBasedLabeling.Rule(QgsPalLayerSettings(template))
+    rule.setDescription(name)
+    lab.rootRule().appendChild(rule)
+    if not layer.labelsEnabled():
+        layer.setLabelsEnabled(True)
+    changed(layer)
+    return rule.ruleKey()
+
+
+def remove_label_class(layer, key):
+    """Klasse ``key`` löschen; die letzte Klasse bleibt. Gibt den Schlüssel der
+    danach gewählten Klasse zurück oder None, wenn nichts gelöscht wurde."""
+    rule = _label_rule(layer, key)
+    if rule is None or len(label_classes(layer)) < 2:
+        return None
+    parent = rule.parent()
+    parent.removeChildAt(parent.children().index(rule))
+    changed(layer)
+    return label_classes(layer)[0][0]
+
+
 def label_class_active(layer, key):
     for k, _name, active in label_classes(layer):
         if k == key:
@@ -416,15 +478,31 @@ def placement_choices(layer):
     return list(PLACEMENTS.get(layer.geometryType(), ()))
 
 
-def label_placement(layer):
-    settings = label_settings(layer)
-    if not settings:
-        return None
-    value = settings[0].placement
+def _placement_name(value):
     for name in dir(Qgis.LabelPlacement):
         if not name.startswith("_") and getattr(Qgis.LabelPlacement, name) == value:
             return name
     return None
+
+
+def label_placement(layer):
+    settings = label_settings(layer)
+    if not settings:
+        return None
+    return _placement_name(settings[0].placement)
+
+
+def suit_placement(layer, settings):
+    """Platzierung auf die erste passende setzen, wenn sie nicht zum Geometrietyp passt.
+
+    Neue Einstellungen stehen auf „Um Punkt“; Linien werden damit nicht
+    beschriftet. Für Linien wird es „Parallel“, wie in den Layereigenschaften.
+    """
+    names = [n for n, _label in placement_choices(layer)]
+    if not names or _placement_name(settings.placement) in names:
+        return False
+    settings.placement = getattr(Qgis.LabelPlacement, names[0])
+    return True
 
 
 def set_label_placement(layer, name):

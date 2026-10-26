@@ -182,8 +182,10 @@ tabs:
         label: "Editing"
         items:
           - {command: "bearbeiten", size: "large"}
-          - {command: "aenderungen_speichern", size: "large"}
-          - {command: "aenderungen_verwerfen", size: "large"}
+          - {command: "layeraenderungen_speichern", size: "large"}
+          - {command: "layeraenderungen_verwerfen", size: "large"}
+          - {command: "aenderungen_speichern", size: "medium"}
+          - {command: "aenderungen_verwerfen", size: "medium"}
           - {command: "topologisch_bearbeiten", size: "medium"}
           - {command: "einstellungen", size: "medium"}
       - id: "einrasten"
@@ -303,7 +305,7 @@ contextual_tabs:
       - id: "beschriftungsklasse"
         label: "Label Class"
         items:
-          - row: ["beschriftungsklasse", "beschriftungsklasse_filter", "beschriftungsklasse_aktiv", "beschriftungsfeld", "beschriftungsausdruck"]
+          - row: ["beschriftungsklasse", "beschriftungsklasse_neu", "beschriftungsklasse_loeschen", "beschriftungsklasse_filter", "beschriftungsklasse_aktiv", "beschriftungsfeld"]
       - id: "sichtbarkeitsbereich"
         label: "Visibility Range"
         items:
@@ -890,13 +892,13 @@ commands:
     source: {type: "qgis_action", object_name: "mActionToggleEditing"}
     description: "Start or stop editing the active layer."
   aenderungen_speichern:
-    label: "Save Edits"
+    label: "Save All"
     source: {type: "qgis_action", object_name: "mActionSaveAllEdits"}
-    description: "Save the edits of all layers being edited."
+    description: "Save the edits of all layers being edited, not only the active one."
   aenderungen_verwerfen:
-    label: "Discard Edits"
+    label: "Discard All"
     source: {type: "qgis_action", object_name: "mActionRollbackAllEdits"}
-    description: "Discard unsaved edits of all layers."
+    description: "Discard the unsaved edits of all layers being edited, not only the active one."
   topologisch_bearbeiten:
     label: "Topological Editing"
     source: {type: "qgis_action", object_name: "TopologicalEditingAction"}
@@ -1171,12 +1173,6 @@ commands:
     source: {type: "custom", id: "ribbon.beschriftung_feld"}
     kind: "control"
     description: "Field or expression shown as the label."
-    enabled_when: ["active_layer_is_vector"]
-  beschriftungsausdruck:
-    label: "Expression"
-    source: {type: "custom", id: "ribbon.beschriftung_ausdruck"}
-    icon: "/mIconExpression.svg"
-    description: "Edit the label expression in the expression editor."
     enabled_when: ["active_layer_is_vector"]
   beschriftung_massstab_max:
     label: "Maximum Scale"
@@ -1515,9 +1511,14 @@ commands:
     source: {type: "qgis_action", object_name: "mActionMultiEditAttributes"}
     description: "Change the attributes of all selected features at once."
   layeraenderungen_speichern:
-    label: "Save Layer Edits"
+    label: "Save"
     source: {type: "qgis_action", object_name: "mActionSaveLayerEdits"}
-    description: "Save the edits of the active layer only."
+    description: "Save the edits of the active layer only. Editing stays on."
+  layeraenderungen_verwerfen:
+    label: "Discard"
+    source: {type: "custom", id: "ribbon.layer_aenderungen_verwerfen"}
+    icon: "/mActionRollbackEdits.svg"
+    description: "Discard the unsaved edits of the active layer only. Editing stays on."
   rasterlayer_hinzufuegen:
     label: "Add Raster Layer"
     source: {type: "qgis_action", object_name: "mActionAddRasterLayer"}
@@ -1554,6 +1555,21 @@ commands:
     label: "Edit Features In-Place"
     source: {type: "plugin_action", plugin: "processing", object_name: "editInPlaceFeatures"}
     description: "Processing tools change the layer's features directly instead of creating a new layer."
+  beschriftungsklasse_neu:
+    label: "New Class"
+    source: {type: "custom", id: "ribbon.beschriftung_regel_neu"}
+    description: "Create a new label class based on the selected one. Then use Filter to choose which features it labels."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftungsklasse_loeschen:
+    label: "Delete Class"
+    source: {type: "custom", id: "ribbon.beschriftung_regel_loeschen"}
+    description: "Delete the selected label class. The last class of a layer stays."
+  beschriftungsausdruck:
+    label: "Expression"
+    source: {type: "custom", id: "ribbon.beschriftung_ausdruck"}
+    icon: "/mIconExpression.svg"
+    description: "Edit the label expression in the expression editor."
+    enabled_when: ["active_layer_is_vector"]
   ergebnisanzeige:
     label: "Results Viewer"
     source: {type: "plugin_action", plugin: "processing", object_name: "resultsViewer"}

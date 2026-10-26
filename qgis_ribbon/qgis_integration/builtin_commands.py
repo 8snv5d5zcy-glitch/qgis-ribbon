@@ -14,7 +14,8 @@ from qgis.core import (Qgis, QgsExpressionContext, QgsExpressionContextUtils, Qg
 from qgis.gui import QgsExpressionBuilderDialog
 from qgis.PyQt.QtCore import QObject, QSize, pyqtSignal
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QActionGroup, QApplication, QDialog, QDockWidget
+from qgis.PyQt.QtWidgets import (QAction, QActionGroup, QApplication, QDialog, QDockWidget, QInputDialog,
+                                 QMessageBox)
 
 from . import custom_commands, layer_ops, raster_ops
 from .custom_commands import GalleryEntry
@@ -401,6 +402,72 @@ def beschriftung_ausdruck(env, command):
     return run
 
 
+def beschriftung_regel_neu(env, command):
+    """Neue Beschriftungsklasse nach dem Muster der gewählten; danach gewählt."""
+    def run():
+        layer = env.iface.activeLayer()
+        if not _vector_or_warn(env, layer):
+            return
+        state = label_class_state(env)
+        number = len(layer_ops.label_classes(layer)) + 1
+        name, ok = QInputDialog.getText(env.iface.mainWindow(), tr("New Label Class"),
+                                        tr("Name of the new label class:"), text=tr("Class %d") % number)
+        name = name.strip()
+        if not ok or not name:
+            return
+        key = layer_ops.add_label_class(layer, state.selected(layer), name)
+        if key is not None:
+            state.select(layer, key)
+            _push(env, tr("Label class “%s” added. Use Filter to choose which features it labels.") % name)
+
+    return run
+
+
+def beschriftung_regel_loeschen(env, command):
+    """Gewählte Beschriftungsklasse löschen (nach Rückfrage); die letzte bleibt."""
+    def read(layer):
+        return len(layer_ops.label_classes(layer)) > 1, False
+
+    def run(layer, _checked):
+        if not _vector_or_warn(env, layer):
+            return
+        state = label_class_state(env)
+        key = state.selected(layer)
+        names = {k: n for k, n, _active in layer_ops.label_classes(layer)}
+        if key not in names or len(names) < 2:
+            _push(env, tr("A layer keeps at least one label class."), Qgis.Warning)
+            return
+        answer = QMessageBox.question(env.iface.mainWindow(), tr("Delete Label Class"),
+                                      tr("Delete the label class “%s”?") % names[key])
+        if answer != QMessageBox.Yes:
+            return
+        new_key = layer_ops.remove_label_class(layer, key)
+        if new_key is not None:
+            state.select(layer, new_key)
+
+    return env.keep(StateAction(env, command.label, read, run, checkable=False))
+
+
+def layer_aenderungen_verwerfen(env, command):
+    """Ungespeicherte Änderungen nur des aktiven Layers verwerfen (nach Rückfrage).
+
+    QGIS hat dafür keine Aktion: „Zurücksetzen“ wirkt auf die in der
+    Layerliste gewählten Layer, die Werkzeugleiste kennt nur „Alle“.
+    """
+    def read(layer):
+        return layer_ops.has_unsaved_edits(layer), False
+
+    def run(layer, _checked):
+        if not layer_ops.has_unsaved_edits(layer):
+            return
+        answer = QMessageBox.question(env.iface.mainWindow(), tr("Discard Edits"),
+                                      tr("Discard the unsaved edits of layer “%s”?") % layer.name())
+        if answer == QMessageBox.Yes:
+            layer_ops.discard_edits(layer)
+
+    return env.keep(StateAction(env, command.label, read, run, checkable=False))
+
+
 def beschriftung_regel_filter(env, command):
     def run():
         layer = env.iface.activeLayer()
@@ -578,6 +645,9 @@ BUTTONS = {
     "ribbon.layerpfad_kopieren": layerpfad_kopieren,
     "ribbon.beschriftung_ausdruck": beschriftung_ausdruck,
     "ribbon.beschriftung_regel_filter": beschriftung_regel_filter,
+    "ribbon.beschriftung_regel_neu": beschriftung_regel_neu,
+    "ribbon.beschriftung_regel_loeschen": beschriftung_regel_loeschen,
+    "ribbon.layer_aenderungen_verwerfen": layer_aenderungen_verwerfen,
     "ribbon.auswahl_linie": auswahl_linie,
 }
 

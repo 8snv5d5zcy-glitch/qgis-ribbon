@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 (2026-10-26)
+
+- Edit tab, Editing: **Save** and **Discard** act on the active layer only and keep editing on; **Discard** asks first. **Save All** and **Discard All** (formerly Save Edits and Discard Edits) act on all layers being edited and show a layer stack in their icons.
+- Labeling tab: **New Class** creates a label class from the selected one, **Delete Class** removes the selected one (the last class stays).
+- **Label** sets a placement that fits the geometry, for lines Parallel; before, new labels on lines could stay invisible.
+- Labeling tab: the separate Expression button is gone; the Field box has its own expression button. Expression is still available in the ribbon editor.
+
 ## 1.1.0 (2026-10-26)
 
 - Edit tab: new group Construction with the Advanced Digitizing switch and the Construction Panel; Snapping gains tracing, self-snapping and snapping to intersections.

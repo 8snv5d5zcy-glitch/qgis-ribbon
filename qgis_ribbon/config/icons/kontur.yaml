@@ -50,6 +50,24 @@ motive:
       - '<rect x="3.5" y="3.5" width="17" height="17" rx="2" stroke-dasharray="2.4 2.2"/>'
     a:
       - '<path d="M8 12.2l2.8 2.8 5.2-6"/>'
+  alle_speichern:
+    f:
+      - '<path d="M5 3h11.2L20 6.8V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 1-2z" transform="translate(0.6 0.6) scale(0.78)"/>'
+    k:
+      - '<path d="M5 3h11.2L20 6.8V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 1-2z" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M8 3.2v4.6h7V3.2" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M7.5 20.8v-6.3h9v6.3" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M14.5 16.5l4-2 4 2-4 2z"/>'
+      - '<path d="M14.5 19.5l4 2 4-2"/>'
+  alle_verwerfen:
+    k:
+      - '<path d="M6 2.8h8.2L19 7.6V19a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V4.8a2 2 0 0 1 1.5-2" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M14 3v4.8h5" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M9.5 11.5l5 5M14.5 11.5l-5 5" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M14.5 16.5l4-2 4 2-4 2z"/>'
+      - '<path d="M14.5 19.5l4 2 4-2"/>'
   angepinnte_hervorheben:
     f:
       - '<rect x="2.5" y="3" width="15.5" height="18" rx="2" transform="translate(0.6 0.6) scale(0.78)"/>'
@@ -243,6 +261,18 @@ motive:
       - '<path d="M4 19.5L9.5 5h1L16 19.5M6.2 14h7.6" transform="translate(0.6 0.6) scale(0.78)"/>'
     a:
       - '<path d="M14.8 18.6l2.6 2.6 5-5.6"/>'
+  beschriftungsklasse_loeschen:
+    k:
+      - '<path d="M4 19.5L9.5 5h1L16 19.5M6.2 14h7.6" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M15.5 9h5M15.5 13h3" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M15.5 15.5l6 6M21.5 15.5l-6 6"/>'
+  beschriftungsklasse_neu:
+    k:
+      - '<path d="M4 19.5L9.5 5h1L16 19.5M6.2 14h7.6" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M15.5 9h5M15.5 13h3" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M18.5 14.5v8M14.5 18.5h8"/>'
   beziehungen:
     f:
       - '<rect x="3" y="3" width="8" height="7" rx="1.4"/>'
@@ -678,8 +708,14 @@ motive:
       - '<path d="M8 3.2v4.6h7V3.2" transform="translate(0.6 0.6) scale(0.78)"/>'
     a:
       - '<path d="M7.5 20.8v-6.3h9v6.3" transform="translate(0.6 0.6) scale(0.78)"/>'
-      - '<path d="M14.5 16.5l4-2 4 2-4 2z"/>'
-      - '<path d="M14.5 19.5l4 2 4-2"/>'
+      - '<path d="M14.5 18.5l4-2.2 4 2.2-4 2.2z"/>'
+  layer_verwerfen:
+    k:
+      - '<path d="M6 2.8h8.2L19 7.6V19a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V4.8a2 2 0 0 1 1.5-2" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M14 3v4.8h5" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M9.5 11.5l5 5M14.5 11.5l-5 5" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M14.5 18.5l4-2.2 4 2.2-4 2.2z"/>'
   layer_zusammen:
     f:
       - '<path d="M12 13l8 4-8 4-8-4z"/>'
@@ -1415,12 +1451,6 @@ motive:
       - '<circle cx="15" cy="12" r="6"/>'
     a:
       - '<path d="M12 6.8a6 6 0 0 1 0 10.4 6 6 0 0 1 0-10.4z"/>'
-  verwerfen:
-    k:
-      - '<path d="M6 2.8h8.2L19 7.6V19a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V4.8a2 2 0 0 1 1.5-2"/>'
-      - '<path d="M14 3v4.8h5"/>'
-    a:
-      - '<path d="M9.5 11.5l5 5M14.5 11.5l-5 5"/>'
   virtueller_layer:
     k:
       - '<path d="M12 3.5l9 4.5-9 4.5-9-4.5z" stroke-dasharray="2.4 2.2"/>'
@@ -1532,8 +1562,8 @@ befehle:
   abfrage_sichtbare_layer: abfrage
   abschneiden_ausdehnen: abschneiden
   aendern: aendern
-  aenderungen_speichern: speichern
-  aenderungen_verwerfen: verwerfen
+  aenderungen_speichern: alle_speichern
+  aenderungen_verwerfen: alle_verwerfen
   aktualisieren: aktualisieren
   alle_auswaehlen: alle_auswaehlen
   alle_werkzeuge: stuetzpunkte
@@ -1576,6 +1606,8 @@ befehle:
   beschriftungsklasse: beschriftungsklasse
   beschriftungsklasse_aktiv: beschriftungsklasse_aktiv
   beschriftungsklasse_filter: filter
+  beschriftungsklasse_loeschen: beschriftungsklasse_loeschen
+  beschriftungsklasse_neu: beschriftungsklasse_neu
   beziehungen_verwalten: beziehungen
   daten_hinzufuegen: daten_hinzufuegen
   diagrammoptionen: diagramm
@@ -1634,6 +1666,7 @@ befehle:
   layer_verpacken: geopackage
   layer_zusammenfuehren: layer_zusammen
   layeraenderungen_speichern: layer_speichern
+  layeraenderungen_verwerfen: layer_verwerfen
   layerdatei_speichern: speichern_als
   layerdefinition_laden: layerdefinition
   layout_als_bild: bild

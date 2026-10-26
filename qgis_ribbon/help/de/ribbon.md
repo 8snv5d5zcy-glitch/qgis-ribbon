@@ -23,6 +23,8 @@ Das Ribbon besteht aus der **Kopfzeile** (Schnellzugriffsleiste, Tabs, Befehlssu
 
 Beginnt die Bearbeitung eines Layers, wechselt das Ribbon zum Tab **Bearbeiten**.
 
+In **Bearbeitung** wirken **Bearbeiten**, **Speichern** und **Verwerfen** nur auf den aktiven Layer; nach Speichern oder Verwerfen bleibt die Bearbeitung an. **Alle speichern** und **Alle verwerfen** wirken auf alle Layer in Bearbeitung. Vor dem Verwerfen kommt eine Rückfrage.
+
 **Konstruktion › Erweiterte Digitalisierung** schaltet die Konstruktionshilfen ein oder aus (Abstand, Winkel, Koordinaten beim Digitalisieren). Der Schalter ist bedienbar, solange ein Werkzeug aktiv ist, das sie unterstützt, etwa **Erstellen** oder **Ändern**. Solange er an ist, öffnet QGIS das Panel bei jedem solchen Werkzeug; **Konstruktionspanel** blendet es ein oder aus. Die kleinen Icons in **Einrasten** schalten Spurverfolgung, Selbsteinrasten und das Einrasten auf Schnittpunkte.
 
 ## Kontext-Tabs
@@ -34,6 +36,8 @@ Manche Tabs erscheinen nur, wenn sie zum aktiven Layer im Bedienfeld Layer passe
 - **Rasterlayer:** Darstellung
 
 ![Kontext-Tab Darstellung eines Vektorlayers](../images/de/contextual.png)
+
+**Beschriftung** eines Vektorlayers: **Beschriften** schaltet die Beschriftung ein. Ein Linienlayer bekommt dabei die Platzierung *Parallel*, weil QGIS Linien mit *Um Punkt* nicht beschriftet. Ein Layer kann mehrere **Beschriftungsklassen** haben, jede für eigene Objekte mit eigenem Text und Stil. Die Klasse wählt die Liste; die Knöpfe daneben legen eine **neue Klasse** an (Kopie der gewählten) oder **löschen** die gewählte. **Filter** legt fest, welche Objekte eine Klasse beschriftet, **Klasse beschriften** schaltet sie ein oder aus, und **Feld** wählt das Feld für den Text; sein Knopf ε öffnet den Ausdruckseditor für einen Text aus mehreren Feldern.
 
 Befehle, die gerade nicht anwendbar sind (zum Beispiel *Auswahl aufheben* ohne Auswahl), sind ausgegraut.
 

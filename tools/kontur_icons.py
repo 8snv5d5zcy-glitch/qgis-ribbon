@@ -66,6 +66,8 @@ def badge(m, b):
 # Marken (unten rechts, Mitte 18,5/18,5)
 PLUS = M(a=[P("M18.5 14.5v8M14.5 18.5h8")])
 STAR = M(a=[P("M18.5 13.8l1.3 3.4 3.4 1.3-3.4 1.3-1.3 3.4-1.3-3.4-3.4-1.3 3.4-1.3z")])
+ONE_LAYER = M(a=[P("M14.5 18.5l4-2.2 4 2.2-4 2.2z")])
+LAYER_STACK = M(a=[P("M14.5 16.5l4-2 4 2-4 2z"), P("M14.5 19.5l4 2 4-2")])
 CROSS = M(a=[P("M15.5 15.5l6 6M21.5 15.5l-6 6")])
 CHECK = M(a=[P("M14.8 18.6l2.6 2.6 5-5.6")])
 OUT_ARROW = M(a=[P("M15 22l7-7M16.5 15H22v5.5")])
@@ -123,6 +125,7 @@ LAYERS = M(k=[P(LAYERS_TOP), P("M3 12.5l9 4.5 9-4.5"), P("M3 16.8l9 4.5 9-4.5")]
 MAGNIFIER = M(k=[C(10.5, 10.5, 6.5), P("M15.3 15.3l5.2 5.2")], f=[C(10.5, 10.5, 6.5)])
 TABLE = M(k=[R(3, 4, 18, 16, 2), P("M3 9.5h18M3 14.8h18M9.5 9.5V20")], f=[P("M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3.5H3z")])
 DOC = M(k=[P("M6 2.8h8.2L19 7.6V19a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V4.8a2 2 0 0 1 1.5-2"), P("M14 3v4.8h5")])
+DISCARD = add(DOC, M(a=[P("M9.5 11.5l5 5M14.5 11.5l-5 5")]))
 FOLDER_D = "M3 7a2 2 0 0 1 2-2h4.2l2 2.2H19a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
 FOLDER = M(k=[P(FOLDER_D)], f=[P(FOLDER_D)])
 DISK_D = "M5 3h11.2L20 6.8V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 1-2z"
@@ -265,7 +268,6 @@ MOTIFS = {
     "bearbeiten": PENCIL,
     "speichern": DISK,
     "speichern_als": add(M(k=DISK["k"], f=DISK["f"]), M(a=[P("M8.5 17.5h.1M12 17.5h.1M15.5 17.5h.1")])),
-    "verwerfen": add(DOC, M(a=[P("M9.5 11.5l5 5M14.5 11.5l-5 5")])),
     "rueckgaengig": M(k=[P("M4.5 9.5h10a5.5 5.5 0 0 1 0 11h-4")], a=[P("M8.5 5.5l-4 4 4 4")]),
     "wiederholen": M(k=[P("M19.5 9.5h-10a5.5 5.5 0 0 0 0 11h4")], a=[P("M15.5 5.5l4 4-4 4")]),
     "erstellen": badge(POLY, PLUS),
@@ -439,6 +441,8 @@ MOTIFS = {
     "beschriftung_drehen": add(shrink(M(k=[LETTER_A])), TURN),
     "beschriftung_aendern": add(shrink(M(k=[LETTER_A])), PEN),
     "beschriftung_anpinnen": add(shrink(M(k=[LETTER_A])), PIN),
+    "beschriftungsklasse_neu": add(shrink(M(k=[LETTER_A], a=[P("M15.5 9h5M15.5 13h3")])), PLUS),
+    "beschriftungsklasse_loeschen": add(shrink(M(k=[LETTER_A], a=[P("M15.5 9h5M15.5 13h3")])), CROSS),
     "angepinnte_hervorheben": add(shrink(M(k=[LETTER_A], f=[R(2.5, 3, 15.5, 18, 2)])), PIN),
 
     # Karte und Daten
@@ -457,7 +461,11 @@ MOTIFS = {
     "feldrechner": add(shrink(TABLE), M(a=[P("M15 16.5h7.5M15 20.5h7.5")])),
     "attribute_aendern": badge(M(k=[R(4, 3, 16, 18, 2), P("M8 8h2.5M8 12h2.5M8 16h2.5")], a=[P("M13 8h3M13 12h3M13 16h3")],
                                  f=[R(4, 3, 16, 18, 2)]), PEN),
-    "layer_speichern": badge(DISK, M(a=[P("M14.5 16.5l4-2 4 2-4 2z"), P("M14.5 19.5l4 2 4-2")])),
+    # Speichern/Verwerfen: eine Ebene = aktiver Layer, Stapel = alle Layer
+    "layer_speichern": badge(DISK, ONE_LAYER),
+    "layer_verwerfen": badge(DISCARD, ONE_LAYER),
+    "alle_speichern": badge(DISK, LAYER_STACK),
+    "alle_verwerfen": badge(DISCARD, LAYER_STACK),
     "rasterlayer": badge(GRID, PLUS),
     "netzlayer": badge(MESH, PLUS),
     "netzlayer_neu": badge(MESH, STAR),
@@ -480,18 +488,20 @@ COMMANDS = {
     "schnittpunkte_einrasten": "schnittpunkte_einrasten", "beschriftungen_ein_aus": "beschriftungen_ein_aus",
     "beschriftung_verschieben": "beschriftung_verschieben", "beschriftung_drehen": "beschriftung_drehen",
     "beschriftung_aendern": "beschriftung_aendern", "beschriftungen_anpinnen": "beschriftung_anpinnen",
-    "angepinnte_hervorheben": "angepinnte_hervorheben", "objekte_abfragen": "abfrage", "herauszoomen": "zoom_out",
+    "angepinnte_hervorheben": "angepinnte_hervorheben", "beschriftungsklasse_neu": "beschriftungsklasse_neu",
+    "beschriftungsklasse_loeschen": "beschriftungsklasse_loeschen", "objekte_abfragen": "abfrage", "herauszoomen": "zoom_out",
     "auf_layer_zoomen": "auf_layer_zoomen", "zur_auswahl_verschieben": "zur_auswahl_verschieben",
     "eigene_aufloesung": "eigene_aufloesung", "aktualisieren": "aktualisieren", "zeitsteuerung": "zeitsteuerung",
     "kartenhinweise": "kartenhinweise", "statistische_zusammenfassung": "statistik", "feldrechner": "feldrechner",
     "attribute_gewaehlter_aendern": "attribute_aendern", "layeraenderungen_speichern": "layer_speichern",
+    "layeraenderungen_verwerfen": "layer_verwerfen",
     "rasterlayer_hinzufuegen": "rasterlayer", "netzlayer_hinzufuegen": "netzlayer", "neuer_netzlayer": "netzlayer_neu",
     "spatialite_layer_hinzufuegen": "datenbank_hinzufuegen", "virtuellen_layer_hinzufuegen": "virtueller_layer",
     "diagrammoptionen": "diagramm", "neue_3d_kartenansicht": "kartenansicht_3d", "qgis_hilfe": "ui_hilfe",
     "objekte_direkt_aendern": "direkt_aendern", "ergebnisanzeige": "ergebnisse",
     "abfragbare_layer": "abfragbare_layer", "abfrage_aktueller_layer": "abfrage", "abfrage_oberster_layer": "abfrage",
     "abfrage_sichtbare_layer": "abfrage", "abschneiden_ausdehnen": "abschneiden", "aendern": "aendern",
-    "aenderungen_speichern": "speichern", "aenderungen_verwerfen": "verwerfen", "alle_auswaehlen": "alle_auswaehlen",
+    "aenderungen_speichern": "alle_speichern", "aenderungen_verwerfen": "alle_verwerfen", "alle_auswaehlen": "alle_auswaehlen",
     "alle_werkzeuge": "stuetzpunkte", "analyse_galerie_anpassen": "galerie_anpassen", "arcgis_rest_server": "server_objekte",
     "atlas_als_pdf": "atlas", "attribute": "attribute", "attribute_zusammenfuehren": "attribute_zusammen",
     "attributtabelle": "tabelle", "aufloesen": "aufloesen", "ausschneiden": "ausschneiden",

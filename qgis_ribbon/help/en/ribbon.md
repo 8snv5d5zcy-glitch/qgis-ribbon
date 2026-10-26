@@ -23,6 +23,8 @@ The ribbon consists of the **header** (Quick Access Toolbar, tabs, command searc
 
 When you start editing a layer, the ribbon switches to the **Edit** tab.
 
+In **Editing**, **Edit**, **Save** and **Discard** act on the active layer only; editing stays on after saving or discarding. **Save All** and **Discard All** act on every layer being edited. QGIS asks before discarding.
+
 **Construction › Advanced Digitizing** turns the construction aids on or off (distance, angle, coordinates while digitizing). It is available while a tool that supports it is active, for example **Create** or **Modify**. While it is on, QGIS opens its panel whenever you pick such a tool; **Construction Panel** shows or hides the panel. The small icons in **Snapping** switch tracing, self-snapping and snapping to intersections.
 
 ## Contextual tabs
@@ -34,6 +36,8 @@ Some tabs only appear when they fit the active layer in the Layers panel. They s
 - **Raster Layer:** Appearance
 
 ![Contextual tab Appearance of a vector layer](../images/en/contextual.png)
+
+**Labeling** for a vector layer: **Label** switches the labels on. A line layer then gets the placement *Parallel*, because QGIS does not draw line labels with *Around point*. A layer can have several **label classes**, each for its own features with its own text and style. Choose a class in the list; the buttons next to it create a **new class** (a copy of the selected one) or **delete** the selected class. **Filter** decides which features a class labels, **Label Class Features** switches the class on or off, and **Field** chooses the field for the text; its button ε opens the expression editor for a text built from several fields.
 
 Commands that cannot be used at the moment (for example *Clear Selection* without a selection) are grayed out.
 

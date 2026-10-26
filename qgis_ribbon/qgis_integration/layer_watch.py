@@ -23,10 +23,12 @@ from .signals import SignalHub
 # Signale des aktiven Layers, nach denen die Steuerelemente neu lesen.
 # Maßstabsbereich und Beschriftung haben kein eigenes Signal; Änderungen
 # darüber (Layereigenschaften, Layer-Styling, Legende) lösen styleChanged
-# bzw. repaintRequested aus.
+# bzw. repaintRequested aus. Die Bearbeitungssignale schalten Befehle wie
+# „Verwerfen“ für den aktiven Layer frei.
 LAYER_SIGNALS = ("opacityChanged", "blendModeChanged", "rendererChanged", "styleChanged",
                  "repaintRequested")
-VECTOR_SIGNALS = ("featureBlendModeChanged",)
+VECTOR_SIGNALS = ("featureBlendModeChanged", "editingStarted", "editingStopped", "layerModified",
+                  "afterRollBack", "afterCommitChanges")
 
 
 class LayerWatch(object):
