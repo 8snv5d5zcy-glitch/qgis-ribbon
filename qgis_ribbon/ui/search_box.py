@@ -103,8 +103,10 @@ class SearchBox(QLineEdit):
     def build_index(self):
         if self.index is None:
             entries = ribbon_entries(self._ribbon)
-            mirrored = {c.source.get("object_name") for c in self._ribbon.commands.values()
-                        if c.source.type in ("qgis_action", "plugin_action")}
+            # Nur Befehle mit Ort im Ribbon; Befehle, die nur im Editor zur
+            # Auswahl stehen, findet die Suche als QGIS-Aktion
+            mirrored = {e.ref[0].source.get("object_name") for e in entries
+                        if e.ref[0].source.type in ("qgis_action", "plugin_action")}
             entries += qgis_action_entries(self._ctx.env.iface.mainWindow(), mirrored)
             self.index = SearchIndex(entries)
         return self.index

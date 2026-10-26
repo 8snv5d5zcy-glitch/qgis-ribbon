@@ -91,6 +91,9 @@ def test_check_invalid_and_unchecked_types():
     assert check_source("mActionPan", idx)[0] == INVALID
     assert check_source({"type": "iface_method", "method": "showLayerProperties"},
                         idx)[0] == UNCHECKED
+    assert check_source({"type": "iface_action", "method": "cadDockWidget.enableAction"},
+                        idx)[0] == UNCHECKED
+    assert check_source({"type": "iface_action"}, idx)[0] == INVALID
     assert check_source({"type": "custom", "id": "ribbon.basemap"}, idx)[0] == UNCHECKED
 
 

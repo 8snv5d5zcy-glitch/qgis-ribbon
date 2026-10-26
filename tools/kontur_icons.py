@@ -75,6 +75,11 @@ LINK = M(a=[P("M17.2 20.8l-.9.9a2.1 2.1 0 0 1-3-3l1.8-1.8a2.1 2.1 0 0 1 3 0"),
             P("M19.8 16.2l.9-.9a2.1 2.1 0 0 1 3 3l-1.8 1.8a2.1 2.1 0 0 1-3 0")])
 DOTS = M(a=[P("M15 18.5h.1M18.5 18.5h.1M22 18.5h.1")])
 PIN = M(a=[P("M18.5 22.5s-3.6-3.4-3.6-6a3.6 3.6 0 0 1 7.2 0c0 2.6-3.6 6-3.6 6z"), C(18.5, 16.5, 1.1)])
+PEN = M(a=[P("M19.8 13.2l2.4 2.4-5.6 5.6h-2.4v-2.4z")])
+TURN = M(a=[P("M15 19.5a4 4 0 0 1 7-3.2"), P("M22.5 13.5v3h-3")])
+MOVE = M(a=[P("M18.5 14.8v7.4M14.8 18.5h7.4"), P("M17.3 16l1.2-1.2 1.2 1.2M17.3 21l1.2 1.2 1.2-1.2M16 17.3l-1.2 1.2 1.2 1.2M21 17.3l1.2 1.2-1.2 1.2")])
+EYE_SMALL = M(a=[P("M14.3 18.5s1.7-3 4.2-3 4.2 3 4.2 3-1.7 3-4.2 3-4.2-3-4.2-3z"), C(18.5, 18.5, 1.1)])
+LOOP = M(a=[P("M15.4 19.6a3.4 3.4 0 1 0 1.2-4"), P("M15.2 13.6v2.6h2.6")])
 UP_SMALL = M(a=[P("M18.5 22v-7M15.5 18l3-3 3 3")])
 DOWN_SMALL = M(a=[P("M18.5 15v7M15.5 19l3 3 3-3")])
 
@@ -171,6 +176,10 @@ POLY_D = "M4 17.5L7.8 5.5l9.6 3 2.6 9.5-9 3z"
 POLY = M(k=[P(POLY_D)], f=[P(POLY_D)])
 RULER = M(k=[R(2.5, 7.5, 19, 9, 1.8)], a=[P("M6.5 7.5v3.5M10.2 7.5v5M14 7.5v3.5M17.8 7.5v5")], f=[R(2.5, 7.5, 19, 9, 1.8)])
 INFO = M(k=[C(12, 12, 9)], a=[P("M12 11v6M12 7.6v.1")], f=[C(12, 12, 9)])
+SET_SQUARE_D = "M4 3.5v17h17z"
+MAGNET_D = "M5 4h4.5v8.5a2.5 2.5 0 0 0 5 0V4H19v8.5a7 7 0 0 1-14 0z"
+MAGNET = M(k=[P(MAGNET_D)], a=[P("M5 8.5h4.5M14.5 8.5H19")], f=[P(MAGNET_D)])
+MESH = M(k=[P("M3 19.5L12 4l9 15.5z"), P("M7.5 11.8h9M12 19.5l-4.5-7.7M12 19.5l4.5-7.7")], f=[P("M7.5 11.8h9L12 19.5z")])
 LIST_BULLETS = M(k=[P("M9 6.5h11M9 12h11M9 17.5h11")], a=[C(5, 6.5, 1.3), C(5, 12, 1.3), C(5, 17.5, 1.3)])
 
 
@@ -263,8 +272,7 @@ MOTIFS = {
     "aendern": add(M(k=[P("M5 18.5L8 6l10.5 4.5-2.5 8z")], f=[P("M5 18.5L8 6l10.5 4.5-2.5 8z")]),
                    M(a=[R(6.4, 4.4, 3.2, 3.2, .6), R(16.9, 8.9, 3.2, 3.2, .6), R(14.4, 16.9, 3.2, 3.2, .6), R(3.4, 16.9, 3.2, 3.2, .6)])),
     "loeschen": TRASH,
-    "einrasten": M(k=[P("M5 4h4.5v8.5a2.5 2.5 0 0 0 5 0V4H19v8.5a7 7 0 0 1-14 0z")], a=[P("M5 8.5h4.5M14.5 8.5H19")],
-                   f=[P("M5 4h4.5v8.5a2.5 2.5 0 0 0 5 0V4H19v8.5a7 7 0 0 1-14 0z")]),
+    "einrasten": MAGNET,
     "topologie": M(k=[P("M3 18.5L9 4.5l5.5 8z"), P("M9 4.5l11.5 2.5-6 5.5")], a=[P("M9 4.5l5.5 8"), C(9, 4.5, 1.6), C(14.5, 12.5, 1.6)],
                    f=[P("M3 18.5L9 4.5l5.5 8z")]),
     "z_wert": M(k=[P("M12 20.5V4.5M9 7.5l3-3 3 3"), P("M12 20.5l-8-3.8M12 20.5l8-3.8")], a=[C(12, 11.5, 2)], f=[C(12, 11.5, 2)]),
@@ -417,6 +425,48 @@ MOTIFS = {
     "helligkeit": sun(),
     "kontrast": M(k=[C(12, 12, 8.5)], f=[P("M12 3.5a8.5 8.5 0 0 1 0 17z")], a=[P("M12 3.5v17")]),
 
+    # Konstruktion und Einrasten
+    "erweiterte_digitalisierung": M(k=[P(SET_SQUARE_D), P("M8 16.5v-4.6l4.6 4.6z")],
+                                    a=[P("M4 7.5h2.2M4 11h1.4M4 14.5h2.2M4 18h1.4")], f=[P(SET_SQUARE_D)]),
+    "konstruktionspanel": add(M(k=WINDOW["k"], f=WINDOW["f"]), M(a=[P("M6.5 18.5v-7.5l7.5 7.5z"), P("M16 12h2.5M16 15.5h2.5")])),
+    "spurverfolgung": M(k=[P(POLY_D, DASH)], a=[P("M4 17.5L7.8 5.5l8 2.5"), P("M13.6 5.3l2.4 2.7-3.4 1.3")]),
+    "selbsteinrasten": add(shrink(MAGNET), LOOP),
+    "schnittpunkte_einrasten": M(k=[P("M3.5 19L20.5 5"), P("M3.5 5l17 14")], a=[C(12, 12, 3.2)], f=[C(12, 12, 3.2)]),
+
+    # Beschriftungswerkzeuge
+    "beschriftungen_ein_aus": add(shrink(M(k=[LETTER_A])), EYE_SMALL),
+    "beschriftung_verschieben": add(shrink(M(k=[LETTER_A])), MOVE),
+    "beschriftung_drehen": add(shrink(M(k=[LETTER_A])), TURN),
+    "beschriftung_aendern": add(shrink(M(k=[LETTER_A])), PEN),
+    "beschriftung_anpinnen": add(shrink(M(k=[LETTER_A])), PIN),
+    "angepinnte_hervorheben": add(shrink(M(k=[LETTER_A], f=[R(2.5, 3, 15.5, 18, 2)])), PIN),
+
+    # Karte und Daten
+    "aktualisieren": M(k=[P("M19.6 10.2a7.8 7.8 0 0 0-14.2-3"), P("M4.4 13.8a7.8 7.8 0 0 0 14.2 3")],
+                       a=[P("M5.2 3.4v3.9h3.9"), P("M18.8 20.6v-3.9h-3.9")]),
+    "auf_layer_zoomen": M(k=[FRAME], a=[P("M12 7.5l5 2.5-5 2.5-5-2.5z"), P("M7 13.5l5 2.5 5-2.5")],
+                          f=[P("M12 7.5l5 2.5-5 2.5-5-2.5z")]),
+    "zur_auswahl_verschieben": M(k=[P("M12 2.8v4.4M12 16.8v4.4M2.8 12h4.4M16.8 12h4.4"),
+                                    P("M10 4.8l2-2 2 2M10 19.2l2 2 2-2M4.8 10l-2 2 2 2M19.2 10l2 2-2 2")],
+                                 a=[R(8.6, 8.6, 6.8, 6.8, 1, DASH)], f=[R(8.6, 8.6, 6.8, 6.8, 1)]),
+    "eigene_aufloesung": M(k=[FRAME], a=[P("M7.6 9.2l1.6-1.2v8M14.8 9.2l1.6-1.2v8M12 11.2v.1M12 14.8v.1")]),
+    "zeitsteuerung": add(shrink(M(k=[C(12, 12, 8.5)], a=[P("M12 7.5v4.8l3 1.8")], f=[C(12, 12, 8.5)])),
+                         M(a=[P("M15.5 14.2v8.6l7-4.3z")])),
+    "kartenhinweise": badge(MAP, M(a=[P("M14.2 14.2h8.3v5.6h-4.6l-2.6 2.4v-2.4h-1.1z")])),
+    "statistik": M(k=[P("M17.5 4.5h-11l6 7.5-6 7.5h11")], a=[P("M17.5 4.5V7M17.5 19.5V17")]),
+    "feldrechner": add(shrink(TABLE), M(a=[P("M15 16.5h7.5M15 20.5h7.5")])),
+    "attribute_aendern": badge(M(k=[R(4, 3, 16, 18, 2), P("M8 8h2.5M8 12h2.5M8 16h2.5")], a=[P("M13 8h3M13 12h3M13 16h3")],
+                                 f=[R(4, 3, 16, 18, 2)]), PEN),
+    "layer_speichern": badge(DISK, M(a=[P("M14.5 16.5l4-2 4 2-4 2z"), P("M14.5 19.5l4 2 4-2")])),
+    "rasterlayer": badge(GRID, PLUS),
+    "netzlayer": badge(MESH, PLUS),
+    "netzlayer_neu": badge(MESH, STAR),
+    "datenbank_hinzufuegen": badge(DB, PLUS),
+    "diagramm": M(k=[C(12, 12, 8.5)], a=[P("M12 12V3.5M12 12l7.4 4.2")], f=[P("M12 12V3.5a8.5 8.5 0 0 1 7.4 12.7z")]),
+    "kartenansicht_3d": badge(CUBE, PLUS),
+    "direkt_aendern": badge(TOOLBOX, PEN),
+    "ergebnisse": badge(LIST_BULLETS, CHECK),
+
     # Ansicht
     "farbsehen": EYE,
     "deuteranopie": add(EYE, M(k=[P("M4 20L20 4")])),
@@ -424,6 +474,21 @@ MOTIFS = {
 
 # Befehls-ID -> Motiv
 COMMANDS = {
+    # QGIS-Befehle aus den ausgeblendeten QGIS-Werkzeugleisten
+    "erweiterte_digitalisierung": "erweiterte_digitalisierung", "konstruktionspanel": "konstruktionspanel",
+    "spurverfolgung": "spurverfolgung", "selbsteinrasten": "selbsteinrasten",
+    "schnittpunkte_einrasten": "schnittpunkte_einrasten", "beschriftungen_ein_aus": "beschriftungen_ein_aus",
+    "beschriftung_verschieben": "beschriftung_verschieben", "beschriftung_drehen": "beschriftung_drehen",
+    "beschriftung_aendern": "beschriftung_aendern", "beschriftungen_anpinnen": "beschriftung_anpinnen",
+    "angepinnte_hervorheben": "angepinnte_hervorheben", "objekte_abfragen": "abfrage", "herauszoomen": "zoom_out",
+    "auf_layer_zoomen": "auf_layer_zoomen", "zur_auswahl_verschieben": "zur_auswahl_verschieben",
+    "eigene_aufloesung": "eigene_aufloesung", "aktualisieren": "aktualisieren", "zeitsteuerung": "zeitsteuerung",
+    "kartenhinweise": "kartenhinweise", "statistische_zusammenfassung": "statistik", "feldrechner": "feldrechner",
+    "attribute_gewaehlter_aendern": "attribute_aendern", "layeraenderungen_speichern": "layer_speichern",
+    "rasterlayer_hinzufuegen": "rasterlayer", "netzlayer_hinzufuegen": "netzlayer", "neuer_netzlayer": "netzlayer_neu",
+    "spatialite_layer_hinzufuegen": "datenbank_hinzufuegen", "virtuellen_layer_hinzufuegen": "virtueller_layer",
+    "diagrammoptionen": "diagramm", "neue_3d_kartenansicht": "kartenansicht_3d", "qgis_hilfe": "ui_hilfe",
+    "objekte_direkt_aendern": "direkt_aendern", "ergebnisanzeige": "ergebnisse",
     "abfragbare_layer": "abfragbare_layer", "abfrage_aktueller_layer": "abfrage", "abfrage_oberster_layer": "abfrage",
     "abfrage_sichtbare_layer": "abfrage", "abschneiden_ausdehnen": "abschneiden", "aendern": "aendern",
     "aenderungen_speichern": "speichern", "aenderungen_verwerfen": "verwerfen", "alle_auswaehlen": "alle_auswaehlen",

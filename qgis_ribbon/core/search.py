@@ -81,7 +81,9 @@ PATH_SEP = " › "  # ›
 
 
 def ribbon_entries(ribbon):
-    """Einträge für alle Befehle des Ribbons mit dem Ort ihres ersten Vorkommens.
+    """Einträge für alle Befehle im Ribbon mit dem Ort ihres ersten Vorkommens.
+
+    Befehle der Definition ohne Ort (nur im Editor zur Auswahl) fehlen.
 
     ``ref`` ist ``(Command, Tab-ID)``; Tab-ID ist None für Befehle, die nur in
     der Schnellzugriffsleiste stehen. Kontext-Tabs tragen die Kontextgruppe im

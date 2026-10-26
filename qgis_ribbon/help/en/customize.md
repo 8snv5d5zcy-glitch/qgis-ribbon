@@ -13,7 +13,7 @@ Everything in the ribbon can be changed: hide, rename or reorder tabs and groups
 - **Top:** the tabs. Contextual tabs are on the right and marked with their color.
 - **Quick Access:** the commands of the Quick Access Toolbar.
 - **Middle:** a preview of the selected tab with its groups.
-- **Bottom left:** the commands. **Search** finds them by name or description. The list next to it filters: *All*, *Not in the ribbon*, *Extensions (plugins)*, *Own scripts and models*, *Toolbox (all tools)* or one tab. A check mark shows that a command is already in the selected tab. **Groups** shows whole groups instead of single commands.
+- **Bottom left:** the commands. **Search** finds them by name or description. The list next to it filters: *All*, *Not in the ribbon*, *Extensions (plugins)*, *Own scripts and models*, *Toolbox (all tools)* or one tab. *Not in the ribbon* also lists further QGIS commands that have no place in the shipped ribbon, for example Zoom Out, Refresh, Field Calculator or Temporal Controller. A check mark shows that a command is already in the selected tab. **Groups** shows whole groups instead of single commands.
 - **Bottom right:** the properties of the selected tab, group or command (label, visibility, size).
 
 Nothing changes in the ribbon until you click **Save**. **Cancel** asks before discarding changes. Every step can be undone with the arrows at the top right (Ctrl+Z, Ctrl+Y). **Restore Defaults** resets tabs, groups and Quick Access to the shipped state; this can also be undone.

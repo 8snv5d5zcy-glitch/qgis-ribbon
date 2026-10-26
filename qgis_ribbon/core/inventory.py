@@ -14,7 +14,7 @@ from .i18n import tr
 
 SCHEMA_VERSION = 1
 
-SOURCE_TYPES = ("qgis_action", "qgis_menu", "iface_method", "processing", "dock",
+SOURCE_TYPES = ("qgis_action", "qgis_menu", "iface_method", "iface_action", "processing", "dock",
                 "plugin_action", "custom", "extension")
 
 # Ergebnis von check_source
@@ -27,6 +27,8 @@ REQUIRED_PARAMS = {
     "qgis_action": ("object_name",),
     "qgis_menu": ("object_name",),
     "iface_method": ("method",),
+    # QAction, die eine Methode von iface liefert (Aktion ohne eindeutigen objectName)
+    "iface_action": ("method",),
     "processing": ("algorithm",),
     "dock": ("object_name",),
     "plugin_action": ("plugin", "object_name"),
@@ -121,8 +123,8 @@ def check_source(source, index):
     """Prüft eine Befehlsquelle gegen das Inventar.
 
     Liefert ``(ergebnis, meldung)`` mit ergebnis in OK, MISSING, UNCHECKED,
-    INVALID. ``iface_method`` und ``custom`` sind über das Inventar nicht
-    prüfbar (Methoden von ``iface`` bzw. eigener Code).
+    INVALID. ``iface_method``, ``iface_action`` und ``custom`` sind über das
+    Inventar nicht prüfbar (Methoden von ``iface`` bzw. eigener Code).
     """
     if not isinstance(source, dict):
         return INVALID, tr("Source is not an object")

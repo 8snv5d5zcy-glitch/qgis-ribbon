@@ -14,7 +14,7 @@ Das Ribbon besteht aus der **Kopfzeile** (Schnellzugriffsleiste, Tabs, Befehlssu
 | Einfügen | Projekt, Neue Layer, Stile, Favoriten |
 | Analyse | Geoverarbeitung, Werkzeuge |
 | Ansicht | Verknüpfen, Fenster, Barrierefreiheit, Navigation |
-| Bearbeiten | Zwischenablage, Bearbeitung, Einrasten, Objekte, Auswahl, Werkzeuge, Höhe |
+| Bearbeiten | Zwischenablage, Bearbeitung, Einrasten, Konstruktion, Objekte, Auswahl, Werkzeuge, Höhe |
 | Bilddaten | Ausrichten, Analyse |
 | Teilen | Paket, Speichern als, Ausgabe |
 | Erweiterungen | Befehle installierter Plugins, siehe [Erweiterungen](extensions.md) |
@@ -22,6 +22,8 @@ Das Ribbon besteht aus der **Kopfzeile** (Schnellzugriffsleiste, Tabs, Befehlssu
 ![Der Tab Bearbeiten](../images/de/tab_edit.png)
 
 Beginnt die Bearbeitung eines Layers, wechselt das Ribbon zum Tab **Bearbeiten**.
+
+**Konstruktion › Erweiterte Digitalisierung** schaltet die Konstruktionshilfen ein oder aus (Abstand, Winkel, Koordinaten beim Digitalisieren). Der Schalter ist bedienbar, solange ein Werkzeug aktiv ist, das sie unterstützt, etwa **Erstellen** oder **Ändern**. Solange er an ist, öffnet QGIS das Panel bei jedem solchen Werkzeug; **Konstruktionspanel** blendet es ein oder aus. Die kleinen Icons in **Einrasten** schalten Spurverfolgung, Selbsteinrasten und das Einrasten auf Schnittpunkte.
 
 ## Kontext-Tabs
 

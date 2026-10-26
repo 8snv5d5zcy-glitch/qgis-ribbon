@@ -14,7 +14,7 @@ The ribbon consists of the **header** (Quick Access Toolbar, tabs, command searc
 | Insert | Project, New Layers, Styles, Favorites |
 | Analysis | Geoprocessing, Tools |
 | View | Link, Windows, Accessibility, Navigation |
-| Edit | Clipboard, Editing, Snapping, Features, Selection, Tools, Elevation |
+| Edit | Clipboard, Editing, Snapping, Construction, Features, Selection, Tools, Elevation |
 | Imagery | Align, Analysis |
 | Share | Package, Save As, Output |
 | Extensions | commands of installed plugins, see [Extensions](extensions.md) |
@@ -22,6 +22,8 @@ The ribbon consists of the **header** (Quick Access Toolbar, tabs, command searc
 ![The Edit tab](../images/en/tab_edit.png)
 
 When you start editing a layer, the ribbon switches to the **Edit** tab.
+
+**Construction › Advanced Digitizing** turns the construction aids on or off (distance, angle, coordinates while digitizing). It is available while a tool that supports it is active, for example **Create** or **Modify**. While it is on, QGIS opens its panel whenever you pick such a tool; **Construction Panel** shows or hides the panel. The small icons in **Snapping** switch tracing, self-snapping and snapping to intersections.
 
 ## Contextual tabs
 

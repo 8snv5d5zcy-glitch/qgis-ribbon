@@ -79,6 +79,8 @@ tabs:
         items:
           - row: ["nicht_platzierte_beschriftungen"]
           - {command: "beschriftungen_extrahieren", size: "large"}
+          - row: ["beschriftungen_ein_aus", "beschriftungen_anpinnen", "angepinnte_hervorheben"]
+          - row: ["beschriftung_verschieben", "beschriftung_drehen", "beschriftung_aendern"]
   - id: "einfuegen"
     label: "Insert"
     groups:
@@ -190,6 +192,12 @@ tabs:
           - split: "einrasten"
             items: ["einrastoptionen"]
             size: "large"
+          - row: ["spurverfolgung", "selbsteinrasten", "schnittpunkte_einrasten"]
+      - id: "konstruktion"
+        label: "Construction"
+        items:
+          - {command: "erweiterte_digitalisierung", size: "large"}
+          - {command: "konstruktionspanel", size: "medium"}
       - id: "objekte"
         label: "Features"
         items:
@@ -1418,3 +1426,135 @@ commands:
     label: "Zoom In"
     source: {type: "qgis_action", object_name: "mActionZoomIn"}
     description: "Zoom in by clicking or dragging a rectangle."
+  erweiterte_digitalisierung:
+    label: "Advanced Digitizing"
+    source: {type: "iface_action", method: "cadDockWidget.enableAction"}
+    description: "Turn construction aids for digitizing on or off (distance, angle, coordinates). Only with a tool that supports them."
+  konstruktionspanel:
+    label: "Construction Panel"
+    source: {type: "dock", object_name: "AdvancedDigitizingTools"}
+    description: "Show or hide the Advanced Digitizing panel."
+  spurverfolgung:
+    label: "Tracing"
+    source: {type: "qgis_action", object_name: "EnableTracingAction"}
+    description: "Follow existing feature edges between two clicks while digitizing."
+  selbsteinrasten:
+    label: "Self-Snapping"
+    source: {type: "qgis_action", object_name: "SelfSnappingAction"}
+    description: "Also snap to the geometry being edited."
+  schnittpunkte_einrasten:
+    label: "Snap to Intersections"
+    source: {type: "qgis_action", object_name: "IntersectionSnappingAction"}
+    description: "Snap to intersections of lines and edges."
+  beschriftungen_ein_aus:
+    label: "Show/Hide Labels"
+    source: {type: "qgis_action", object_name: "mActionShowHideLabels"}
+    description: "Show or hide individual labels and diagrams by clicking."
+  beschriftung_verschieben:
+    label: "Move Label"
+    source: {type: "qgis_action", object_name: "mActionMoveLabel"}
+    description: "Move a label, diagram or callout with the mouse."
+  beschriftung_drehen:
+    label: "Rotate Label"
+    source: {type: "qgis_action", object_name: "mActionRotateLabel"}
+    description: "Rotate a label with the mouse."
+  beschriftung_aendern:
+    label: "Change Label"
+    source: {type: "qgis_action", object_name: "mActionChangeLabelProperties"}
+    description: "Change the text and properties of a single label."
+  beschriftungen_anpinnen:
+    label: "Pin/Unpin Labels"
+    source: {type: "qgis_action", object_name: "mActionPinLabels"}
+    description: "Pin labels and diagrams in place or unpin them."
+  angepinnte_hervorheben:
+    label: "Highlight Pinned Labels"
+    source: {type: "qgis_action", object_name: "mActionShowPinnedLabels"}
+    description: "Highlight pinned labels, diagrams and callouts in color."
+  objekte_abfragen:
+    label: "Identify Features"
+    source: {type: "qgis_action", object_name: "mActionIdentify"}
+    description: "Show the attributes of the clicked feature (using the current identify mode)."
+  herauszoomen:
+    label: "Zoom Out"
+    source: {type: "qgis_action", object_name: "mActionZoomOut"}
+    description: "Click or drag a rectangle to zoom out."
+  auf_layer_zoomen:
+    label: "Zoom to Layers"
+    source: {type: "qgis_action", object_name: "mActionZoomToLayers"}
+    description: "Zoom to the extent of the selected layers."
+  zur_auswahl_verschieben:
+    label: "Pan to Selection"
+    source: {type: "qgis_action", object_name: "mActionPanToSelected"}
+    description: "Pan the map to the selected features without changing the scale."
+  eigene_aufloesung:
+    label: "Native Resolution"
+    source: {type: "qgis_action", object_name: "mActionZoomActualSize"}
+    description: "Zoom to the native resolution of the raster layer (100%)."
+  aktualisieren:
+    label: "Refresh"
+    source: {type: "qgis_action", object_name: "mActionDraw"}
+    description: "Redraw the map."
+  zeitsteuerung:
+    label: "Temporal Controller"
+    source: {type: "qgis_action", object_name: "mActionTemporalController"}
+    description: "Show or hide the panel for time-based data."
+  kartenhinweise:
+    label: "Map Tips"
+    source: {type: "qgis_action", object_name: "mActionMapTips"}
+    description: "Show tips for the feature under the mouse."
+  statistische_zusammenfassung:
+    label: "Statistical Summary"
+    source: {type: "qgis_action", object_name: "mActionStatisticalSummary"}
+    description: "Show statistics of a field or expression in a panel."
+  feldrechner:
+    label: "Field Calculator"
+    source: {type: "qgis_action", object_name: "mActionOpenFieldCalc"}
+    description: "Calculate field values of the active layer with an expression."
+  attribute_gewaehlter_aendern:
+    label: "Modify Attributes of Selected Features"
+    source: {type: "qgis_action", object_name: "mActionMultiEditAttributes"}
+    description: "Change the attributes of all selected features at once."
+  layeraenderungen_speichern:
+    label: "Save Layer Edits"
+    source: {type: "qgis_action", object_name: "mActionSaveLayerEdits"}
+    description: "Save the edits of the active layer only."
+  rasterlayer_hinzufuegen:
+    label: "Add Raster Layer"
+    source: {type: "qgis_action", object_name: "mActionAddRasterLayer"}
+    description: "Add a raster file as a layer."
+  netzlayer_hinzufuegen:
+    label: "Add Mesh Layer"
+    source: {type: "qgis_action", object_name: "mActionAddMeshLayer"}
+    description: "Add a mesh file as a layer."
+  spatialite_layer_hinzufuegen:
+    label: "Add SpatiaLite Layer"
+    source: {type: "qgis_action", object_name: "mActionAddSpatiaLiteLayer"}
+    description: "Add a table from a SpatiaLite database as a layer."
+  virtuellen_layer_hinzufuegen:
+    label: "Add Virtual Layer"
+    source: {type: "qgis_action", object_name: "mActionAddVirtualLayer"}
+    description: "Create or edit a virtual layer from an SQL query over existing layers."
+  neuer_netzlayer:
+    label: "New Mesh Layer"
+    source: {type: "qgis_action", object_name: "mActionNewMeshLayer"}
+    description: "Create a new, empty mesh layer."
+  diagrammoptionen:
+    label: "Diagram Options"
+    source: {type: "qgis_action", object_name: "mActionDiagramProperties"}
+    description: "Set up the diagrams of the active layer."
+  neue_3d_kartenansicht:
+    label: "New 3D Map View"
+    source: {type: "qgis_action", object_name: "mActionNew3DMapCanvas"}
+    description: "Open another map view in 3D."
+  qgis_hilfe:
+    label: "QGIS Help"
+    source: {type: "qgis_action", object_name: "mActionHelpContents"}
+    description: "Open the QGIS user manual."
+  objekte_direkt_aendern:
+    label: "Edit Features In-Place"
+    source: {type: "plugin_action", plugin: "processing", object_name: "editInPlaceFeatures"}
+    description: "Processing tools change the layer's features directly instead of creating a new layer."
+  ergebnisanzeige:
+    label: "Results Viewer"
+    source: {type: "plugin_action", plugin: "processing", object_name: "resultsViewer"}
+    description: "Show or hide the panel with processing results."

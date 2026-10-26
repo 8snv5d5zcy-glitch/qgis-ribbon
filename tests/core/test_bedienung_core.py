@@ -143,8 +143,11 @@ def test_ribbon_entries_have_paths():
     from qgis_ribbon.core import config_loader
     pytest.importorskip("yaml")
     ribbon = config_loader.load()
+    from qgis_ribbon.core.model import iter_commands
     entries = {e.ref[0].id: e for e in __import__("qgis_ribbon.core.search", fromlist=["x"]).ribbon_entries(ribbon)}
-    assert set(entries) == set(ribbon.commands)
+    placed = {c.id for t in ribbon.tabs for g in t.groups for c in iter_commands(g)}
+    assert set(entries) == placed | {c.id for c in ribbon.quick_access}
+    assert "herauszoomen" in ribbon.commands and "herauszoomen" not in entries  # nur im Editor
     assert entries["layer_deckkraft"].path == "Vektorlayer: Darstellung › Effekte"
     assert entries["neues_projekt"].path == "Schnellzugriff"
     idx = SearchIndex(entries.values())

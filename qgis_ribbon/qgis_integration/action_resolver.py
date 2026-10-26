@@ -236,6 +236,24 @@ class ActionResolver(object):
 
         return Resolved(callback=call)
 
+    def _resolve_iface_action(self, command):
+        """QAction, die ``iface`` über einen Methodenpfad liefert.
+
+        Für Aktionen ohne eindeutigen objectName, die nicht am Hauptfenster
+        hängen, z. B. ``cadDockWidget.enableAction`` (Schalter der erweiterten
+        Digitalisierung, sitzt im Panel und hat keinen Text).
+        """
+        method = command.source.get("method")
+        obj = self.iface
+        for part in method.split("."):
+            attr = getattr(obj, part, None)
+            if attr is None:
+                return unavailable(tr("iface method %s not available") % method)
+            obj = attr() if callable(attr) else attr
+        if not isinstance(obj, QAction):
+            return unavailable(tr("QGIS action %s not found") % method)
+        return self._from_action(obj)
+
     def _resolve_processing(self, command):
         alg_id = command.source.get("algorithm")
         alg = QgsApplication.processingRegistry().algorithmById(alg_id)

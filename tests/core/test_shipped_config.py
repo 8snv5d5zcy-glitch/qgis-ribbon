@@ -43,16 +43,19 @@ def test_no_esri_ids_or_esri_texts(raw_text):
     assert "esri" not in raw_text.lower()
 
 
-def test_every_defined_command_is_used(ribbon):
+def test_unplaced_commands_are_editor_offers(ribbon):
+    # Befehle ohne Ort stehen nur im Editor zur Auswahl: einfache Buttons mit Beschreibung
     used = {c.id for t in ribbon.tabs for c in iter_commands(t)} | {c.id for c in ribbon.quick_access}
-    assert set(ribbon.commands) == used
+    unplaced = [ribbon.commands[c] for c in set(ribbon.commands) - used]
+    assert unplaced and len(used) > 150
+    assert all(c.kind == "button" and c.description for c in unplaced), [c.id for c in unplaced]
 
 
 # Wörter, in denen ae/oe/ue/ss richtig geschrieben sind (keine Ersatzschreibweise)
 ALLOWED_ASCII = {"ausschneiden", "messen", "messwerkzeuge", "neue", "neues", "neuer", "aktueller",
                  "processing", "quelle", "anpassen", "ausschnitt", "klasse",
                  "beschriftungsklasse", "bildverbesserung", "virtueller", "aktuelles",
-                 "kartenausschnitt", "neuen"}
+                 "kartenausschnitt", "neuen", "virtuellen", "zeitsteuerung", "zusammenfassung"}
 
 
 def test_labels_use_real_umlauts():

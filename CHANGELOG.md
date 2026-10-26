@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 (2026-10-26)
+
+- Edit tab: new group Construction with the Advanced Digitizing switch and the Construction Panel; Snapping gains tracing, self-snapping and snapping to intersections.
+- Map tab, Labeling: show/hide, pin, highlight pinned, move, rotate and change labels.
+- 23 further QGIS commands from the hidden toolbars can be added in the ribbon editor (for example Zoom Out, Refresh, Field Calculator, Temporal Controller) and are found by the command search.
+- 28 new icons in the own icon set.
+
 ## 1.0.0 (2026-10-26)
 
 First public release.

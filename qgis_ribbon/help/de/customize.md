@@ -13,7 +13,7 @@ Alles im Ribbon lässt sich ändern: Tabs und Gruppen ausblenden, umbenennen und
 - **Oben:** die Tabs. Kontext-Tabs stehen rechts und tragen ihre Farbe.
 - **Schnellzugriff:** die Befehle der Schnellzugriffsleiste.
 - **Mitte:** eine Vorschau des gewählten Tabs mit seinen Gruppen.
-- **Unten links:** die Befehle. **Suchen** findet sie nach Name oder Beschreibung. Die Liste daneben filtert: *Alle*, *Nicht im Ribbon*, *Erweiterungen (Plugins)*, *Eigene Skripte und Modelle*, *Werkzeugkasten (alle Werkzeuge)* oder ein Tab. Ein Häkchen zeigt, dass ein Befehl schon im gewählten Tab steht. **Gruppen** zeigt ganze Gruppen statt einzelner Befehle.
+- **Unten links:** die Befehle. **Suchen** findet sie nach Name oder Beschreibung. Die Liste daneben filtert: *Alle*, *Nicht im Ribbon*, *Erweiterungen (Plugins)*, *Eigene Skripte und Modelle*, *Werkzeugkasten (alle Werkzeuge)* oder ein Tab. *Nicht im Ribbon* enthält auch weitere QGIS-Befehle ohne festen Platz im mitgelieferten Ribbon, etwa Herauszoomen, Aktualisieren, Feldrechner oder Zeitsteuerung. Ein Häkchen zeigt, dass ein Befehl schon im gewählten Tab steht. **Gruppen** zeigt ganze Gruppen statt einzelner Befehle.
 - **Unten rechts:** die Eigenschaften des gewählten Tabs, der Gruppe oder des Befehls (Beschriftung, Sichtbarkeit, Größe).
 
 Im Ribbon ändert sich erst etwas mit **Speichern**. **Abbrechen** fragt nach, bevor Änderungen verworfen werden. Jeder Schritt lässt sich mit den Pfeilen oben rechts rückgängig machen (Strg+Z, Strg+Y). **Standard wiederherstellen** setzt Tabs, Gruppen und Schnellzugriff auf den gelieferten Stand zurück; auch das lässt sich rückgängig machen.
