@@ -1,0 +1,58 @@
+# Design „Kontur“: Farbtokens für Hell und Dunkel.
+# Gelesen und geprüft von qgis_ribbon/core/theme_tokens.py (Pflicht-Tokens,
+# Hex-Format, Kontrast ≥ 4,5:1 für Text auf seiner Fläche).
+# Farben als #RRGGBB, Schatten als #RRGGBBAA (mit Deckkraft).
+
+version: 1
+name: "Kontur"
+
+modes:
+  hell:
+    win: "#F3F4F6"      # Fensterhintergrund, Kopfzeile
+    surf: "#FFFFFF"     # Ribbon-Fläche, Popups, Docks
+    bord: "#DDE1E7"     # Rahmen
+    div: "#E6E9EE"      # Trennlinien
+    text: "#1B2027"
+    muted: "#5A6370"    # Gruppenbeschriftung, inaktive Tabs
+    faint: "#A2A9B3"    # gesperrt
+    hover: "#EEF1F4"
+    press: "#E3E7ED"
+    ctx: "#6A4DF0"      # Kontext-Tabs
+    ctxS: "#EFEBFF"
+    ctxT: "#5235D4"
+    shadow: "#10182824"
+    tip: "#1B2027"      # KeyTip-Marke (Hintergrund); Schrift: surf
+    err: "#B3261E"      # Fehler, Konflikte in Dialogen
+  dunkel:
+    win: "#111418"
+    surf: "#1A1E24"
+    bord: "#2E3540"
+    div: "#262B33"
+    text: "#E6E9ED"
+    muted: "#A0A9B5"
+    faint: "#5A636E"
+    hover: "#242931"
+    press: "#2C323B"
+    ctx: "#A08BFF"
+    ctxS: "#221D3F"
+    ctxT: "#BCAFFF"
+    shadow: "#00000066"
+    tip: "#E6E9ED"
+    err: "#FF8A80"
+
+# Akzent: Farbe, Fläche „aktiv“, Text auf der Fläche, Rand „aktiv“ (mit Deckkraft)
+accents:
+  moos:
+    label: "Moss"
+    hell: {acc: "#0E7C6B", accS: "#E1F2EE", accT: "#0A6457", accB: "#0E7C6B4D"}
+    dunkel: {acc: "#3CC4A8", accS: "#13332E", accT: "#6AD9C2", accB: "#3CC4A852"}
+  kobalt:
+    label: "Cobalt"
+    hell: {acc: "#3550E0", accS: "#E8ECFF", accT: "#2A41BD", accB: "#3550E04D"}
+    dunkel: {acc: "#8C9DFF", accS: "#1E2448", accT: "#AAB6FF", accB: "#8C9DFF52"}
+  bernstein:
+    label: "Amber"
+    hell: {acc: "#B45309", accS: "#FDF0E1", accT: "#954406", accB: "#B453094D"}
+    dunkel: {acc: "#F2A33A", accS: "#3A2A14", accT: "#F7BC66", accB: "#F2A33A52"}
+
+default_accent: "moos"

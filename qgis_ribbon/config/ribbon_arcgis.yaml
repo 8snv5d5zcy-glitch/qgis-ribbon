@@ -1,0 +1,1420 @@
+# QGIS Ribbon: ribbon definition (tabs, groups, commands, conditions, galleries).
+# Labels and descriptions in English; German texts in qgis_ribbon/i18n/de_ribbon.json.
+# Read and checked by qgis_ribbon/core/config_loader.py.
+
+version: 1
+
+hide_toolbars: ["mFileToolBar", "mLayerToolBar", "mDigitizeToolBar", "mAdvancedDigitizeToolBar", "mMapNavToolBar", "mAttributesToolBar", "mHelpToolBar", "mLabelToolBar", "mSnappingToolBar", "mDataSourceManagerToolBar", "mShapeDigitizeToolBar", "mSelectionToolBar", "mMeshToolBar", "mAnnotationsToolBar", "mGpsToolBar"]
+
+extensions:
+  menus: ["mPluginMenu", "mRasterMenu", "mVectorMenu", "mDatabaseMenu", "mWebMenu"]
+  toolbars: ["mPluginToolBar", "mRasterToolBar", "mVectorToolBar", "mDatabaseToolBar", "mWebToolBar"]
+  qgis_toolbars: ["mFileToolBar", "mLayerToolBar", "mDigitizeToolBar", "mAdvancedDigitizeToolBar", "mMapNavToolBar", "mAttributesToolBar", "mHelpToolBar", "mLabelToolBar", "mSnappingToolBar", "mDataSourceManagerToolBar", "mShapeDigitizeToolBar", "mSelectionToolBar", "mMeshToolBar", "mAnnotationsToolBar", "mGpsToolBar", "mBookmarkToolbar", "mBrowserToolbar", "mToolbar", "processingToolbar"]
+  hide: true
+
+quick_access: ["neues_projekt", "projekt_oeffnen", "projekt_speichern", "rueckgaengig", "wiederholen", "erkunden", "hineinzoomen", "suchen"]
+
+tabs:
+  - id: "karte"
+    label: "Map"
+    groups:
+      - id: "zwischenablage"
+        label: "Clipboard"
+        items:
+          - split: "einfuegen"
+            items: ["einfuegen_als", "stil_einfuegen"]
+            size: "large"
+          - {command: "ausschneiden", size: "medium"}
+          - {command: "kopieren", size: "medium"}
+          - {command: "pfad_kopieren", size: "large"}
+      - id: "navigieren"
+        label: "Navigate"
+        launcher: "optionen_kartenwerkzeuge"
+        items:
+          - split: "erkunden"
+            items: ["abfrage_oberster_layer", "abfrage_sichtbare_layer", "abfragbare_layer", "abfrage_aktueller_layer"]
+            size: "large"
+          - row: ["volle_ausdehnung", "schrittweise_hineinzoomen", "schrittweise_herauszoomen", "vorherige_ausdehnung", "naechste_ausdehnung"]
+          - menu: "Bookmarks"
+            key: "Lesezeichen"
+            icon: "/mActionShowBookmarks.svg"
+            gallery: "lesezeichen_galerie"
+            items: ["neues_lesezeichen", "lesezeichen_verwalten"]
+            size: "large"
+          - {command: "gehe_zu_xy", size: "large"}
+      - id: "layer"
+        label: "Layer"
+        items:
+          - {command: "grundkarten_galerie", size: "large"}
+          - split: "daten_hinzufuegen"
+            items: ["layer_hinzufuegen"]
+            size: "large"
+          - {command: "vektorlayer_hinzufuegen", size: "medium"}
+          - {command: "xy_tabelle_zu_punkten", size: "medium"}
+          - {command: "neuer_annotationslayer", size: "large"}
+      - id: "auswahl"
+        label: "Selection"
+        launcher: "auswahloptionen"
+        items:
+          - split: "rechteck"
+            label: "Select"
+            items: ["rechteck", "polygon", "freihand", "kreis", "auswahl_linie"]
+            size: "large"
+          - {command: "nach_attributen", size: "large"}
+          - {command: "nach_lage", size: "large"}
+          - {command: "attribute", size: "medium"}
+          - {command: "auswahl_aufheben", size: "medium"}
+          - {command: "zur_auswahl_zoomen", size: "medium"}
+      - id: "abfragen"
+        label: "Query"
+        items:
+          - split: "messen"
+            items: ["messwerkzeuge"]
+            size: "large"
+          - split: "suchen"
+            items: ["sucheinstellungen"]
+            size: "large"
+      - id: "beschriftung"
+        label: "Labeling"
+        items:
+          - row: ["nicht_platzierte_beschriftungen"]
+          - {command: "beschriftungen_extrahieren", size: "large"}
+  - id: "einfuegen"
+    label: "Insert"
+    groups:
+      - id: "projekt"
+        label: "Project"
+        items:
+          - {command: "neue_kartenansicht", size: "large"}
+          - {command: "neues_layout", size: "large"}
+          - {command: "neuer_bericht", size: "large"}
+          - {command: "werkzeuge", size: "medium"}
+          - {command: "layerdefinition_laden", size: "medium"}
+          - {command: "layoutverwaltung", size: "medium"}
+          - menu: "Connections"
+            key: "Verbindungen"
+            icon: "/mActionAddLayer.svg"
+            items:
+              - "postgresql_verbindung"
+              - menu: "Server"
+                key: "Server"
+                items: ["arcgis_rest_server", "wfs_ogc_api", "wcs_server", "wms_wmts_server"]
+              - "stac_verbindung"
+            size: "large"
+          - {command: "ordner_verbinden", size: "large"}
+      - id: "neue_layer"
+        label: "New Layers"
+        items:
+          - split: "neuer_geopackage_layer"
+            label: "New Layer"
+            items: ["neuer_geopackage_layer", "neuer_shapefile_layer", "neuer_scratch_layer", "neuer_spatialite_layer", "neuer_virtueller_layer"]
+            size: "large"
+      - id: "stile"
+        label: "Styles"
+        items:
+          - {command: "stilverwaltung", size: "medium"}
+      - id: "favoriten"
+        label: "Favorites"
+        items:
+          - {command: "favoriten", size: "medium"}
+  - id: "analyse"
+    label: "Analysis"
+    groups:
+      - id: "geoverarbeitung"
+        label: "Geoprocessing"
+        launcher: "processing_optionen"
+        items:
+          - {command: "verlauf", size: "large"}
+          - {command: "modell_designer", size: "medium"}
+          - {command: "python", size: "medium"}
+          - {command: "umgebungen", size: "medium"}
+          - {command: "werkzeuge", size: "large"}
+      - id: "werkzeuge"
+        label: "Tools"
+        items:
+          - menu: "Analysis Tools"
+            key: "Analysewerkzeuge"
+            icon: "/processingAlgorithm.svg"
+            gallery: "processing_galerie"
+            items: ["analyse_galerie_anpassen"]
+            size: "large"
+  - id: "ansicht"
+    label: "View"
+    groups:
+      - id: "verknuepfen"
+        label: "Link"
+        items:
+          - {command: "neue_kartenansicht", size: "large"}
+      - id: "fenster"
+        label: "Windows"
+        items:
+          - {command: "katalog", size: "large"}
+          - {command: "inhalt", size: "large"}
+          - {command: "geoverarbeitung", size: "large"}
+          - {command: "python_konsole", size: "large"}
+      - id: "barrierefreiheit"
+        label: "Accessibility"
+        items:
+          - split: "farbsehschwaeche_simulieren"
+            items: ["vorschau_deuteranopie"]
+            size: "large"
+      - id: "navigation"
+        label: "Navigation"
+        items:
+          - {command: "kartendrehung", size: "large"}
+          - {command: "lupe", size: "large"}
+  - id: "bearbeiten"
+    label: "Edit"
+    activate_on: ["editing_started"]
+    groups:
+      - id: "zwischenablage"
+        label: "Clipboard"
+        items:
+          - split: "einfuegen"
+            items: ["einfuegen_als", "stil_einfuegen"]
+            size: "large"
+          - {command: "ausschneiden", size: "medium"}
+          - {command: "kopieren", size: "medium"}
+          - {command: "pfad_kopieren", size: "large"}
+      - id: "bearbeitung"
+        label: "Editing"
+        items:
+          - {command: "bearbeiten", size: "large"}
+          - {command: "aenderungen_speichern", size: "large"}
+          - {command: "aenderungen_verwerfen", size: "large"}
+          - {command: "topologisch_bearbeiten", size: "medium"}
+          - {command: "einstellungen", size: "medium"}
+      - id: "einrasten"
+        label: "Snapping"
+        items:
+          - split: "einrasten"
+            items: ["einrastoptionen"]
+            size: "large"
+      - id: "objekte"
+        label: "Features"
+        items:
+          - {command: "erstellen", size: "large"}
+          - {command: "aendern", size: "large"}
+          - {command: "loeschen", size: "large"}
+      - id: "auswahl"
+        label: "Selection"
+        launcher: "auswahloptionen"
+        items:
+          - split: "rechteck"
+            label: "Select"
+            items: ["rechteck", "polygon", "freihand", "kreis", "auswahl_linie"]
+            size: "large"
+          - {command: "attribute", size: "medium"}
+          - {command: "auswahl_aufheben", size: "medium"}
+          - {command: "zur_auswahl_zoomen", size: "medium"}
+      - id: "werkzeuge"
+        label: "Tools"
+        launcher: "digitalisieroptionen"
+        items:
+          - menu: "Editing Tools"
+            key: "Editorwerkzeuge"
+            icon: "/mActionVertexTool.svg"
+            gallery: "editor_galerie"
+            items: ["galerie_groesse", "alle_werkzeuge", "editor_galerie_anpassen"]
+            size: "large"
+      - id: "hoehe"
+        label: "Elevation"
+        items:
+          - {command: "z_wert", size: "large"}
+  - id: "bilddaten"
+    label: "Imagery"
+    groups:
+      - id: "ausrichten"
+        label: "Align"
+        items:
+          - {command: "georeferenzieren", size: "large"}
+          - {command: "raster_transformieren", size: "large"}
+          - {command: "raster_anpassen", size: "large"}
+      - id: "analyse"
+        label: "Analysis"
+        items:
+          - {command: "rasterrechner", size: "large"}
+  - id: "teilen"
+    label: "Share"
+    groups:
+      - id: "paket"
+        label: "Package"
+        items:
+          - {command: "layer_verpacken", size: "large"}
+      - id: "speichern_als"
+        label: "Save As"
+        items:
+          - {command: "projekt_speichern_als", size: "large"}
+          - {command: "layerdatei_speichern", size: "large"}
+      - id: "ausgabe"
+        label: "Output"
+        items:
+          - split: "karte_exportieren"
+            items: ["karte_als_pdf", "projekt_als_dxf"]
+            size: "large"
+          - split: "layout_exportieren"
+            items: ["layout_als_bild", "atlas_als_pdf"]
+            size: "large"
+          - {command: "drucken", size: "large"}
+  - {id: "erweiterungen", label: "Extensions", dynamic: "erweiterungen"}
+
+contextual_tabs:
+  - id: "vektor_darstellung"
+    label: "Appearance"
+    context: "Vector Layer"
+    visible_when: ["active_layer_is_vector"]
+    groups:
+      - id: "sichtbarkeitsbereich"
+        label: "Visibility Range"
+        items:
+          - {command: "layer_massstab_schalten", size: "large"}
+          - {command: "layer_massstab_max", size: "medium"}
+          - {command: "layer_massstab_min", size: "medium"}
+      - id: "effekte"
+        label: "Effects"
+        items:
+          - {command: "layer_deckkraft", size: "medium"}
+          - {command: "layer_mischmodus", size: "medium"}
+      - id: "zeichnen"
+        label: "Drawing"
+        items:
+          - split: "symbolisierung"
+            items: ["renderer_galerie"]
+            size: "large"
+          - {command: "masken", size: "medium"}
+          - {command: "stil_importieren", size: "medium"}
+  - id: "vektor_beschriftung"
+    label: "Labeling"
+    context: "Vector Layer"
+    visible_when: ["active_layer_is_vector"]
+    groups:
+      - id: "layer"
+        label: "Layer"
+        items:
+          - {command: "beschriftung_schalten", size: "large"}
+      - id: "beschriftungsklasse"
+        label: "Label Class"
+        items:
+          - row: ["beschriftungsklasse", "beschriftungsklasse_filter", "beschriftungsklasse_aktiv", "beschriftungsfeld", "beschriftungsausdruck"]
+      - id: "sichtbarkeitsbereich"
+        label: "Visibility Range"
+        items:
+          - {command: "beschriftung_massstab_max", size: "medium"}
+          - {command: "beschriftung_massstab_min", size: "medium"}
+          - {command: "beschriftung_massstab_aus", size: "medium"}
+      - id: "textsymbol"
+        label: "Text Symbol"
+        launcher: "beschriftungseigenschaften"
+        items:
+          - menu: "Text Format"
+            key: "Textformat"
+            icon: "/propertyicons/labelformatting.svg"
+            gallery: "textformat_galerie"
+            items: ["stilverwaltung"]
+            size: "large"
+          - row: ["beschriftung_schrift", "beschriftung_groesse", "beschriftung_groesser", "beschriftung_kleiner", "beschriftung_schriftschnitt", "beschriftung_farbe"]
+      - id: "platzierung"
+        label: "Placement"
+        items:
+          - {command: "platzierung_galerie", size: "large"}
+      - id: "karte"
+        label: "Map"
+        items:
+          - row: ["nicht_platzierte_beschriftungen"]
+  - id: "vektor_daten"
+    label: "Data"
+    context: "Vector Layer"
+    visible_when: ["active_layer_is_vector"]
+    groups:
+      - id: "filter"
+        label: "Filter"
+        launcher: "quelle_und_filter"
+        items:
+          - {command: "filter", size: "large"}
+      - id: "tabelle"
+        label: "Table"
+        items:
+          - {command: "attributtabelle", size: "large"}
+          - {command: "tabelle_der_auswahl", size: "large"}
+      - id: "auswahl"
+        label: "Selection"
+        items:
+          - {command: "alle_auswaehlen", size: "medium"}
+          - {command: "auswahl_umkehren", size: "medium"}
+          - {command: "auswahl_im_layer_aufheben", size: "medium"}
+          - {command: "layer_aus_auswahl", size: "large"}
+      - id: "datenentwurf"
+        label: "Data Design"
+        items:
+          - {command: "felder", size: "large"}
+          - {command: "domaenen", size: "large"}
+      - id: "beziehungen"
+        label: "Relationships"
+        items:
+          - {command: "raeumliche_verknuepfung", size: "large"}
+          - {command: "verknuepfung_hinzufuegen", size: "large"}
+          - {command: "beziehungen_verwalten", size: "large"}
+      - id: "exportieren"
+        label: "Export"
+        items:
+          - {command: "objekte_exportieren", size: "large"}
+  - id: "tabelle_daten"
+    label: "Data"
+    context: "Table"
+    visible_when: ["active_layer_is_table"]
+    groups:
+      - id: "filter"
+        label: "Filter"
+        launcher: "quelle_und_filter"
+        items:
+          - {command: "filter", size: "large"}
+      - id: "tabelle"
+        label: "Table"
+        items:
+          - {command: "attributtabelle", size: "large"}
+          - {command: "tabelle_der_auswahl", size: "large"}
+      - id: "auswahl"
+        label: "Selection"
+        items:
+          - {command: "nach_attributen", size: "large"}
+          - {command: "alle_auswaehlen", size: "medium"}
+          - {command: "auswahl_umkehren", size: "medium"}
+          - {command: "auswahl_im_layer_aufheben", size: "medium"}
+          - {command: "loeschen", size: "medium"}
+      - id: "datenentwurf"
+        label: "Data Design"
+        items:
+          - {command: "felder", size: "large"}
+          - {command: "domaenen", size: "large"}
+      - id: "beziehungen"
+        label: "Relationships"
+        items:
+          - {command: "verknuepfung_hinzufuegen", size: "large"}
+          - {command: "beziehungen_verwalten", size: "large"}
+      - id: "exportieren"
+        label: "Export"
+        items:
+          - {command: "objekte_exportieren", size: "large"}
+      - id: "punkte_erstellen"
+        label: "Create Points"
+        items:
+          - menu: "From Table"
+            key: "Aus Tabelle"
+            icon: "/mActionAddDelimitedTextLayer.svg"
+            items: ["xy_tabelle_zu_punkten", "textdatei_mit_koordinaten"]
+            size: "large"
+  - id: "raster_darstellung"
+    label: "Appearance"
+    context: "Raster Layer"
+    visible_when: ["active_layer_is_raster"]
+    groups:
+      - id: "sichtbarkeitsbereich"
+        label: "Visibility Range"
+        items:
+          - {command: "layer_massstab_schalten", size: "large"}
+          - {command: "layer_massstab_max", size: "medium"}
+          - {command: "layer_massstab_min", size: "medium"}
+      - id: "effekte"
+        label: "Effects"
+        items:
+          - {command: "layer_deckkraft", size: "medium"}
+          - {command: "layer_mischmodus", size: "medium"}
+      - id: "symbolisierung"
+        label: "Symbology"
+        items:
+          - split: "raster_symbolisierung"
+            items: ["raster_darstellungsart"]
+            size: "large"
+          - {command: "histogramm", size: "large"}
+          - {command: "streckung_auf_ausschnitt", size: "large"}
+          - {command: "raster_resampling", size: "large"}
+          - {command: "raster_kanaele", size: "large"}
+          - {command: "masken", size: "large"}
+      - id: "bildverbesserung"
+        label: "Enhancement"
+        items:
+          - {command: "raster_helligkeit", size: "medium"}
+          - {command: "raster_kontrast", size: "medium"}
+          - {command: "raster_gamma", size: "medium"}
+
+commands:
+  einfuegen:
+    label: "Paste"
+    source: {type: "qgis_action", object_name: "mActionPasteFeatures"}
+    description: "Paste features from the clipboard into the active layer."
+  einfuegen_als:
+    label: "Paste As"
+    source: {type: "qgis_menu", object_name: "mMenuPasteAs"}
+    description: "Paste copied features as a new or temporary layer."
+  stil_einfuegen:
+    label: "Paste Style"
+    source: {type: "qgis_action", object_name: "mActionPasteStyle"}
+    description: "Apply the copied style to the active layer."
+  ausschneiden:
+    label: "Cut"
+    source: {type: "qgis_action", object_name: "mActionCutFeatures"}
+    description: "Cut the selected features."
+  kopieren:
+    label: "Copy"
+    source: {type: "qgis_action", object_name: "mActionCopyFeatures"}
+    description: "Copy the selected features to the clipboard."
+  pfad_kopieren:
+    label: "Copy Path"
+    source: {type: "custom", id: "ribbon.layerpfad_kopieren"}
+    icon: "/mActionEditCopy.svg"
+    description: "Copy the data source of the active layer to the clipboard as text."
+  erkunden:
+    label: "Explore"
+    source: {type: "qgis_action", object_name: "mActionPan"}
+    description: "Pan the map by dragging."
+  abfrage_oberster_layer:
+    label: "Identify: Top Layer"
+    source:
+      type: "custom"
+      args: ["TopDownStopAtFirst"]
+      id: "ribbon.abfragemodus"
+    icon: "/mActionIdentify.svg"
+    description: "Select the identify tool; only the topmost layer with a hit is queried."
+  abfrage_sichtbare_layer:
+    label: "Identify: Visible Layers"
+    source:
+      type: "custom"
+      args: ["TopDownAll"]
+      id: "ribbon.abfragemodus"
+    icon: "/mActionIdentify.svg"
+    description: "Select the identify tool; all visible layers are queried."
+  abfragbare_layer:
+    label: "Identifiable Layers"
+    source: {type: "custom", id: "ribbon.abfragbare_layer"}
+    kind: "control"
+    icon: "/mActionIdentify.svg"
+    description: "Choose which layers the identify tool considers; switches identify to all identifiable layers."
+    gallery: {display: "dropdown"}
+  abfrage_aktueller_layer:
+    label: "Identify: Current Layer"
+    source:
+      type: "custom"
+      args: ["ActiveLayer"]
+      id: "ribbon.abfragemodus"
+    icon: "/mActionIdentify.svg"
+    description: "Select the identify tool; only the active layer is queried."
+  volle_ausdehnung:
+    label: "Full Extent"
+    source: {type: "qgis_action", object_name: "mActionZoomFullExtent"}
+    description: "Zoom to the extent of all layers."
+  zur_auswahl_zoomen:
+    label: "Zoom to Selection"
+    source: {type: "qgis_action", object_name: "mActionZoomToSelected"}
+    description: "Zoom to the selected features."
+  schrittweise_hineinzoomen:
+    label: "Step Zoom In"
+    source: {type: "iface_method", method: "mapCanvas.zoomIn"}
+    icon: "/mActionZoomIn.svg"
+    description: "Zoom in one step around the map center."
+  schrittweise_herauszoomen:
+    label: "Step Zoom Out"
+    source: {type: "iface_method", method: "mapCanvas.zoomOut"}
+    icon: "/mActionZoomOut.svg"
+    description: "Zoom out one step around the map center."
+  vorherige_ausdehnung:
+    label: "Previous Extent"
+    source: {type: "qgis_action", object_name: "mActionZoomLast"}
+    description: "Return to the previous map extent."
+  naechste_ausdehnung:
+    label: "Next Extent"
+    source: {type: "qgis_action", object_name: "mActionZoomNext"}
+    description: "Go to the next map extent."
+  neues_lesezeichen:
+    label: "New Bookmark"
+    source: {type: "qgis_action", object_name: "mActionNewBookmark"}
+    description: "Save the current map extent as a bookmark."
+  lesezeichen_verwalten:
+    label: "Manage Bookmarks"
+    source: {type: "qgis_action", object_name: "mActionShowBookmarkManager"}
+    description: "Show, edit, import and export bookmarks."
+  lesezeichen_galerie:
+    label: "Bookmarks"
+    source: {type: "custom", id: "ribbon.lesezeichen_galerie"}
+    kind: "control"
+    icon: "/mActionShowBookmarks.svg"
+    description: "Jump to the project's saved bookmarks and your own bookmarks."
+    gallery: {display: "dropdown"}
+  gehe_zu_xy:
+    label: "Go To XY"
+    source:
+      type: "custom"
+      args: ["go "]
+      id: "ribbon.locator_fokus"
+    icon: "/mActionZoomTo.svg"
+    description: "Enter a coordinate in the locator bar and jump there."
+  optionen_kartenwerkzeuge:
+    label: "Map Tool Options"
+    source:
+      type: "iface_method"
+      args: [null, "mOptionsPageMapTools"]
+      method: "showOptionsDialog"
+    description: "Open the options for zooming, identifying and measuring."
+  grundkarte_basemap_de_farbig:
+    label: "basemap.de color"
+    source:
+      type: "custom"
+      args: ["https://sgx.geodatenzentrum.de/wmts_basemapde/tile/1.0.0/de_basemapde_web_raster_farbe/default/GLOBAL_WEBMERCATOR/{z}/{y}/{x}.png", 0, 18, "© GeoBasis-DE / BKG, CC BY 4.0"]
+      id: "ribbon.grundkarte"
+    icon: "/mIconXyz.svg"
+    description: "Official basemap of Germany (BKG), color. License CC BY 4.0."
+  grundkarte_basemap_de_grau:
+    label: "basemap.de gray"
+    source:
+      type: "custom"
+      args: ["https://sgx.geodatenzentrum.de/wmts_basemapde/tile/1.0.0/de_basemapde_web_raster_grau/default/GLOBAL_WEBMERCATOR/{z}/{y}/{x}.png", 0, 18, "© GeoBasis-DE / BKG, CC BY 4.0"]
+      id: "ribbon.grundkarte"
+    icon: "/mIconXyz.svg"
+    description: "Official basemap of Germany (BKG), grayscale. License CC BY 4.0."
+  grundkarte_opentopomap:
+    label: "OpenTopoMap"
+    source:
+      type: "custom"
+      args: ["https://tile.opentopomap.org/{z}/{x}/{y}.png", 0, 17, "Map data: © OpenStreetMap contributors, SRTM | Map display: © OpenTopoMap (CC-BY-SA)"]
+      id: "ribbon.grundkarte"
+    icon: "/mIconXyz.svg"
+    description: "Topographic map based on OpenStreetMap. License CC-BY-SA."
+  grundkarten_galerie:
+    label: "Basemap"
+    source: {type: "custom", id: "ribbon.grundkarten_galerie"}
+    kind: "control"
+    icon: "/mIconXyz.svg"
+    description: "Add a basemap below the other layers."
+    gallery:
+      display: "dropdown"
+      columns: 3
+      items: ["grundkarte_basemap_de_farbig", "grundkarte_basemap_de_grau", "grundkarte_opentopomap"]
+  daten_hinzufuegen:
+    label: "Add Data"
+    source: {type: "qgis_action", object_name: "mActionDataSourceManager"}
+    description: "Open the data source manager and add layers."
+  layer_hinzufuegen:
+    label: "Add Layer"
+    source: {type: "qgis_menu", object_name: "mAddLayerMenu"}
+    icon: "/mActionAddLayer.svg"
+    description: "Add a layer of a specific type."
+  vektorlayer_hinzufuegen:
+    label: "Add Vector Layer"
+    source: {type: "qgis_action", object_name: "mActionAddOgrLayer"}
+    description: "Add a vector file or database as a layer."
+  xy_tabelle_zu_punkten:
+    label: "XY Table to Points"
+    source: {type: "processing", algorithm: "native:createpointslayerfromtable"}
+    description: "Create a point layer from a table with coordinate fields."
+  neuer_annotationslayer:
+    label: "New Annotation Layer"
+    source: {type: "qgis_action", object_name: "mActionCreateAnnotationLayer"}
+    description: "Create a layer for freely placed text and graphics."
+  rechteck:
+    label: "Rectangle"
+    source: {type: "qgis_action", object_name: "mActionSelectFeatures"}
+    description: "Select features by dragging a rectangle."
+  polygon:
+    label: "Polygon"
+    source: {type: "qgis_action", object_name: "mActionSelectPolygon"}
+    description: "Select features with a drawn polygon."
+  freihand:
+    label: "Freehand"
+    source: {type: "qgis_action", object_name: "mActionSelectFreehand"}
+    description: "Select features with a freehand line."
+  kreis:
+    label: "Circle"
+    source: {type: "qgis_action", object_name: "mActionSelectRadius"}
+    description: "Select features within a circle around a point."
+  auswahl_linie:
+    label: "Select by Line"
+    source: {type: "custom", id: "ribbon.auswahl_linie"}
+    icon: "/mActionSelectFreehand.svg"
+    description: "Draw a line: features of the active layer that it crosses are selected. Right-click ends the line, Shift adds, Ctrl removes."
+  nach_attributen:
+    label: "By Attributes"
+    source: {type: "qgis_action", object_name: "mActionSelectByExpression"}
+    description: "Select features with an expression."
+  nach_lage:
+    label: "By Location"
+    source: {type: "processing", algorithm: "native:selectbylocation"}
+    description: "Select features by their location relative to another layer."
+  attribute:
+    label: "Attributes"
+    source: {type: "qgis_action", object_name: "mActionOpenTableSelected"}
+    description: "Open the attribute table with the selected features."
+  auswahl_aufheben:
+    label: "Clear Selection"
+    source: {type: "qgis_action", object_name: "mActionDeselectAll"}
+    description: "Clear the selection in all layers."
+  auswahloptionen:
+    label: "Selection Options"
+    source:
+      type: "iface_method"
+      args: ["mProjOptsGeneral"]
+      method: "showProjectPropertiesDialog"
+    description: "Open the project properties with the selection color."
+  messen:
+    label: "Measure"
+    source: {type: "qgis_action", object_name: "mActionMeasure"}
+    description: "Measure a distance in the map."
+  messwerkzeuge:
+    label: "Measuring Tools"
+    source: {type: "qgis_menu", object_name: "mMenuMeasure"}
+    icon: "/mActionMeasure.svg"
+    description: "Measure length, area, angle or an elevation profile."
+  suchen:
+    label: "Locate"
+    source: {type: "custom", id: "ribbon.locator_fokus"}
+    icon: "/search.svg"
+    description: "Open the locator bar: search layers, features, places and commands."
+  sucheinstellungen:
+    label: "Search Settings"
+    source: {type: "iface_method", method: "showOptionsDialog"}
+    icon: "/mActionOptions.svg"
+    description: "Open the locator bar options."
+  nicht_platzierte_beschriftungen:
+    label: "Unplaced Labels"
+    source: {type: "qgis_action", object_name: "mActionShowUnplacedLabels"}
+    description: "Highlight labels that could not be placed."
+  beschriftungen_extrahieren:
+    label: "Extract Labels"
+    source: {type: "processing", algorithm: "native:extractlabels"}
+    description: "Save placed labels as a point layer with text, font and rotation."
+  neue_kartenansicht:
+    label: "New Map View"
+    source: {type: "qgis_action", object_name: "mActionNewMapCanvas"}
+    description: "Open an additional 2D map view."
+  layoutverwaltung:
+    label: "Layout Manager"
+    source: {type: "qgis_action", object_name: "mActionShowLayoutManager"}
+    description: "Open the layout manager: create layouts from templates (.qpt), open and manage them."
+  neues_layout:
+    label: "New Layout"
+    source: {type: "qgis_action", object_name: "mActionNewPrintLayout"}
+    description: "Create a new print layout."
+  neuer_bericht:
+    label: "New Report"
+    source: {type: "qgis_action", object_name: "mActionNewReport"}
+    description: "Create a new report in the layout designer."
+  werkzeuge:
+    label: "Tools"
+    source: {type: "plugin_action", object_name: "toolboxAction", plugin: "processing"}
+    description: "Show or hide the processing toolbox."
+  layerdefinition_laden:
+    label: "Load Layer Definition"
+    source: {type: "qgis_action", object_name: "mActionAddLayerDefinition"}
+    description: "Add layers with their style from a layer definition file (.qlr)."
+  postgresql_verbindung:
+    label: "PostgreSQL Connection"
+    source: {type: "qgis_action", object_name: "mActionAddPgLayer"}
+    description: "Add PostgreSQL layers via the data source manager."
+  arcgis_rest_server:
+    label: "ArcGIS REST Server"
+    source: {type: "qgis_action", object_name: "mActionAddAfsLayer"}
+    description: "Add layers from an ArcGIS REST server."
+  wfs_ogc_api:
+    label: "WFS / OGC API"
+    source: {type: "qgis_action", object_name: "mActionAddWfsLayer"}
+    description: "Add layers from a WFS or OGC API Features service."
+  wcs_server:
+    label: "WCS Server"
+    source: {type: "qgis_action", object_name: "mActionAddWcsLayer"}
+    description: "Add raster layers from a WCS service."
+  wms_wmts_server:
+    label: "WMS/WMTS Server"
+    source: {type: "qgis_action", object_name: "mActionAddWmsLayer"}
+    description: "Add a map service via WMS or WMTS."
+  stac_verbindung:
+    label: "STAC Connection"
+    source: {type: "qgis_action", object_name: "mActionAddStacLayer"}
+    description: "Connect STAC catalogs in the data source manager and add layers from them."
+  ordner_verbinden:
+    label: "Connect Folder"
+    source: {type: "dock", modus: "zeigen", object_name: "Browser"}
+    icon: "/mIconFolderOpen.svg"
+    description: "Open the browser to connect a folder as a favorite."
+  neuer_geopackage_layer:
+    label: "GeoPackage Layer"
+    source: {type: "qgis_action", object_name: "mActionNewGeoPackageLayer"}
+    description: "Create a new layer in a GeoPackage."
+  neuer_shapefile_layer:
+    label: "Shapefile Layer"
+    source: {type: "qgis_action", object_name: "mActionNewVectorLayer"}
+    description: "Create a new layer as a shapefile."
+  neuer_scratch_layer:
+    label: "Temporary Scratch Layer"
+    source: {type: "qgis_action", object_name: "mActionNewMemoryLayer"}
+    description: "Create a new layer in memory only; it is lost when the project is closed."
+  neuer_spatialite_layer:
+    label: "SpatiaLite Layer"
+    source: {type: "qgis_action", object_name: "mActionNewSpatiaLiteLayer"}
+    description: "Create a new layer in a SpatiaLite database."
+  neuer_virtueller_layer:
+    label: "Virtual Layer"
+    source: {type: "qgis_action", object_name: "mActionNewVirtualLayer"}
+    description: "Create a layer from a query over other layers."
+  stilverwaltung:
+    label: "Style Manager"
+    source: {type: "qgis_action", object_name: "mActionStyleManager"}
+    description: "Open the style manager with symbols and text formats."
+  favoriten:
+    label: "Favorites"
+    source: {type: "dock", object_name: "Browser"}
+    icon: "/mIconFavorites.svg"
+    description: "Show or hide the browser with the favorites; add folders as favorites with a right-click."
+  verlauf:
+    label: "History"
+    source: {type: "plugin_action", object_name: "historyAction", plugin: "processing"}
+    description: "Show the history of executed processing tools."
+  modell_designer:
+    label: "Model Designer"
+    source: {type: "plugin_action", object_name: "modelerAction", plugin: "processing"}
+    description: "Build workflows as a model."
+  python:
+    label: "Python"
+    source: {type: "qgis_action", object_name: "mActionShowPythonDialog"}
+    description: "Show or hide the Python console."
+  umgebungen:
+    label: "Environments"
+    source: {type: "plugin_action", object_name: "optionsAction", plugin: "processing"}
+    description: "Open the processing options; they apply to all tools."
+  processing_optionen:
+    label: "Processing Options"
+    source: {type: "custom", id: "ribbon.processing_optionen"}
+    description: "Open the processing settings."
+  analyse_galerie_anpassen:
+    label: "Customize Gallery …"
+    source:
+      type: "custom"
+      args: ["processing_galerie"]
+      id: "ribbon.galerie_anpassen"
+    icon: "/mActionOptions.svg"
+    description: "Choose which tools the Analysis Tools gallery shows and in which order."
+  puffer:
+    label: "Buffer"
+    source: {type: "processing", algorithm: "native:buffer"}
+    description: "Create polygons at a fixed distance around features."
+  zuschneiden:
+    label: "Clip"
+    source: {type: "processing", algorithm: "native:clip"}
+    description: "Clip features to the area of another layer."
+  verschneiden:
+    label: "Intersect"
+    source: {type: "processing", algorithm: "native:intersection"}
+    description: "Overlapping parts of two layers with the attributes of both."
+  vereinigen:
+    label: "Union"
+    source: {type: "processing", algorithm: "native:union"}
+    description: "Overlay two layers; all parts are kept."
+  aufloesen:
+    label: "Dissolve"
+    source: {type: "processing", algorithm: "native:dissolve"}
+    description: "Combine features, optionally by field values."
+  differenz:
+    label: "Difference"
+    source: {type: "processing", algorithm: "native:difference"}
+    description: "Remove the parts covered by another layer."
+  layer_zusammenfuehren:
+    label: "Merge Layers"
+    source: {type: "processing", algorithm: "native:mergevectorlayers"}
+    description: "Merge several vector layers of the same type into one layer."
+  galerie_raeumlich_verknuepfen:
+    label: "Join by Location"
+    source: {type: "processing", algorithm: "native:joinattributesbylocation"}
+    description: "Take over attributes based on the location relative to another layer."
+  punkte_in_polygon_zaehlen:
+    label: "Count Points in Polygon"
+    source: {type: "processing", algorithm: "native:countpointsinpolygon"}
+    description: "Number of points per polygon as a new field."
+  zentroide:
+    label: "Centroids"
+    source: {type: "processing", algorithm: "native:centroids"}
+    description: "Center of each feature as a point."
+  processing_galerie:
+    label: "Analysis Tools"
+    source: {type: "custom", id: "ribbon.processing_galerie"}
+    kind: "control"
+    icon: "/processingAlgorithm.svg"
+    description: "Frequently used processing tools."
+    gallery:
+      display: "ribbon"
+      columns: 4
+      items: ["puffer", "zuschneiden", "verschneiden", "vereinigen", "aufloesen", "differenz", "layer_zusammenfuehren", "galerie_raeumlich_verknuepfen", "punkte_in_polygon_zaehlen", "zentroide"]
+  katalog:
+    label: "Catalog"
+    source: {type: "dock", object_name: "Browser"}
+    icon: "/mIconFolderOpen.svg"
+    description: "Show or hide the browser."
+  inhalt:
+    label: "Contents"
+    source: {type: "dock", object_name: "Layers"}
+    icon: "/mIconLayerTree.svg"
+    description: "Show or hide the layers panel."
+  geoverarbeitung:
+    label: "Geoprocessing"
+    source: {type: "plugin_action", object_name: "toolboxAction", plugin: "processing"}
+    description: "Show or hide the processing toolbox."
+  python_konsole:
+    label: "Python Console"
+    source: {type: "qgis_action", object_name: "mActionShowPythonDialog"}
+    description: "Show or hide the Python console."
+  vorschau_deuteranopie:
+    label: "Deuteranopia Preview"
+    source: {type: "qgis_action", object_name: "mActionPreviewDeuteranope"}
+    description: "Show the map as people with red-green color blindness see it."
+  farbsehschwaeche_simulieren:
+    label: "Simulate Color Blindness"
+    source: {type: "qgis_menu", object_name: "mMenuPreviewMode"}
+    icon: "/propertyicons/colors.svg"
+    description: "Show the map as people with color blindness see it; choose the type in the menu."
+  kartendrehung:
+    label: "Rotation"
+    source: {type: "custom", id: "ribbon.kartendrehung"}
+    kind: "control"
+    description: "Map rotation in degrees (clockwise)."
+  lupe:
+    label: "Magnifier"
+    source: {type: "custom", id: "ribbon.lupe"}
+    kind: "control"
+    description: "Magnification of the map display without changing the scale."
+  bearbeiten:
+    label: "Edit"
+    source: {type: "qgis_action", object_name: "mActionToggleEditing"}
+    description: "Start or stop editing the active layer."
+  aenderungen_speichern:
+    label: "Save Edits"
+    source: {type: "qgis_action", object_name: "mActionSaveAllEdits"}
+    description: "Save the edits of all layers being edited."
+  aenderungen_verwerfen:
+    label: "Discard Edits"
+    source: {type: "qgis_action", object_name: "mActionRollbackAllEdits"}
+    description: "Discard unsaved edits of all layers."
+  topologisch_bearbeiten:
+    label: "Topological Editing"
+    source: {type: "qgis_action", object_name: "TopologicalEditingAction"}
+    description: "Move shared vertices of adjacent features along while editing."
+  einstellungen:
+    label: "Settings"
+    source:
+      type: "iface_method"
+      args: [null, "mOptionsPageDigitizing"]
+      method: "showOptionsDialog"
+    icon: "/mActionOptions.svg"
+    description: "Open the digitizing options."
+  digitalisieroptionen:
+    label: "Digitizing Options"
+    source:
+      type: "iface_method"
+      args: [null, "mOptionsPageDigitizing"]
+      method: "showOptionsDialog"
+    description: "Open the digitizing options."
+  einrasten:
+    label: "Snapping"
+    source: {type: "qgis_action", object_name: "EnableSnappingAction"}
+    description: "Turn snapping on or off while digitizing."
+  einrastoptionen:
+    label: "Snapping Options"
+    source: {type: "qgis_action", object_name: "mActionSnappingOptions"}
+    description: "Set the snapping mode, tolerance and layers."
+  erstellen:
+    label: "Create"
+    source: {type: "qgis_action", object_name: "mActionAddFeature"}
+    description: "Draw new features in the active layer."
+  aendern:
+    label: "Modify"
+    source: {type: "qgis_action", object_name: "mActionVertexTool"}
+    description: "Edit the vertices of features."
+  loeschen:
+    label: "Delete"
+    source: {type: "qgis_action", object_name: "mActionDeleteSelected"}
+    description: "Delete the selected features."
+  galerie_groesse:
+    label: "Gallery Size"
+    source: {type: "custom", id: "ribbon.galerie_groesse"}
+    description: "Switch the tool gallery between wide and narrow display."
+  alle_werkzeuge:
+    label: "All Tools"
+    source: {type: "qgis_menu", object_name: "mMenuEditGeometry"}
+    icon: "/mActionMultiEdit.svg"
+    description: "All tools for editing geometries."
+  editor_galerie_anpassen:
+    label: "Customize Gallery …"
+    source:
+      type: "custom"
+      args: ["editor_galerie"]
+      id: "ribbon.galerie_anpassen"
+    icon: "/mActionOptions.svg"
+    description: "Choose which tools the Editing Tools gallery shows and in which order."
+  verschieben:
+    label: "Move"
+    source: {type: "qgis_action", object_name: "mActionMoveFeature"}
+  umformen:
+    label: "Reshape"
+    source: {type: "qgis_action", object_name: "mActionReshapeFeatures"}
+  teilen:
+    label: "Share"
+    source: {type: "qgis_action", object_name: "mActionSplitFeatures"}
+  zusammenfuehren:
+    label: "Merge"
+    source: {type: "qgis_action", object_name: "mActionMergeFeatures"}
+  drehen:
+    label: "Rotate"
+    source: {type: "qgis_action", object_name: "mActionRotateFeature"}
+  skalieren:
+    label: "Scale"
+    source: {type: "qgis_action", object_name: "mActionScaleFeature"}
+  kopieren_und_verschieben:
+    label: "Copy and Move"
+    source: {type: "qgis_action", object_name: "mActionMoveFeatureCopy"}
+  linie_versetzen:
+    label: "Offset Line"
+    source: {type: "qgis_action", object_name: "mActionOffsetCurve"}
+  vereinfachen:
+    label: "Simplify"
+    source: {type: "qgis_action", object_name: "mActionSimplifyFeature"}
+  abschneiden_ausdehnen:
+    label: "Trim/Extend"
+    source: {type: "qgis_action", object_name: "mActionTrimExtendFeature"}
+  linie_umkehren:
+    label: "Reverse Line"
+    source: {type: "qgis_action", object_name: "mActionReverseLine"}
+  teile_zerlegen:
+    label: "Split Parts"
+    source: {type: "qgis_action", object_name: "mActionSplitParts"}
+  attribute_zusammenfuehren:
+    label: "Merge Attributes"
+    source: {type: "qgis_action", object_name: "mActionMergeFeatureAttributes"}
+  teil_hinzufuegen:
+    label: "Add Part"
+    source: {type: "qgis_action", object_name: "mActionAddPart"}
+  teil_loeschen:
+    label: "Delete Part"
+    source: {type: "qgis_action", object_name: "mActionDeletePart"}
+  ring_hinzufuegen:
+    label: "Add Ring"
+    source: {type: "qgis_action", object_name: "mActionAddRing"}
+  ring_fuellen:
+    label: "Fill Ring"
+    source: {type: "qgis_action", object_name: "mActionFillRing"}
+  ring_loeschen:
+    label: "Delete Ring"
+    source: {type: "qgis_action", object_name: "mActionDeleteRing"}
+  editor_galerie:
+    label: "Editing Tools"
+    source: {type: "custom", id: "ribbon.editor_galerie"}
+    kind: "control"
+    icon: "/mActionVertexTool.svg"
+    description: "Tools for editing existing features."
+    gallery:
+      display: "ribbon"
+      columns: 4
+      items: ["verschieben", "umformen", "teilen", "zusammenfuehren", "drehen", "skalieren", "kopieren_und_verschieben", "linie_versetzen", "vereinfachen", "abschneiden_ausdehnen", "linie_umkehren", "teile_zerlegen", "attribute_zusammenfuehren", "teil_hinzufuegen", "teil_loeschen", "ring_hinzufuegen", "ring_fuellen", "ring_loeschen"]
+  z_wert:
+    label: "Z Value"
+    source:
+      type: "iface_method"
+      args: [null, "mOptionsPageDigitizing"]
+      method: "showOptionsDialog"
+    description: "Set the default Z value for new features in the digitizing options."
+  georeferenzieren:
+    label: "Georeference"
+    source: {type: "qgis_action", object_name: "mActionShowGeoreferencer"}
+    description: "Open the georeferencer: locate a raster image or vector data with control points."
+  raster_transformieren:
+    label: "Reproject Raster"
+    source: {type: "processing", algorithm: "gdal:warpreproject"}
+    description: "Transform a raster to another coordinate reference system (GDAL)."
+  raster_anpassen:
+    label: "Align Rasters"
+    source: {type: "processing", algorithm: "native:alignrasters"}
+    description: "Bring rasters to the cell size, extent and CRS of a reference raster."
+  rasterrechner:
+    label: "Raster Calculator"
+    source: {type: "qgis_action", object_name: "mActionShowRasterCalculator"}
+    description: "Calculate a new raster from an expression over existing rasters."
+  layer_verpacken:
+    label: "Package Layers"
+    source: {type: "processing", algorithm: "native:package"}
+    icon: "/mGeoPackage.svg"
+    description: "Copy layers with their style into a GeoPackage, e.g. to pass them on."
+  projekt_speichern_als:
+    label: "Save Project As"
+    source: {type: "qgis_action", object_name: "mActionSaveProjectAs"}
+    description: "Save the project under a new name or in another location."
+  layerdatei_speichern:
+    label: "Save Layer File"
+    source: {type: "qgis_action", object_name: "mActionSaveLayerDefinition"}
+    icon: "/mActionFileSaveAs.svg"
+    description: "Save the active layer with its style as a layer definition file (.qlr)."
+  karte_als_pdf:
+    label: "Map as PDF"
+    source: {type: "qgis_action", object_name: "mActionSaveMapAsPdf"}
+    description: "Save the map view as a PDF."
+  projekt_als_dxf:
+    label: "Project as DXF"
+    source: {type: "qgis_action", object_name: "mActionDxfExport"}
+    description: "Save the project's vector layers as DXF for CAD."
+  karte_exportieren:
+    label: "Export Map"
+    source: {type: "qgis_action", object_name: "mActionSaveMapAsImage"}
+    description: "Save the map view as an image; PDF and DXF in the menu."
+  layout_als_bild:
+    label: "Layout as Image"
+    source: {type: "processing", algorithm: "native:printlayouttoimage"}
+    description: "Export a print layout of the project as an image."
+  atlas_als_pdf:
+    label: "Atlas as PDF"
+    source: {type: "processing", algorithm: "native:atlaslayouttopdf"}
+    description: "Export the atlas of a print layout as one PDF."
+  layout_exportieren:
+    label: "Export Layout"
+    source: {type: "processing", algorithm: "native:printlayouttopdf"}
+    icon: "/mActionSaveAsPDF.svg"
+    description: "Export a print layout as PDF; image and atlas in the menu."
+  drucken:
+    label: "Print"
+    source: {type: "qgis_action", object_name: "mActionShowLayoutManager"}
+    icon: "/mActionFilePrint.svg"
+    description: "Open the layout manager; printing is done from the layout designer."
+  layer_massstab_schalten:
+    label: "Scale Range"
+    source: {type: "custom", id: "ribbon.layer_massstab_schalten"}
+    icon: "/mActionScaleBar.svg"
+    description: "Limit the visibility of the layer to a scale range."
+  layer_massstab_max:
+    label: "Maximum Scale"
+    source: {type: "custom", id: "ribbon.layer_massstab_max"}
+    kind: "control"
+    icon: "/mActionZoomIn.svg"
+    description: "Zoomed in further, the layer is no longer drawn. Empty = no limit."
+  layer_massstab_min:
+    label: "Minimum Scale"
+    source: {type: "custom", id: "ribbon.layer_massstab_min"}
+    kind: "control"
+    icon: "/mActionZoomOut.svg"
+    description: "Zoomed out further, the layer is no longer drawn. Empty = no limit."
+  layer_deckkraft:
+    label: "Opacity"
+    source: {type: "custom", id: "ribbon.layer_deckkraft"}
+    kind: "control"
+    icon: "/propertyicons/transparency.svg"
+    description: "Opacity of the active layer."
+    enabled_when: ["active_layer"]
+  layer_mischmodus:
+    label: "Blending Mode"
+    source: {type: "custom", id: "ribbon.layer_mischmodus"}
+    kind: "control"
+    icon: "/mIconPaintEffects.svg"
+    description: "How the layer is blended with the layers below."
+  symbolisierung:
+    label: "Symbology"
+    source: {type: "dock", modus: "zeigen", object_name: "LayerStyling"}
+    icon: "/propertyicons/symbology.svg"
+    description: "Open layer styling."
+  renderer_galerie:
+    label: "Renderer"
+    source: {type: "custom", id: "ribbon.renderer_galerie"}
+    kind: "control"
+    icon: "/rendererCategorizedSymbol.svg"
+    description: "Change the layer's renderer (single symbol, categories, classes, rules)."
+    enabled_when: ["active_layer_is_vector"]
+    gallery: {display: "dropdown"}
+  masken:
+    label: "Masks"
+    source:
+      type: "iface_method"
+      args: ["@aktiver_layer", "mOptsPage_Masks"]
+      method: "showLayerProperties"
+    icon: "/propertyicons/labelmask.svg"
+    description: "Set masks in the layer properties: cut out labels and symbols of other layers."
+    enabled_when: ["active_layer"]
+  stil_importieren:
+    label: "Import Style"
+    source: {type: "processing", algorithm: "native:setlayerstyle"}
+    description: "Apply a style from a file to a layer."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftung_schalten:
+    label: "Label"
+    source: {type: "custom", id: "ribbon.beschriftung_schalten"}
+    icon: "/mActionLabeling.svg"
+    description: "Turn the labels of the active layer on or off."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftungsklasse:
+    label: "Class"
+    source: {type: "custom", id: "ribbon.beschriftung_regel"}
+    kind: "control"
+    icon: "/mIconLabelingRules.svg"
+    description: "Choose a labeling rule of the active layer; the other commands of the group apply to it."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftungsklasse_filter:
+    label: "Filter"
+    source: {type: "custom", id: "ribbon.beschriftung_regel_filter"}
+    icon: "/mIconExpressionFilter.svg"
+    description: "Edit the filter expression of the selected label class."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftungsklasse_aktiv:
+    label: "Label Class Features"
+    source: {type: "custom", id: "ribbon.beschriftung_regel_aktiv"}
+    kind: "control"
+    description: "Label the features of the selected label class (rule on or off)."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftungsfeld:
+    label: "Field"
+    source: {type: "custom", id: "ribbon.beschriftung_feld"}
+    kind: "control"
+    description: "Field or expression shown as the label."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftungsausdruck:
+    label: "Expression"
+    source: {type: "custom", id: "ribbon.beschriftung_ausdruck"}
+    icon: "/mIconExpression.svg"
+    description: "Edit the label expression in the expression editor."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftung_massstab_max:
+    label: "Maximum Scale"
+    source: {type: "custom", id: "ribbon.beschriftung_massstab_max"}
+    kind: "control"
+    icon: "/mActionZoomIn.svg"
+    description: "Zoomed in further, no labels are drawn. Empty = no limit."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftung_massstab_min:
+    label: "Minimum Scale"
+    source: {type: "custom", id: "ribbon.beschriftung_massstab_min"}
+    kind: "control"
+    icon: "/mActionZoomOut.svg"
+    description: "Zoomed out further, no labels are drawn. Empty = no limit."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftung_massstab_aus:
+    label: "Clear Limits"
+    source: {type: "custom", id: "ribbon.beschriftung_massstab_aus"}
+    icon: "/mIconClearText.svg"
+    description: "Remove the scale limits of the labels."
+    enabled_when: ["active_layer_is_vector"]
+  textformat_galerie:
+    label: "Text Format"
+    source: {type: "custom", id: "ribbon.textformat_galerie"}
+    kind: "control"
+    icon: "/propertyicons/labelformatting.svg"
+    description: "Apply a saved text format to the labels."
+    enabled_when: ["active_layer_is_vector"]
+    gallery: {display: "dropdown"}
+  beschriftung_schrift:
+    label: "Font"
+    source: {type: "custom", id: "ribbon.beschriftung_schrift"}
+    kind: "control"
+    icon: "/mIconFonts.svg"
+    description: "Font of the labels."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftung_groesse:
+    label: "Font Size"
+    source: {type: "custom", id: "ribbon.beschriftung_groesse"}
+    kind: "control"
+    icon: "/text.svg"
+    description: "Font size of the labels in points."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftung_groesser:
+    label: "Increase Font Size"
+    source: {type: "custom", id: "ribbon.beschriftung_groesser"}
+    icon: "/mActionIncreaseFont.svg"
+    description: "Make the label font one step larger."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftung_kleiner:
+    label: "Decrease Font Size"
+    source: {type: "custom", id: "ribbon.beschriftung_kleiner"}
+    icon: "/mActionDecreaseFont.svg"
+    description: "Make the label font one step smaller."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftung_schriftschnitt:
+    label: "Font Style"
+    source: {type: "custom", id: "ribbon.beschriftung_schriftschnitt"}
+    kind: "control"
+    icon: "/mActionEditBold.svg"
+    description: "Font style of the labels (e.g. bold, italic)."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftung_farbe:
+    label: "Font Color"
+    source: {type: "custom", id: "ribbon.beschriftung_farbe"}
+    kind: "control"
+    icon: "/mIconColorPicker.svg"
+    description: "Font color of the labels."
+    enabled_when: ["active_layer_is_vector"]
+  beschriftungseigenschaften:
+    label: "Label Properties"
+    source:
+      type: "iface_method"
+      args: ["@aktiver_layer", "mOptsPage_Labels"]
+      method: "showLayerProperties"
+    description: "Open the layer properties on the Labels page."
+  platzierung_galerie:
+    label: "Placement"
+    source: {type: "custom", id: "ribbon.platzierung_galerie"}
+    kind: "control"
+    icon: "/propertyicons/labelplacement.svg"
+    description: "Choose the label placement mode, e.g. around the point, parallel to the line or inside the polygon."
+    enabled_when: ["active_layer_is_vector"]
+    gallery: {display: "dropdown"}
+  filter:
+    label: "Filter"
+    source: {type: "qgis_action", object_name: "mActionLayerSubsetString"}
+    description: "Show only features that match a filter expression."
+  quelle_und_filter:
+    label: "Source and Filter"
+    source:
+      type: "iface_method"
+      args: ["@aktiver_layer", "mOptsPage_Source"]
+      method: "showLayerProperties"
+    description: "Open the layer properties on the Source page (query builder)."
+  attributtabelle:
+    label: "Attribute Table"
+    source: {type: "qgis_action", object_name: "mActionOpenTable"}
+    description: "Open the attribute table of the active layer."
+  tabelle_der_auswahl:
+    label: "Selection Table"
+    source: {type: "qgis_action", object_name: "mActionOpenTableSelected"}
+    description: "Open the attribute table with the selected features."
+  alle_auswaehlen:
+    label: "Select All"
+    source: {type: "qgis_action", object_name: "mActionSelectAll"}
+    description: "Select all features of the active layer."
+  auswahl_umkehren:
+    label: "Invert Selection"
+    source: {type: "qgis_action", object_name: "mActionInvertSelection"}
+    description: "Invert the selection in the active layer."
+  auswahl_im_layer_aufheben:
+    label: "Clear Layer Selection"
+    source: {type: "qgis_action", object_name: "mActionDeselectActiveLayer"}
+    description: "Clear the selection in the active layer."
+  layer_aus_auswahl:
+    label: "Layer from Selection"
+    source: {type: "processing", algorithm: "native:saveselectedfeatures"}
+    description: "Save the selected features as a new layer."
+  felder:
+    label: "Fields"
+    source:
+      type: "iface_method"
+      args: ["@aktiver_layer", "mOptsPage_SourceFields"]
+      method: "showLayerProperties"
+    icon: "/mSourceFields.svg"
+    description: "Edit the layer's fields in the layer properties."
+    enabled_when: ["active_layer_has_fields"]
+  domaenen:
+    label: "Domains"
+    source: {type: "custom", id: "ribbon.domaenen_dialog"}
+    icon: "/propertyicons/sourcefieldsandforms.svg"
+    description: "Manage value ranges and coded value lists of the fields."
+    enabled_when: ["active_layer_has_fields"]
+  raeumliche_verknuepfung:
+    label: "Spatial Join"
+    source: {type: "processing", algorithm: "native:joinattributesbylocation"}
+    description: "Take over attributes based on the location relative to another layer."
+    enabled_when: ["active_layer_has_fields"]
+  verknuepfung_hinzufuegen:
+    label: "Add Join"
+    source:
+      type: "iface_method"
+      args: ["@aktiver_layer", "mOptsPage_Joins"]
+      method: "showLayerProperties"
+    icon: "/propertyicons/join.svg"
+    description: "Create a table join in the layer properties."
+    enabled_when: ["active_layer_has_fields"]
+  beziehungen_verwalten:
+    label: "Manage Relationships"
+    source:
+      type: "iface_method"
+      args: ["mTabRelations"]
+      method: "showProjectPropertiesDialog"
+    description: "Create or remove relationships between layers in the project properties."
+  objekte_exportieren:
+    label: "Export Features"
+    source: {type: "qgis_action", object_name: "mActionLayerSaveAs"}
+    description: "Save a layer or selection to a file."
+  textdatei_mit_koordinaten:
+    label: "Delimited Text with Coordinates"
+    source: {type: "qgis_action", object_name: "mActionAddDelimitedText"}
+    description: "Add a text file with coordinate columns as a point layer."
+  raster_symbolisierung:
+    label: "Symbology"
+    source: {type: "dock", object_name: "LayerStyling"}
+    icon: "/propertyicons/symbology.svg"
+    description: "Show or hide the layer styling panel with the active raster layer."
+  raster_darstellungsart:
+    label: "Renderer"
+    source: {type: "custom", id: "ribbon.raster_renderer_galerie"}
+    kind: "control"
+    icon: "/styleicons/multibandcolor.svg"
+    description: "Choose the renderer of the raster layer: multiband color, singleband gray, pseudocolor, hillshade and more."
+    enabled_when: ["active_layer_is_raster"]
+    gallery: {display: "dropdown"}
+  histogramm:
+    label: "Histogram"
+    source:
+      type: "iface_method"
+      args: ["@aktiver_layer", "mOptsPage_Histogram"]
+      method: "showLayerProperties"
+    icon: "/histogram.svg"
+    description: "Show the histogram of the raster layer in the layer properties."
+  streckung_auf_ausschnitt:
+    label: "Stretch to View"
+    source: {type: "qgis_action", object_name: "mActionLocalCumulativeCutStretch"}
+    description: "Stretch the contrast to the visible map view (cumulative cut)."
+  raster_resampling:
+    label: "Resampling"
+    source: {type: "custom", id: "ribbon.raster_resampling"}
+    kind: "control"
+    icon: "/mIconRaster.svg"
+    description: "Choose the resampling method for zooming in and out (nearest neighbor, bilinear, cubic)."
+    enabled_when: ["active_layer_is_raster"]
+    gallery: {display: "dropdown"}
+  raster_kanaele:
+    label: "Band Combination"
+    source: {type: "custom", id: "ribbon.raster_kanaele"}
+    kind: "control"
+    icon: "/mIconRasterLayer.svg"
+    description: "Choose the bands for red, green and blue, e.g. natural color or false color infrared."
+    enabled_when: ["active_layer_is_raster"]
+    gallery: {display: "dropdown"}
+  raster_helligkeit:
+    label: "Brightness"
+    source: {type: "custom", id: "ribbon.raster_helligkeit"}
+    kind: "control"
+    icon: "/mActionIncreaseBrightness.svg"
+    description: "Brightness of the raster layer (−255 to 255)."
+    enabled_when: ["active_layer_is_raster"]
+  raster_kontrast:
+    label: "Contrast"
+    source: {type: "custom", id: "ribbon.raster_kontrast"}
+    kind: "control"
+    icon: "/mActionIncreaseContrast.svg"
+    description: "Contrast of the raster layer (−100 to 100)."
+    enabled_when: ["active_layer_is_raster"]
+  raster_gamma:
+    label: "Gamma"
+    source: {type: "custom", id: "ribbon.raster_gamma"}
+    kind: "control"
+    icon: "/mActionIncreaseGamma.svg"
+    description: "Gamma correction of the raster layer (0.1 to 10)."
+    enabled_when: ["active_layer_is_raster"]
+  neues_projekt:
+    label: "New Project"
+    source: {type: "qgis_action", object_name: "mActionNewProject"}
+    description: "Create a new, empty project."
+  projekt_oeffnen:
+    label: "Open Project"
+    source: {type: "qgis_action", object_name: "mActionOpenProject"}
+    description: "Open a saved project."
+  projekt_speichern:
+    label: "Save Project"
+    source: {type: "qgis_action", object_name: "mActionSaveProject"}
+    description: "Save the current project."
+  rueckgaengig:
+    label: "Undo"
+    source: {type: "qgis_action", object_name: "mActionUndo"}
+    description: "Undo the last edit on the active layer."
+  wiederholen:
+    label: "Redo"
+    source: {type: "qgis_action", object_name: "mActionRedo"}
+    description: "Redo the undone edit."
+  hineinzoomen:
+    label: "Zoom In"
+    source: {type: "qgis_action", object_name: "mActionZoomIn"}
+    description: "Zoom in by clicking or dragging a rectangle."
