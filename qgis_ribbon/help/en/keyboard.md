@@ -48,7 +48,7 @@ The field **Search commands** at the right of the header finds commands by their
 ![Command search](../images/en/search.png)
 
 - Open: click the field, or **Alt**, then **Q**.
-- Each result shows where the command is located (for example *Analysis › Tools*). Commands of the QGIS menus are marked with *QGIS:*.
+- Each result shows where the command is located (for example *Analysis › Tools*). Commands of the QGIS menus are marked with *QGIS:*, commands without a place in the ribbon (such as **Properties: Metadata** or **Project Properties: CRS**) with *Command pool*. A QGIS submenu such as **Recent Projects** opens below the search field.
 - **Enter** runs the first result, the arrow keys choose another one.
 - **Esc** clears the field and returns to the map.
 - Upper and lower case do not matter. German umlauts can be typed as ae, oe, ue and ss.

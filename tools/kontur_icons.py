@@ -506,8 +506,127 @@ MOTIFS = {
                        f=[P("M7 9.5a1 1 0 0 1 1-1h2.5l1.2 1.3H16a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1z")]),
 }
 
+# Befehlslücken: Felder, Menüs Projekt/Layer/Einstellungen, Layerliste, Eigenschaftsseiten
+GEAR_MARK = M(a=[C(18.5, 18.5, 2.2), P("M18.5 14.3v1.6M18.5 21.1v1.6M14.3 18.5h1.6M21.1 18.5h1.6"
+                                       "M15.5 15.5l1.1 1.1M20.4 20.4l1.1 1.1M15.5 21.5l1.1-1.1M20.4 16.6l1.1-1.1")])
+DROP = M(a=[P("M18.5 13.5s3.5 3.6 3.5 5.6a3.5 3.5 0 0 1-7 0c0-2 3.5-5.6 3.5-5.6z")])
+CLOCK_MARK = M(a=[C(18.5, 18.5, 3.8), P("M18.5 16.4v2.3l1.6 1")])
+DUP_MARK = M(a=[R(14.5, 16.5, 5, 5, 1), P("M16.5 16.5v-2h6v6h-2")])
+GLOBE = M(k=[C(12, 12, 9), P("M3 12h18M12 3c-2.6 2.6-2.6 15.4 0 18M12 3c2.6 2.6 2.6 15.4 0 18")], f=[C(12, 12, 9)])
+PERSON = M(k=[C(12, 8, 3.8), P("M4.5 20.5a7.5 7.5 0 0 1 15 0")], f=[C(12, 8, 3.8)])
+FORM = M(k=[R(4, 3, 16, 18, 2), P("M7.5 8h3M7.5 13h3")], a=[R(12, 6.5, 4.5, 3, .8), R(12, 11.5, 4.5, 3, .8)],
+         f=[R(4, 3, 16, 18, 2)])
+CROSSED_PENCIL = add(PENCIL, M(a=[P("M4 4l16 16")]))
+ROUTE = M(k=[P("M4 19c3-6 6 0 9-6s6-5 7-8")], a=[C(4, 19, 1.6), C(20, 5, 1.6)])
+BOLT_D = "M13.5 2.8L5 13.5h6.5l-1 7.7L19 10.5h-6.5z"
+TILES = M(k=[R(3, 3, 18, 18, 2), P("M3 12h18M12 3v18")], f=[R(3, 3, 9, 9)])
+
+MOTIFS.update({
+    "feld_hinzufuegen": badge(MOTIFS["felder"], PLUS),
+    "feld_loeschen": badge(MOTIFS["felder"], CROSS),
+    "feld_umbenennen": badge(MOTIFS["felder"], PEN),
+    "projekt_schliessen": badge(DOC, CROSS),
+    "beenden": M(k=[P("M7.5 6.8a7.5 7.5 0 1 0 9 0"), P("M12 3v8")]),
+    "projekteigenschaften": badge(DOC, GEAR_MARK),
+    "zuruecknehmen": badge(DOC, TURN),
+    "zuletzt_verwendet": badge(DOC, CLOCK_MARK),
+    "uebersicht": badge(MAP, EYE_SMALL),
+    "uebersicht_alle": badge(MAP, LAYER_STACK),
+    "uebersicht_leeren": badge(MAP, CROSS),
+    "layer_kopieren": badge(COPY, ONE_LAYER),
+    "layer_einfuegen": badge(CLIPBOARD, ONE_LAYER),
+    "stil_kopieren": badge(COPY, DROP),
+    "stil_speichern": badge(DISK, DROP),
+    "layer_duplizieren": badge(LAYERS, DUP_MARK),
+    "layer_entfernen": badge(LAYERS, CROSS),
+    "layer_einbetten": badge(LAYERS, IN_ARROW),
+    "layereigenschaften": badge(LAYERS, GEAR_MARK),
+    "kbs": GLOBE,
+    "kbs_projekt": badge(GLOBE, CHECK),
+    "kbs_eigen": badge(GLOBE, PEN),
+    "transformationen": badge(GLOBE, LOOP),
+    "bearbeitung_abbrechen": badge(CROSSED_PENCIL, ONE_LAYER),
+    "bearbeitung_abbrechen_alle": badge(CROSSED_PENCIL, LAYER_STACK),
+    "tabelle_sichtbar": badge(TABLE, EYE_SMALL),
+    "tabelle_bearbeitet": badge(TABLE, PEN),
+    "gpx": ROUTE,
+    "gpx_neu": badge(ROUTE, PLUS),
+    "vektorkacheln": add(TILES, M(a=[P("M5.5 9l3-3 3 2M14.5 18l3-3 3 2")])),
+    "xyz": add(TILES, M(a=[P("M5.5 5.5l4 4M9.5 5.5l-4 4M14.5 5.5l2 2.2 2-2.2M16.5 7.7v2")])),
+    "profil": PERSON,
+    "profil_neu": badge(PERSON, PLUS),
+    "tastenkuerzel": M(k=[R(2.5, 6, 19, 12, 2)], a=[P("M6 9.5h.1M9.3 9.5h.1M12.6 9.5h.1M15.9 9.5h.1M18 9.5h.1"
+                                                      "M6 12.5h.1M18 12.5h.1M8.5 15h7")], f=[R(2.5, 6, 19, 12, 2)]),
+    "oberflaeche": badge(WINDOW, GEAR_MARK),
+    "formular": FORM,
+    "nach_wert": badge(FORM, CURSOR),
+    "erneut_waehlen": badge(M(k=[R(3, 3, 15, 15, 1.5, DASH)]), LOOP),
+    "objektanzahl": M(k=[P("M3 6.5h9M3 12h9M3 17.5h9")], a=[P("M15.5 8l2.5-2v12M15 18h6")]),
+    "umbenennen": M(k=[R(2.5, 7, 19, 10, 2)], a=[P("M6 12h6"), P("M15.5 5v14M14 5h3M14 19h3")]),
+    "nach_oben": badge(LAYERS, UP_SMALL),
+    "nach_unten": badge(LAYERS, DOWN_SMALL),
+    "aus_gruppe": badge(FOLDER, OUT_ARROW),
+    "gruppe_neu": badge(FOLDER, PLUS),
+    "gruppieren": badge(FOLDER, IN_ARROW),
+    "kinder_ein": badge(FOLDER, CHECK),
+    "kinder_aus": badge(FOLDER, CROSS),
+    "info": INFO,
+    "hilfsspeicher": badge(DB, LINK),
+    "aktionen": M(k=[P(BOLT_D)], f=[P(BOLT_D)]),
+    "variablen": M(k=[P("M8 4.5c-2 0-2.5 1-2.5 2.6v2.4c0 1.2-.8 2-2 2.5 1.2.5 2 1.3 2 2.5v2.4c0 1.6.5 2.6 2.5 2.6"
+                        "M16 4.5c2 0 2.5 1 2.5 2.6v2.4c0 1.2.8 2 2 2.5-1.2.5-2 1.3-2 2.5v2.4c0 1.6-.5 2.6-2.5 2.6")],
+                   a=[P("M9.5 9.5l5 5M14.5 9.5l-5 5")]),
+    "abhaengigkeiten": badge(LAYERS, LINK),
+    "metadaten": add(DOC, M(a=[P("M8 11.5h8M8 14.5h8M8 17.5h5")])),
+    "legende": M(k=[R(3, 3, 18, 18, 2)], a=[P("M11 8h7M11 12h7M11 16h7")],
+                 f=[R(6, 6.5, 3, 3, .6), R(6, 10.5, 3, 3, .6), R(6, 14.5, 3, 3, .6)]),
+    "pyramiden": M(k=[P("M12 3.5l8.5 15.5h-17z"), P("M7.4 12h9.2M5.2 16h13.6")], f=[P("M12 3.5l4.6 8.5H7.4z")]),
+    "farben": M(k=[R(3, 3, 8, 8, 1.8), R(13, 3, 8, 8, 1.8), R(3, 13, 8, 8, 1.8), R(13, 13, 8, 8, 1.8)],
+                f=[R(3, 3, 8, 8, 1.8), R(13, 13, 8, 8, 1.8)]),
+})
+
 # Befehls-ID -> Motiv
 COMMANDS = {
+    # Befehlslücken: Felder, Menüs, Layerliste, Eigenschaftsseiten
+    "feld_hinzufuegen": "feld_hinzufuegen", "feld_loeschen": "feld_loeschen", "feld_umbenennen": "feld_umbenennen",
+    "projekt_schliessen": "projekt_schliessen", "qgis_beenden": "beenden",
+    "projekteigenschaften": "projekteigenschaften", "projekt_zuruecknehmen": "zuruecknehmen",
+    "dwg_importieren": "dxf", "neu_aus_vorlage": "projekt_neu", "zuletzt_verwendet": "zuletzt_verwendet",
+    "oeffnen_aus": "projekt_oeffnen", "speichern_in": "speichern_als", "layout_oeffnen": "layoutverwaltung",
+    "projektmodelle": "modell", "in_uebersicht_anzeigen": "uebersicht", "alle_in_uebersicht": "uebersicht_alle",
+    "alle_aus_uebersicht": "uebersicht_leeren", "layer_kopieren": "layer_kopieren",
+    "layer_einfuegen": "layer_einfuegen", "stil_kopieren": "stil_kopieren",
+    "layer_duplizieren": "layer_duplizieren", "layer_entfernen": "layer_entfernen",
+    "layer_einbetten": "layer_einbetten", "beschriftung_gestalten": "beschriften",
+    "layereigenschaften": "layereigenschaften", "layer_kbs_setzen": "kbs", "projekt_kbs_vom_layer": "kbs_projekt",
+    "sichtbarkeit_massstab": "massstabsbereich", "speichern_gewaehlte": "layer_speichern",
+    "verwerfen_gewaehlte": "layer_verwerfen", "abbrechen_gewaehlte": "bearbeitung_abbrechen",
+    "abbrechen_alle": "bearbeitung_abbrechen_alle", "tabelle_sichtbare": "tabelle_sichtbar",
+    "tabelle_bearbeitete": "tabelle_bearbeitet", "neuer_gpx_layer": "gpx_neu", "gpx_hinzufuegen": "gpx",
+    "punktwolke_hinzufuegen": "punktwolke", "vektorkacheln_hinzufuegen": "vektorkacheln", "xyz_hinzufuegen": "xyz",
+    "mssql_hinzufuegen": "datenbank_hinzufuegen", "oracle_hinzufuegen": "datenbank_hinzufuegen",
+    "hana_hinzufuegen": "datenbank_hinzufuegen", "stil_speichern": "stil_speichern", "optionen": "optionen",
+    "tastenkuerzel": "tastenkuerzel", "benutzerprojektionen": "kbs_eigen", "oberflaechenanpassung": "oberflaeche",
+    "benutzerprofile": "profil", "neues_profil": "profil_neu", "profilordner_oeffnen": "ordner",
+    "nach_wert_waehlen": "nach_wert", "erneut_waehlen": "erneut_waehlen", "objektanzahl": "objektanzahl",
+    "umbenennen": "umbenennen", "nach_oben_bringen": "nach_oben", "nach_unten_schieben": "nach_unten",
+    "aus_gruppe_nehmen": "aus_gruppe", "gruppe_hinzufuegen": "gruppe_neu", "gewaehlte_gruppieren": "gruppieren",
+    "alle_kinder_einschalten": "kinder_ein", "alle_kinder_ausschalten": "kinder_aus",
+    "eigenschaften_information": "info", "eigenschaften_symbolisierung": "symbolisierung",
+    "eigenschaften_beschriftungen": "beschriften", "eigenschaften_3d": "kartenansicht_3d",
+    "eigenschaften_diagramme": "diagramm", "eigenschaften_attributformular": "formular",
+    "eigenschaften_hilfsspeicher": "hilfsspeicher", "eigenschaften_aktionen": "aktionen",
+    "eigenschaften_anzeige": "kartenhinweise", "eigenschaften_darstellung": "darstellungsart",
+    "eigenschaften_zeitlich": "zeitsteuerung", "eigenschaften_variablen": "variablen",
+    "eigenschaften_hoehe": "z_wert", "eigenschaften_metadaten": "metadaten",
+    "eigenschaften_abhaengigkeiten": "abhaengigkeiten", "eigenschaften_legende": "legende",
+    "eigenschaften_server": "server", "eigenschaften_digitalisieren": "erstellen",
+    "eigenschaften_transparenz": "deckkraft", "eigenschaften_pyramiden": "pyramiden",
+    "eigenschaften_rasterattribute": "tabelle", "projekt_allgemein": "projekteigenschaften",
+    "projekt_metadaten": "metadaten", "projekt_ansicht": "volle_ausdehnung", "projekt_kbs": "kbs_projekt",
+    "projekt_transformationen": "transformationen", "projekt_stile": "stilverwaltung", "projekt_farben": "farben",
+    "projekt_datenquellen": "datenbank", "projekt_variablen": "variablen", "projekt_makros": "python",
+    "projekt_server": "server", "projekt_zeitlich": "zeitsteuerung",
     # QGIS-Befehle aus den ausgeblendeten QGIS-Werkzeugleisten
     "erweiterte_digitalisierung": "erweiterte_digitalisierung", "konstruktionspanel": "konstruktionspanel",
     "spurverfolgung": "spurverfolgung", "selbsteinrasten": "selbsteinrasten",

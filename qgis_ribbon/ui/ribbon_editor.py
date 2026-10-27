@@ -50,8 +50,9 @@ TITLE = tr("Customize Ribbon")
 DEFAULT_SIZE = (1200, 760)
 FIXED_TAB_LABEL = tr("Tabs of the definition keep their label.")
 NEED_GROUP = tr("Please select a group in the preview first (or “＋ Group”).")
-ONLY_HIDE_TAB = tr("Tabs of the definition can only be hidden.")
-ONLY_HIDE_GROUP = tr("Groups of the definition can only be hidden (or reset to default).")
+ONLY_HIDE_TAB = tr("Contextual tabs of the definition can only be hidden.")
+REMOVE_TAB_TEXT = tr("Really delete the default tab “%s”? You can bring it back with "
+                     "“Restore Deleted Tab”.")
 DISCARD_TEXT = tr("The changes in the editor will be lost. Close anyway?")
 HOVER_SWITCH_MS = 600       # über einem Tab: so lange, bis die Vorschau wechselt
 SCROLL_MARGIN = 36          # Rand der Vorschau, an dem beim Ziehen gerollt wird
@@ -64,6 +65,13 @@ QUICK_ONLY_BUTTONS = tr("Only buttons can go into Quick Access (no controls, gal
 def confirm_discard(parent):
     """Rückfrage beim Schließen mit Änderungen (in Tests ersetzt)."""
     answer = QMessageBox.question(parent, TITLE, DISCARD_TEXT, QMessageBox.Yes | QMessageBox.No,
+                                  QMessageBox.No)
+    return answer == QMessageBox.Yes
+
+
+def confirm_remove_tab(parent, label):
+    """Rückfrage vor dem Löschen eines Haupt-Tabs der Definition (in Tests ersetzt)."""
+    answer = QMessageBox.question(parent, TITLE, REMOVE_TAB_TEXT % label, QMessageBox.Yes | QMessageBox.No,
                                   QMessageBox.No)
     return answer == QMessageBox.Yes
 
@@ -241,6 +249,13 @@ class RibbonEditor(QDialog):
             tr("Tabs, groups and Quick Access as in the definition (can be undone; galleries stay)"))
         self.reset_button.clicked.connect(self.reset_all)
         foot.addWidget(self.reset_button)
+        self.restore_button = QPushButton(tr("Restore Deleted Tab"), self)
+        self.restore_button.setObjectName("ribbon_editor_restore_tab")
+        self.restore_button.setToolTip(tr("Bring back a deleted tab of the definition with all its groups"))
+        self.restore_menu = QMenu(self.restore_button)
+        self.restore_menu.aboutToShow.connect(self._fill_restore_menu)
+        self.restore_button.setMenu(self.restore_menu)
+        foot.addWidget(self.restore_button)
         self.help_button = QPushButton(tr("Help"), self)
         self.help_button.setToolTip(tr("Guide: customizing the ribbon (F1)"))
         self.help_button.clicked.connect(lambda: guide.show_help("customize", self))
@@ -251,7 +266,8 @@ class RibbonEditor(QDialog):
         self.save_button = QPushButton(tr("Save"), self)
         self.save_button.setObjectName("ribbon_editor_save")
         self.save_button.clicked.connect(self.save)
-        for b in (self.reset_button, self.help_button, self.cancel_button, self.save_button):
+        for b in (self.reset_button, self.restore_button, self.help_button, self.cancel_button,
+                  self.save_button):
             b.setAutoDefault(False)
             b.setDefault(False)
         foot.addWidget(self.cancel_button)
@@ -389,6 +405,7 @@ class RibbonEditor(QDialog):
     def _update_status(self):
         problems = self.editor.problems()
         self.save_button.setEnabled(not problems)
+        self.restore_button.setEnabled(bool(self.editor.removed_tabs()))
         empty = [g.label for t in self.editor.arr.tabs for g in t.groups if g.custom and not g.items]
         if problems:
             text, error = tr("Cannot be saved: ") + " ".join(problems), True
@@ -571,12 +588,17 @@ class RibbonEditor(QDialog):
                 if n - 1 <= 0:
                     return ("newgroup", place.tab)
                 return ("group", Place(place.tab, min(place.group, n - 2)))
-            deleted = self.do(self.editor.remove_group, place.tab, place.group, select=after_group)
-            if deleted is False:
-                self.set_status(ONLY_HIDE_GROUP)
-            return deleted
+            tab = self.editor.arr.tab(place.tab)
+            home = tab.is_home(tab.groups[place.group])
+            return self.do(self.editor.remove_group, place.tab, place.group, select=after_group,
+                           message=tr("Group deleted. Bring it back from the palette (Groups) or with Ctrl+Z.")
+                           if home else None)
         if kind == "tab":
             index = ed.tab_index(self.editor.arr, sel[1])
+            tab = self.editor.arr.tab(sel[1])
+            confirm = tab.standard and not tab.contextual and not cz.is_last_main_tab(self.editor.arr, tab)
+            if confirm and not confirm_remove_tab(self, tab.label):
+                return None
 
             def after_tab(deleted):
                 if not deleted:
@@ -955,10 +977,11 @@ class RibbonEditor(QDialog):
         self._label_field(sel, tab.label, editable=not tab.standard)
         self._visible_box(sel, tab.visible)
         self._prop_label(tr("%d groups") % len(tab.groups), "ribbon_editor_prop_muted")
-        if tab.standard:
+        if not cz.can_remove_tab(tab):
             self._prop_label(ONLY_HIDE_TAB, "ribbon_editor_prop_muted")
         else:
-            self._prop_button(tr("Delete Tab"), lambda: self.remove(sel), name="ribbon_editor_remove")
+            self._prop_button(tr("Delete Tab"), lambda: self.remove(sel), name="ribbon_editor_remove",
+                              enabled=not cz.is_last_main_tab(self.editor.arr, tab))
 
     def _props_group(self, sel):
         place = sel[1]
@@ -1077,6 +1100,15 @@ class RibbonEditor(QDialog):
                           enabled=ed.quick_allowed(cmd), name="ribbon_editor_quick_add")
 
     # Ganzes
+    def _fill_restore_menu(self):
+        self.restore_menu.clear()
+        for t in self.editor.removed_tabs():
+            self.restore_menu.addAction(t.label, lambda _c=False, tid=t.id: self.restore_tab(tid))
+
+    def restore_tab(self, tab_id):
+        return self.do(self.editor.restore_tab, tab_id, select=lambda p: ("tab", p.tab),
+                       message=tr("Tab restored with all its groups."))
+
     def reset_all(self):
         self.clip = None
         return self.do(self.editor.reset_all, select=("tab", self.current_tab),

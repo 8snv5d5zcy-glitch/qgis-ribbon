@@ -48,7 +48,7 @@ Das Feld **Befehl suchen** rechts in der Kopfzeile findet Befehle nach Name, Bes
 ![Befehlssuche](../images/de/search.png)
 
 - Öffnen: in das Feld klicken, oder **Alt**, dann **Q**.
-- Jeder Treffer zeigt, wo der Befehl steht (zum Beispiel *Analyse › Werkzeuge*). Befehle aus den QGIS-Menüs sind mit *QGIS:* gekennzeichnet.
+- Jeder Treffer zeigt, wo der Befehl steht (zum Beispiel *Analyse › Werkzeuge*). Befehle aus den QGIS-Menüs sind mit *QGIS:* gekennzeichnet, Befehle ohne Platz im Ribbon (etwa **Eigenschaften: Metadaten** oder **Projekteigenschaften: KBS**) mit *Befehlsvorrat*. Ein QGIS-Untermenü wie **Zuletzt verwendet** öffnet sich unter dem Suchfeld.
 - **Eingabe** führt den ersten Treffer aus, die Pfeiltasten wählen einen anderen.
 - **Esc** leert das Feld und kehrt zur Karte zurück.
 - Groß- und Kleinschreibung spielen keine Rolle. Umlaute lassen sich als ae, oe, ue und ss eingeben.

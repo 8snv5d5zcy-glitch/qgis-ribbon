@@ -14,12 +14,13 @@ from qgis.core import (Qgis, QgsExpressionContext, QgsExpressionContextUtils, Qg
 from qgis.gui import QgsExpressionBuilderDialog
 from qgis.PyQt.QtCore import QObject, QSize, pyqtSignal
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import (QAction, QActionGroup, QApplication, QDialog, QDockWidget, QInputDialog,
-                                 QMessageBox)
+from qgis.PyQt.QtWidgets import (QAction, QActionGroup, QApplication, QDialog, QDockWidget, QFileDialog,
+                                 QInputDialog, QMessageBox)
 
-from . import compare, custom_commands, kontext_ops, layer_ops, raster_ops
+from . import compare, context_state, custom_commands, kontext_ops, layer_ops, raster_ops
 from .custom_commands import GalleryEntry
 from .map_tools import SelectByLineTool
+from ..core import layer_pages
 from ..core.i18n import tr
 
 LOG_TAG = "QGIS Ribbon"
@@ -778,6 +779,13 @@ def gruppe_als_ebene(env, command):
     return env.keep(StateAction(env, command.label, read, run))
 
 
+def _repaint_layer_tree(env):
+    """Layerliste neu zeichnen (Kreise statt Haken; QGIS meldet die Exklusivität nicht)."""
+    view = getattr(env.iface, "layerTreeView", lambda: None)()
+    if view is not None:
+        view.viewport().update()
+
+
 def gruppe_exklusiv(env, command):
     """Gruppe exklusiv: Es ist immer nur ein Layer der Gruppe sichtbar."""
     def read(_layer):
@@ -788,6 +796,7 @@ def gruppe_exklusiv(env, command):
         group = _group(env)
         if group is not None:
             group.setIsMutuallyExclusive(bool(checked))
+            _repaint_layer_tree(env)
 
     return env.keep(StateAction(env, command.label, read, run))
 
@@ -811,7 +820,38 @@ def gruppe_zoomen(env, command):
     return env.keep(StateAction(env, command.label, read, run, checkable=False))
 
 
+def layer_eigenschaften(env, command):
+    """Layereigenschaften auf einer Seite öffnen; ``args``: Seiten, die erste passende zur Layerart gilt."""
+    pages = list(command.source.get("args") or [])
+
+    def run():
+        layer = env.iface.activeLayer()
+        if layer is None:
+            _push(env, tr("No active layer selected."), Qgis.Warning)
+            return
+        env.iface.showLayerProperties(layer, layer_pages.pick(context_state.layer_kind(layer), pages))
+    return run
+
+
+def stil_speichern(env, command):
+    """Stil des aktiven Layers als QGIS-Layerstildatei (.qml) speichern."""
+    def run():
+        layer = env.iface.activeLayer()
+        if layer is None:
+            _push(env, tr("No active layer selected."), Qgis.Warning)
+            return
+        path, _filter = QFileDialog.getSaveFileName(env.iface.mainWindow(), tr("Save Style"), layer.name() + ".qml",
+                                                    tr("QGIS layer style file (*.qml)"))
+        if not path:
+            return
+        message, ok = layer.saveNamedStyle(path)
+        _push(env, tr("Style saved: %s") % path if ok else message, Qgis.Success if ok else Qgis.Warning)
+    return run
+
+
 BUTTONS = {
+    "ribbon.layer_eigenschaften": layer_eigenschaften,
+    "ribbon.stil_speichern": stil_speichern,
     "ribbon.abfragemodus": abfragemodus,
     "ribbon.locator_fokus": locator_fokus,
     "ribbon.layer_massstab_schalten": layer_massstab_schalten,

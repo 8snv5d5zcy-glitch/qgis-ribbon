@@ -22,6 +22,7 @@ from qgis.PyQt import sip
 from qgis.PyQt.QtCore import QTimer
 
 from ..core.conditions import Snapshot
+from .field_ops import field_caps
 from .signals import SignalHub
 
 
@@ -71,7 +72,8 @@ def snapshot(layer, group=None):
     kind = layer_kind(layer)
     if kind in ("vector", "table"):
         return Snapshot(layer_kind=kind, editable=layer.isEditable(),
-                        has_selection=layer.selectedFeatureCount() > 0)
+                        has_selection=layer.selectedFeatureCount() > 0,
+                        field_caps=field_caps(layer))
     return Snapshot(layer_kind=kind)
 
 

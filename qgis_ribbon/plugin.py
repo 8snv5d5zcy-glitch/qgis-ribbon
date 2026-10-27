@@ -45,6 +45,7 @@ from .qgis_integration.user_settings import UserSettings
 from .ui import dialog_commands, guide, icons, theme
 from .ui.controls import custom as custom_controls
 from .ui.keytips import KeyTipController
+from .ui.layer_tree_style import LayerTreeRadios, layer_tree_exclusive
 from .ui.ribbon_widget import RibbonWidget
 from .ui.whole_theme import WholeTheme
 from .core.i18n import tr
@@ -110,6 +111,7 @@ class RibbonPlugin:
         self.themes = None
         self.whole = None
         self.catalog = None       # Aktionen anderer Plugins, Werkzeuge
+        self.radios = None        # Kreise statt Haken in exklusiven Gruppen der Layerliste
         self._after_modal = None
         self.registered = False
         self.startup_ms = None
@@ -283,9 +285,20 @@ class RibbonPlugin:
         self.catalog.changed.connect(self.request_rebuild)
         self.catalog.start()
         self._apply_whole()
+        self._install_radios()
         self._lap(lap, "einsetzen")
         self.startup_ms = (time.perf_counter() - start) * 1000.0
         log.info_later(tr("Ribbon built in %.1f ms") % self.startup_ms)
+
+    def _install_radios(self):
+        try:
+            view = self.iface.layerTreeView()
+        except AttributeError:
+            view = None
+        if view is None:
+            return
+        self.radios = LayerTreeRadios(view, layer_tree_exclusive(view), self.hub)
+        self.radios.install()
 
     def _lap(self, since, name):
         now = time.perf_counter()
@@ -357,6 +370,9 @@ class RibbonPlugin:
             self.keytips = None
         if self.widget is not None:
             self.widget.hide_popup()
+        if self.radios is not None:
+            self.radios.restore()
+            self.radios = None
         if self.themes is not None:
             # Zuerst trennen: das Zurücksetzen der Palette soll nichts mehr auslösen
             self.themes.changed.disconnect(self._apply_whole)

@@ -195,3 +195,19 @@ def test_dropdown_button_becomes_split():
     # Einzeln (Palette, eigene Gruppen) gibt es beide Befehle auch
     out = ext.extend(definition(), found)
     assert ext.plugin_id(opts) in out.commands
+
+
+def test_deleted_plugin_group_stays_deleted():
+    full = ext.extend(definition(), FOUND)
+    arr = cz.standard(full)
+    tab = arr.tab("erweiterungen")
+    group = tab.groups[0]
+    cz.remove_group(tab, group, arr)
+    data = cz.to_dict(arr, full)
+    assert data["removed"] == [group.ref]
+    # Plugin beim nächsten Start nicht geladen: der Verweis bleibt gelöscht
+    arr, _w = cz.from_dict(data, ext.extend(definition()))
+    data = cz.to_dict(arr, ext.extend(definition()))
+    arr, _w = cz.from_dict(data, full)
+    assert group.ref not in [g.ref for g in arr.tab("erweiterungen").groups]
+    assert len(arr.tab("erweiterungen").groups) == len(full.tab("erweiterungen").groups) - 1

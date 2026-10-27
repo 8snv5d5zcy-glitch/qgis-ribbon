@@ -25,7 +25,7 @@ from qgis.PyQt.QtCore import QSize, Qt
 from qgis.PyQt.QtWidgets import (QAction, QHBoxLayout, QMenu, QSizePolicy, QToolButton,
                                  QVBoxLayout, QWidget)
 
-from .. import icons, theme
+from .. import icons, menu_anchor, theme
 from ..html_text import escape
 from ...core.i18n import tr
 
@@ -162,7 +162,12 @@ class ProxyAction(QAction):
             self.setChecked(src.isChecked())
 
     def _run(self, _checked=False):
-        self._ctx.resolver.trigger(self.command)
+        if self.command.source.type in menu_anchor.FOREIGN_SOURCES:
+            # Plugins öffnen ihr Menü oft selbst am ausgeblendeten Leistenknopf
+            with menu_anchor.anchored(menu_anchor.trigger_widget(self)):
+                self._ctx.resolver.trigger(self.command)
+        else:
+            self._ctx.resolver.trigger(self.command)
         # Bei exklusiven Werkzeugen ändert sich die QGIS-Aktion evtl. nicht
         # (schon aktiv); der eigene Haken wurde aber umgeschaltet.
         self.sync()

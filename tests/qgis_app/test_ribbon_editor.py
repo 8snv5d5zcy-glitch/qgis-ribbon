@@ -1,4 +1,4 @@
-"""Grafischer Ribbon-Editor „Ribbon anpassen“."""
+﻿"""Grafischer Ribbon-Editor „Ribbon anpassen“."""
 import copy
 import json
 
@@ -220,12 +220,14 @@ def test_new_tab_and_group_from_keyboard(plugin):
     assert tab_ids(plugin) == ["eigener_tab_1", "karte", "projekt"]
 
 
-def test_definition_groups_only_hide_and_reset(plugin):
+def test_definition_groups_delete_reset_and_restore(plugin, monkeypatch):
+    asked = []
+    monkeypatch.setattr(ribbon_editor, "confirm_remove_tab",
+                        lambda parent, label: asked.append(label) or True)
     dlg = open_editor(plugin.widget)
     try:
-        dlg.select(("group", Place("karte", 0)), focus=True)
-        press(dlg, Qt.Key_Delete)
-        assert "nur ausblenden" in dlg.status.text()
+        # Ausblenden und Zurücksetzen bleiben möglich
+        dlg.toggle_visible(("group", Place("karte", 0)))
         assert not dlg.editor.arr.tab("karte").groups[0].visible
         assert dlg.card(0).header.faded
         dlg.toggle_visible(("group", Place("karte", 0)))
@@ -237,16 +239,63 @@ def test_definition_groups_only_hide_and_reset(plugin):
         settle()
         assert items(dlg, 0) == ["Verschieben", "Hineinzoomen"]
         assert cz.to_dict(dlg.editor.arr, plugin.base) is None
-        # Tab der Definition: Entf blendet nur aus
+        # Gruppe der Definition: Entf löscht ohne Rückfrage, die Palette holt sie zurück
+        dlg.select(("group", Place("karte", 0)), focus=True)
+        press(dlg, Qt.Key_Delete)
+        assert "Gruppe gelöscht" in dlg.status.text() and not asked
+        assert labels(dlg) == [] and dlg.editor.arr.removed == {"karte/nav"}
+        dlg.insert_from_palette(("group", "karte/nav"))
+        assert labels(dlg) == ["Navigieren"] and not dlg.editor.arr.removed
+        # Tab der Definition: Entf fragt nach und löscht
+        assert not dlg.restore_button.isEnabled()
         dlg.select(("tab", "projekt"), focus=True)
         press(dlg, Qt.Key_Delete)
-        assert not dlg.editor.arr.tab("projekt").visible and "nur ausblenden" in dlg.status.text()
+        assert asked == ["Projekt"]
+        assert [t.id for t in dlg.editor.arr.tabs] == ["karte"]
+        assert dlg.editor.arr.removed == {"projekt"} and dlg.restore_button.isEnabled()
+        # der letzte Haupt-Tab bleibt
         dlg.select(("tab", "karte"), focus=True)
+        press(dlg, Qt.Key_Delete)
+        assert [t.id for t in dlg.editor.arr.tabs] == ["karte"] and "Haupt-Tab" in dlg.status.text()
+        dlg._fill_restore_menu()
+        assert [a.text() for a in dlg.restore_menu.actions()] == ["Projekt"]
+        dlg.restore_menu.actions()[0].trigger()
+        settle()
+        assert [t.id for t in dlg.editor.arr.tabs] == ["karte", "projekt"]
+        assert not dlg.editor.arr.removed and not dlg.restore_button.isEnabled()
+        assert cz.to_dict(dlg.editor.arr, plugin.base) is None
+        # Nein bei der Rückfrage: nichts passiert
+        monkeypatch.setattr(ribbon_editor, "confirm_remove_tab", lambda parent, label: False)
+        dlg.select(("tab", "projekt"), focus=True)
+        press(dlg, Qt.Key_Delete)
+        assert [t.id for t in dlg.editor.arr.tabs] == ["karte", "projekt"]
+        # alle Haupt-Tabs ausgeblendet: Speichern verweigert
+        dlg.select(("tab", "karte"), focus=True)
+        press(dlg, Qt.Key_Space)
+        dlg.select(("tab", "projekt"), focus=True)
         press(dlg, Qt.Key_Space)
         assert not dlg.save() and "Haupt-Tab" in dlg.status.text()
         assert not dlg.save_button.isEnabled()
     finally:
         close(dlg)
+
+
+def test_deleted_definition_items_survive_rebuild(plugin, monkeypatch):
+    monkeypatch.setattr(ribbon_editor, "confirm_remove_tab", lambda parent, label: True)
+    dlg = open_editor(plugin.widget)
+    try:
+        dlg.remove(("tab", "projekt"))
+        dlg.remove(("group", Place("karte", 0)))
+        assert dlg.save()
+    finally:
+        close(dlg)
+    settle()
+    assert tab_ids(plugin) == ["karte"]
+    arr = plugin.arrangements.current()
+    assert arr.removed == {"projekt", "karte/nav"}
+    assert arr.tab("karte").groups == []
+    # der Schnellzugriff behält seinen Eintrag aus dem gelöschten Tab
+    assert [c.id for c in plugin.widget.quick.commands] == ["neu"]
 
 
 def test_reset_cancel_and_confirm(plugin, settings, no_confirm):
@@ -535,7 +584,7 @@ def test_drag_back_to_palette_removes(plugin):
         dlg.begin_drag(("quick", 0))
         assert drop(lst, QPoint(20, 20))
         assert dlg.editor.quick_ids() == []
-        # eigene Gruppe wird gelöscht, Gruppe der Definition nur ausgeblendet
+        # eigene Gruppe und Gruppe der Definition werden gelöscht
         dlg.new_group()
         assert labels(dlg) == ["Navigieren", "Neue Gruppe"]
         dlg.begin_drag(("group", Place("karte", 1)))
@@ -543,7 +592,7 @@ def test_drag_back_to_palette_removes(plugin):
         assert labels(dlg) == ["Navigieren"]
         dlg.begin_drag(("group", Place("karte", 0)))
         assert drop(lst, QPoint(20, 20))
-        assert labels(dlg) == ["Navigieren"] and not dlg.editor.arr.tab("karte").groups[0].visible
+        assert labels(dlg) == [] and dlg.editor.arr.removed == {"karte/nav"}
         # Befehle aus der Palette zurück in die Palette: nichts
         dlg.begin_drag(("command", "neu"))
         assert not drag_over(lst, QPoint(20, 20)) and not lst.drop_active

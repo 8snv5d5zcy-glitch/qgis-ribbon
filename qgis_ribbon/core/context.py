@@ -14,6 +14,9 @@ Tab-Wechsel (wie in ArcGIS Pro):
   Haupt-Tab.
 - Tritt ein Ereignis ein, das ein Tab in ``activate_on`` nennt (z. B.
   ``editing_started``), wird dieser Tab gewählt, sofern er sichtbar ist.
+  Ausnahme: Der gewählte Tab ist ein eigener Tab des Nutzers (``stay_on``,
+  standardmäßig alle eigenen Tabs). Wer dort einen Arbeitsablauf aufgebaut
+  hat und die Bearbeitung startet, bleibt in seinem Tab.
 """
 
 from dataclasses import dataclass, field
@@ -21,6 +24,7 @@ from typing import Dict, Optional
 
 from . import conditions
 from .conditions import Snapshot
+from .customization import CUSTOM_TAB_PREFIX
 from .model import iter_commands
 
 
@@ -36,9 +40,16 @@ class Changes:
         return bool(self.commands or self.tabs or self.select)
 
 
+def own_tabs(ribbon):
+    """IDs der eigenen Tabs des Nutzers (Ereignisse wechseln von dort nicht weg)."""
+    return {t.id for t in ribbon.tabs if t.id.startswith(CUSTOM_TAB_PREFIX)}
+
+
 class ContextLogic(object):
-    def __init__(self, ribbon, snapshot=None):
+    def __init__(self, ribbon, snapshot=None, stay_on=None):
         self.ribbon = ribbon
+        # Tabs, die ein Ereignis (activate_on) nicht verlässt
+        self.stay_on = set(own_tabs(ribbon) if stay_on is None else stay_on)
         self.snapshot = snapshot or Snapshot()
         self._commands = {}                 # ID -> Command mit Bedingungen
         self._tabs = {t.id: t for t in ribbon.tabs if t.contextual}
@@ -126,6 +137,8 @@ class ContextLogic(object):
                 changes.tabs[tid] = value
 
         target = None
+        if self.current_tab in self.stay_on:
+            events = ()
         for e in events:
             for tid in self._by_event.get(e, ()):
                 if self.tab_visible(tid):

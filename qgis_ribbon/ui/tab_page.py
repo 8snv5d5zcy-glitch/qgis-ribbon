@@ -1,4 +1,4 @@
-"""Seite eines Tabs: Gruppen nebeneinander, getrennt durch kurze Linien.
+"""Seite eines Tabs: Gruppen nebeneinander, getrennt durch Linien.
 
 Adaptive Breite: Bei jeder Größenänderung wählt die Seite je Gruppe eine
 Fassung (``core.adaptive.choose``), sodass die Breite der Ribbon-Fläche
@@ -19,6 +19,17 @@ from .controls.custom import LayerControl
 from .group_widget import GroupWidget
 
 
+def divider_pixels(ratio):
+    """Breite der Gruppentrenner in Gerätepixeln: 1, ab 150 % Skalierung 2 (scharf, kein Bruchteil)."""
+    return 2 if ratio >= 1.5 else 1
+
+
+def divider_x(left, gap, ratio, pixels):
+    """Logische x-Mitte des Trenners, auf ganze Gerätepixel gelegt (sonst unscharf)."""
+    first = int(round((left - gap / 2.0) * ratio - pixels / 2.0))
+    return (first + pixels / 2.0) / ratio
+
+
 class PageInner(QWidget):
     """Gruppen in einer Zeile; zeichnet die Trennlinien zwischen den Gruppen."""
 
@@ -30,15 +41,19 @@ class PageInner(QWidget):
         if len(self.groups) < 2:
             return
         painter = QPainter(self)
-        pen = QPen(theme.color("div"))
-        pen.setWidthF(1.0)
+        ratio = self.devicePixelRatioF()
+        pixels = divider_pixels(ratio)
+        pen = QPen(theme.color("gdiv"))
+        pen.setWidthF(pixels / ratio)
+        pen.setCapStyle(Qt.FlatCap)
         painter.setPen(pen)
-        top = theme.PAGE_TOP + 6
-        bottom = self.height() - 8
+        # Fast über die volle Höhe der Gruppe (Befehle und Beschriftung)
+        top = theme.PAGE_TOP + 1
+        bottom = self.height() - 3
         for g in self.groups[1:]:
             if g.isHidden():
                 continue
-            x = g.geometry().left() - theme.GROUP_GAP / 2.0 - 0.5
+            x = divider_x(g.geometry().left(), theme.GROUP_GAP, ratio, pixels)
             painter.drawLine(QPointF(x, top), QPointF(x, bottom))
         painter.end()
 

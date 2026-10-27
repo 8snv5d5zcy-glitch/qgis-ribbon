@@ -118,8 +118,8 @@ def test_format1_layout_reads_unchanged(base):
     assert all(g.items is None for t in arr.tabs for g in t.groups if g.ref)
 
 
-def test_bundle_version_1_is_read_and_2_is_written(base):
-    assert cz.make_bundle(None)["version"] == 2
+def test_bundle_version_1_is_read_and_3_is_written(base):
+    assert cz.make_bundle(None)["version"] == 3
     old = {"format": cz.FORMAT, "version": 1, "layout": {"tabs": [{"tab": "karte", "visible": False},
                                                                    {"tab": "analyse"}, {"tab": "vektor"}]},
            "quick_access": None, "keytips": {}}
@@ -127,8 +127,9 @@ def test_bundle_version_1_is_read_and_2_is_written(base):
     arr, warnings = cz.from_dict(bundle.layout, base)
     assert not warnings and not arr.tab("karte").visible
     assert cz.same_bundle(old, cz.make_bundle(old["layout"], name="X"))
+    assert cz.read_bundle(dict(old, version=2)).layout == old["layout"]
     with pytest.raises(cz.BundleError):
-        cz.read_bundle(dict(old, version=3))
+        cz.read_bundle(dict(old, version=4))
 
 
 def test_personal_version_of_definition_group(base):
@@ -267,16 +268,35 @@ def test_groups_move_within_and_between_tabs(base):
     assert "Eigen" not in [g.label for g in e.arr.tab("karte").groups]
 
 
-def test_remove_group_hides_home_groups(base):
+def test_remove_group_deletes_home_groups_and_palette_restores(base):
     e = Editor(base, cz.standard(base))
-    assert e.remove_group("karte", 0) is False
-    assert not e.arr.tab("karte").groups[0].visible
+    e.set_group_visible("karte", 0, False)
     e.copy_group_ref("karte/nav", "karte")        # ausgeblendete wieder einblenden
     assert e.arr.tab("karte").groups[0].visible
-    p = e.copy_group_ref("karte/nav", "analyse", 0)
+    assert e.remove_group("karte", 0) is True
+    assert [g.ref for g in e.arr.tab("karte").groups] == ["karte/auswahl"]
+    assert e.arr.removed == {"karte/nav"}
+    p = e.copy_group_ref("karte/nav", "analyse", 0)  # Kopie anderswo: bleibt gelöscht am eigenen Platz
+    assert e.arr.removed == {"karte/nav"}
     assert e.remove_group("analyse", p.group) is True
+    p = e.copy_group_ref("karte/nav", "karte", 0)     # zurück in den eigenen Tab
+    assert e.arr.removed == set() and e.arr.tab("karte").groups[0].ref == "karte/nav"
     with pytest.raises(EditError):
         e.copy_group_ref("karte/nav", "karte")
+    e.undo()
+    e.undo()
+    e.undo()
+    assert e.arr.removed == {"karte/nav"}
+    e.undo()
+    assert e.arr.removed == set()
+
+
+def test_moving_home_group_to_other_tab_copies_it(base):
+    e = Editor(base, cz.standard(base))
+    e.move_group("karte", 0, "analyse", 0)
+    assert e.arr.tab("karte").groups[0].ref == "karte/nav"
+    assert e.arr.tab("analyse").groups[0].ref == "karte/nav"
+    assert e.arr.removed == set()
 
 
 def test_tabs_move_hide_rename(base):
@@ -294,10 +314,37 @@ def test_tabs_move_hide_rename(base):
     with pytest.raises(EditError):
         e.rename_tab("karte", "Anders")
     e.set_tab_visible("karte", False)
-    assert e.remove_tab("analyse") is False and not e.arr.tab("analyse").visible
+    e.set_tab_visible("analyse", False)
     assert e.problems() == []                          # der eigene Tab ist noch sichtbar
     assert e.remove_tab(p.tab) is True
     assert e.problems() == ["Mindestens ein Haupt-Tab muss sichtbar bleiben."]
+
+
+def test_remove_and_restore_tabs_of_the_definition(base):
+    e = Editor(base, cz.standard(base))
+    assert e.removed_tabs() == []
+    assert e.remove_tab("karte") is True
+    assert [t.id for t in e.arr.tabs] == ["analyse", "vektor"] and e.arr.removed == {"karte"}
+    assert [t.id for t in e.removed_tabs()] == ["karte"]
+    with pytest.raises(EditError):
+        e.remove_tab("analyse")                        # letzter Haupt-Tab bleibt
+    assert e.remove_tab("vektor") is False and not e.arr.tab("vektor").visible   # Kontext-Tab: ausblenden
+    assert e.restore_tab("karte") == Place("karte")
+    assert [t.id for t in e.arr.tabs] == ["karte", "analyse", "vektor"]
+    assert [g.ref for g in e.arr.tab("karte").groups] == ["karte/nav", "karte/auswahl"]
+    assert e.arr.removed == set()
+    with pytest.raises(EditError):
+        e.restore_tab("karte")
+    # Gelöschte Gruppen des Tabs kommen beim Wiederherstellen mit
+    e.remove_group("karte", 1)
+    e.remove_tab("karte")
+    assert e.arr.removed == {"karte", "karte/auswahl"}
+    e.restore_tab("karte")
+    assert len(e.arr.tab("karte").groups) == 2 and e.arr.removed == set()
+    # Auf Standard zurücksetzen leert die Liste
+    e.remove_tab("karte")
+    e.reset_all()
+    assert e.arr.removed == set() and [t.id for t in e.arr.tabs] == ["karte", "analyse", "vektor"]
 
 
 def test_keyboard_moves(base):

@@ -137,24 +137,71 @@ def test_group_from_other_tab_gets_unique_id(base):
     assert [c.id for c in iter_commands(eff.tab("karte").groups[2])] == ["verschieben"]
 
 
-def test_standard_items_only_hidden_not_removed(base):
+def test_definition_items_can_be_removed(base):
     arr = cz.standard(base)
     karte = arr.tab("karte")
-    assert not cz.can_remove_tab(karte)
-    assert not cz.can_remove_group(karte, karte.groups[0])
+    vektor = arr.tab("vektor")
+    assert cz.can_remove_tab(karte, arr) and cz.can_remove_group(karte, karte.groups[0])
+    assert not cz.can_remove_tab(vektor, arr)            # Kontext-Tab der Definition: nur ausblenden
     with pytest.raises(ValueError):
-        cz.remove_group(karte, karte.groups[0])
+        cz.remove_group(karte, karte.groups[0])          # Gruppe der Definition braucht die Anordnung
+    cz.remove_group(karte, karte.groups[0], arr)
+    assert arr.removed == {"karte/nav"}
+    copy_ = cz.add_group_ref(karte, base, "bearbeiten/werkzeuge")
+    cz.remove_group(karte, copy_, arr)
+    assert arr.removed == {"karte/nav"}                  # Kopien hinterlassen nichts
+    cz.remove_tab(arr, arr.tab("bearbeiten"))
+    assert cz.is_last_main_tab(arr, karte) and not cz.can_remove_tab(karte, arr)
     with pytest.raises(ValueError):
         cz.remove_tab(arr, karte)
-    copy_ = cz.add_group_ref(karte, base, "bearbeiten/werkzeuge")
-    assert cz.can_remove_group(karte, copy_)
-    cz.remove_group(karte, copy_)
     # Ausgeblendete Gruppe am eigenen Platz wird beim Hinzufügen wieder eingeblendet
     karte.groups[0].visible = False
-    assert cz.add_group_ref(karte, base, "karte/nav") is karte.groups[0]
+    assert cz.add_group_ref(karte, base, karte.groups[0].ref) is karte.groups[0]
     assert karte.groups[0].visible
     with pytest.raises(ValueError):
         cz.add_command(karte.groups[0], "neu")
+
+
+def test_removed_items_survive_writing_and_reading(base):
+    arr = cz.standard(base)
+    cz.remove_group(arr.tab("karte"), arr.tab("karte").groups[0], arr)
+    cz.remove_tab(arr, arr.tab("bearbeiten"))
+    data = cz.to_dict(arr, base)
+    assert data["removed"] == ["bearbeiten", "karte/nav"]
+    assert data["tabs"] == [{"tab": "karte", "groups": [{"group": "karte/projekt"}]}, {"tab": "vektor"}]
+    again, warnings = cz.from_dict(json.loads(json.dumps(data)), base)
+    assert again == arr and not warnings
+    eff = cz.apply(base, again)
+    assert layout(eff) == [("karte", ["projekt"]), ("vektor", ["effekte"])]
+
+
+def test_removed_items_are_not_appended_again(base):
+    # Ohne Tab-Liste (z. B. nur gelöschte Einträge) und mit unveränderten Tabs (nur ID)
+    arr, warnings = cz.from_dict({"removed": ["bearbeiten", "karte/projekt"]}, base)
+    assert not warnings
+    assert [(t.id, [g.ref for g in t.groups]) for t in arr.tabs] == [
+        ("karte", ["karte/nav"]), ("vektor", ["vektor/effekte"])]
+    arr, _w = cz.from_dict({"tabs": [{"tab": "karte"}], "removed": ["karte/nav"]}, base)
+    assert [g.ref for g in arr.tab("karte").groups] == ["karte/projekt"]
+    assert [t.id for t in arr.tabs] == ["karte", "bearbeiten", "vektor"]   # neu in der Definition
+
+
+def test_removed_list_tolerates_unknown_and_contradicting_entries(base):
+    data = {"tabs": [{"tab": "karte", "groups": [{"group": "karte/nav"}]}, {"tab": "bearbeiten"},
+                     {"tab": "vektor"}],
+            "removed": ["karte/nav", "erweiterungen/erw_plugin", "vektor", 7]}
+    arr, warnings = cz.from_dict(data, base)
+    assert not warnings
+    # aufgeführt schlägt gelöscht; Kontext-Tabs lassen sich nicht löschen;
+    # unbekannte Einträge (Plugin gerade nicht geladen) bleiben gelöscht
+    assert arr.removed == {"erweiterungen/erw_plugin"}
+    assert [g.ref for g in arr.tab("karte").groups] == ["karte/nav", "karte/projekt"]
+    assert cz.to_dict(arr, base)["removed"] == ["erweiterungen/erw_plugin"]
+
+
+def test_keytips_of_deleted_tabs_expire():
+    keytips = {"tab:karte": "K", "karte/zoomen": "Z", "tab:bearbeiten": "B", "bearbeiten/neu": "N"}
+    assert cz.keytips_without_tabs(keytips, {"bearbeiten"}) == {"tab:karte": "K", "karte/zoomen": "Z"}
 
 
 def test_problems_need_a_visible_main_tab(base):

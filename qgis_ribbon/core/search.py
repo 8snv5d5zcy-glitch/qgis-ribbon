@@ -105,3 +105,26 @@ def ribbon_entries(ribbon):
         cmd = ribbon.commands[cid]
         out.append(Entry(cmd.label, (cmd, tab_id), path=path, description=cmd.description or ""))
     return out
+
+
+# Quelltypen, die die Suche ohnehin als QGIS-Aktion findet
+ACTION_TYPES = ("qgis_action", "plugin_action", "extension")
+
+
+def pool_entries(ribbon, placed=()):
+    """Einträge für Befehle ohne Ort im Ribbon (Befehlsvorrat, gelöschte Gruppen).
+
+    Nur Buttons, die sich ohne ihr Element auslösen lassen, und nur solche, die
+    nicht schon als QGIS-Aktion gefunden werden. ``placed``: IDs mit Ort
+    (aus ``ribbon_entries``). ``ref`` ist ``(Command, None)``.
+    """
+    from .extensions import is_runtime
+
+    placed = set(placed)
+    out = []
+    for cid, cmd in ribbon.commands.items():
+        if (cid in placed or cmd.kind != "button" or cmd.gallery is not None or is_runtime(cid)
+                or cmd.source.type in ACTION_TYPES):
+            continue
+        out.append(Entry(cmd.label, (cmd, None), path=tr("Command pool"), description=cmd.description or ""))
+    return out

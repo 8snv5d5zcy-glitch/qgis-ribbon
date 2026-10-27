@@ -6,6 +6,8 @@ from qgis_ribbon.core.conditions import Snapshot
 from qgis_ribbon.qgis_integration.context_state import ContextState, snapshot
 from qgis_ribbon.qgis_integration.signals import SignalHub
 
+ALL = frozenset({"add", "delete", "rename"})  # Speicherlayer können alle Feldänderungen
+
 
 class Recorder(object):
     def __init__(self):
@@ -33,13 +35,13 @@ def start(fake_iface):
 
 def test_snapshot_of_layer_kinds(layers):
     assert snapshot(None) == Snapshot()
-    assert snapshot(layers["vector"]) == Snapshot("vector")
-    assert snapshot(layers["table"]) == Snapshot("table")
+    assert snapshot(layers["vector"]) == Snapshot("vector", field_caps=ALL)
+    assert snapshot(layers["table"]) == Snapshot("table", field_caps=ALL)
     assert snapshot(layers["raster"]) == Snapshot("raster")
     v = layers["vector"]
     v.selectByIds([v.allFeatureIds()[0]])
     v.startEditing()
-    assert snapshot(v) == Snapshot("vector", editable=True, has_selection=True)
+    assert snapshot(v) == Snapshot("vector", editable=True, has_selection=True, field_caps=ALL)
     v.rollBack()
     v.removeSelection()
 
@@ -47,7 +49,7 @@ def test_snapshot_of_layer_kinds(layers):
 def test_start_delivers_initial_state_immediately(fake_iface, layers):
     fake_iface.active_layer = layers["table"]
     state, hub, rec = start(fake_iface)
-    assert rec.calls == [(Snapshot("table"), ())]
+    assert rec.calls == [(Snapshot("table", field_caps=ALL), ())]
     state.stop()
     hub.disconnect_all()
 
@@ -62,10 +64,10 @@ def test_signals_in_quick_succession_are_coalesced(fake_iface, layers):
     assert len(rec.calls) == 1  # noch nichts, erst in der Ereignisschleife
     settle()
     assert len(rec.calls) == 2
-    assert rec.last == (Snapshot("vector", editable=True, has_selection=True), ("editing_started",))
+    assert rec.last == (Snapshot("vector", editable=True, has_selection=True, field_caps=ALL), ("editing_started",))
     v.commitChanges()
     settle()
-    assert rec.last == (Snapshot("vector", has_selection=True), ())
+    assert rec.last == (Snapshot("vector", has_selection=True, field_caps=ALL), ())
     v.removeSelection()
     state.stop()
     hub.disconnect_all()
@@ -80,7 +82,7 @@ def test_layer_change_disconnects_previous_layer(fake_iface, layers):
     settle()
     assert len(hub) == 2                 # nur currentLayerChanged und aktueller Knoten der Layerliste
     assert len(state.layer_hub) == 4     # willBeDeleted, Bearbeitung an/aus, Auswahl der Tabelle
-    assert rec.last[0] == Snapshot("table")
+    assert rec.last[0] == Snapshot("table", field_caps=ALL)
     n = len(rec.calls)
     v.selectByIds(v.allFeatureIds())     # alter Layer: keine Aktualisierung mehr
     v.startEditing()

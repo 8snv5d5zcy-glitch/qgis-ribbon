@@ -55,7 +55,8 @@ def test_unplaced_commands_are_editor_offers(ribbon):
 ALLOWED_ASCII = {"ausschneiden", "messen", "messwerkzeuge", "neue", "neues", "neuer", "aktueller",
                  "processing", "quelle", "anpassen", "ausschnitt", "klasse",
                  "beschriftungsklasse", "bildverbesserung", "virtueller", "aktuelles",
-                 "kartenausschnitt", "neuen", "virtuellen", "zeitsteuerung", "zusammenfassung"}
+                 "kartenausschnitt", "neuen", "virtuellen", "zeitsteuerung", "zusammenfassung",
+                 "ausschalten", "datenquellen", "hilfsspeicher", "oberflächenanpassung"}
 
 
 def test_labels_use_real_umlauts():

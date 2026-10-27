@@ -8,7 +8,8 @@ KeyTip-Schrift).
 
 Prüfungen (``check``): Pflicht-Tokens vorhanden, Format ``#RRGGBB`` bzw.
 ``#RRGGBBAA``, Kontrast mindestens 4,5:1 für jedes Paar Text/Fläche aus
-``CONTRAST_PAIRS`` in jedem Modus und mit jedem Akzent. Fehler sammelt
+``CONTRAST_PAIRS`` in jedem Modus und mit jedem Akzent, mindestens 1,8:1 für
+Trennlinien (``DIVIDER_PAIRS``). Fehler sammelt
 ``ThemeError`` vollständig, wie beim Config-Loader.
 
 ``resolve_mode`` übersetzt die Einstellung des Nutzers (automatisch, hell,
@@ -27,7 +28,7 @@ DEFAULT_THEME = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config
 MODES = ("hell", "dunkel")
 MODE_SETTINGS = ("auto", "hell", "dunkel")
 MODE_LABELS = {"auto": tr("Automatic (like QGIS)"), "hell": tr("Light"), "dunkel": tr("Dark")}
-MODE_TOKENS = ("win", "surf", "bord", "div", "text", "muted", "faint", "hover", "press",
+MODE_TOKENS = ("win", "surf", "bord", "div", "gdiv", "text", "muted", "faint", "hover", "press",
                "ctx", "ctxS", "ctxT", "shadow", "tip", "err")
 ACCENT_TOKENS = ("acc", "accS", "accT", "accB")
 ALPHA_TOKENS = ("shadow", "accB")       # mit Deckkraft (#RRGGBBAA erlaubt)
@@ -39,6 +40,9 @@ CONTRAST_PAIRS = (
     ("accT", "accS"), ("ctxT", "ctxS"), ("ctxT", "win"), ("surf", "tip"),
     ("err", "win"), ("err", "surf"),
 )
+# Linien, die Bereiche trennen: deutlich, aber kein Text (Gruppentrenner im Ribbon)
+DIVIDER_PAIRS = (("gdiv", "surf"),)
+MIN_DIVIDER_CONTRAST = 1.8
 ICON_FILL_ALPHA = "2E"   # Akzentfläche in Icons (18 %)
 SELECTION_ALPHA = "38"   # Auswahlfläche (22 %)
 DARK_BELOW = 128         # Helligkeit der Fensterfarbe (0–255), unter der QGIS als dunkel gilt
@@ -182,6 +186,11 @@ def check(themes):
                 if ratio < MIN_CONTRAST:
                     errors.append(tr("Contrast %s on %s (%s, %s): %.2f < %.1f")
                                   % (fg, bg, mode, accent, ratio, MIN_CONTRAST))
+            for fg, bg in DIVIDER_PAIRS:
+                ratio = contrast(t[fg], t[bg])
+                if ratio < MIN_DIVIDER_CONTRAST:
+                    errors.append(tr("Contrast %s on %s (%s, %s): %.2f < %.1f")
+                                  % (fg, bg, mode, accent, ratio, MIN_DIVIDER_CONTRAST))
     return errors
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0 (2026-10-27)
+
+- New Fields group in the Data tab of vector layers and tables: Add Field (name, type, length, precision, alias, comment), Delete Fields, Rename Field and the Field Calculator. In edit mode changes go into the edit buffer, otherwise they are written to the data source after confirmation; buttons follow what the data source supports.
+- 94 further QGIS commands available in the ribbon editor and in the search (command pool), among them direct access to the pages of the layer, project and options dialogs, Save Style and layer tree actions; QGIS submenus open below the search field.
+- Ribbon editor: built-in tabs and groups (also plugin groups in the Extensions tab) can be deleted, not only hidden, and restored later.
+- Layer tree shows mutually exclusive groups with round check boxes, wider opacity slider, stronger group separators, no tab jump away from your own tabs, plugin menus open below their button.
+
 ## 1.3.0 (2026-10-26)
 
 - Appearance tab for vector and raster layers: visibility range, effects (opacity, blending mode, for vector layers also feature blending mode) and compare (swipe, flicker with adjustable interval).

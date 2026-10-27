@@ -756,12 +756,24 @@ class RibbonWidget(QWidget):
         res = self.ctx.resolver.resolve(cmd)
         if not res.available or not self.ctx.allowed(cmd):
             return False
+        if self._pool_menu(cmd, tab_id):
+            return res.menu is not None
         if self._navigates(cmd):
             return tab_id is not None and self.is_tab_visible(tab_id)
         return res.action is None or res.action.isEnabled()
 
+    def _pool_menu(self, cmd, tab_id):
+        """QGIS-Menü ohne Ort im Ribbon (Befehlsvorrat): öffnet unter dem Suchfeld."""
+        return cmd.source.type == "qgis_menu" and tab_id is None
+
     def run_entry(self, entry):
         cmd, tab_id = entry.ref
+        if self._pool_menu(cmd, tab_id):
+            menu = self.ctx.resolver.resolve(cmd).menu
+            if menu is None:
+                return False
+            menu.popup(self.search.mapToGlobal(QPoint(0, self.search.height())))
+            return True
         if not self._navigates(cmd):
             self.ctx.resolver.trigger(cmd)
             self.ctx.after_trigger()

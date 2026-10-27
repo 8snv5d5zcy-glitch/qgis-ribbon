@@ -21,7 +21,7 @@ Das Ribbon besteht aus der **Kopfzeile** (Schnellzugriffsleiste, Tabs, Befehlssu
 
 ![Der Tab Bearbeiten](../images/de/tab_edit.png)
 
-Beginnt die Bearbeitung eines Layers, wechselt das Ribbon zum Tab **Bearbeiten**.
+Beginnt die Bearbeitung eines Layers, wechselt das Ribbon zum Tab **Bearbeiten**. Aus einem eigenen Tab (siehe [Ribbon anpassen](customize.md)) wechselt es nicht; dort bleibt Ihr Arbeitsablauf stehen.
 
 In **Bearbeitung** wirken **Bearbeiten**, **Speichern** und **Verwerfen** nur auf den aktiven Layer; nach Speichern oder Verwerfen bleibt die Bearbeitung an. **Alle speichern** und **Alle verwerfen** wirken auf alle Layer in Bearbeitung. Vor dem Verwerfen kommt eine Rückfrage.
 
@@ -46,7 +46,9 @@ Manche Tabs erscheinen nur, wenn sie zum aktiven Layer im Bedienfeld Layer passe
 
 Danach folgen die Gruppen des Layertyps, zum Beispiel **Aggregation** für Punktlayer (Punktcluster, Punktverdrängung, Heatmap; **Keine** stellt die vorige Darstellung wieder her), die **Darstellungsart**, **Punktgröße** und der **maximale Fehler** einer Punktwolke oder die dargestellten Datensätze (**Skalar**, **Vektoren**) und das **Netzgitter** eines Netzes.
 
-**Gruppe:** Deckkraft, Mischmodus und Sichtbarkeitsbereich gelten für die ganze Gruppe. QGIS kennt sie nur, wenn die Gruppe *als Gruppe dargestellt* wird; die erste Änderung schaltet das ein (Knopf **Als Gruppe darstellen**, ausschalten nimmt die Einstellungen der Gruppe zurück). **Exklusiv** lässt immer nur einen Layer der Gruppe sichtbar, **Auf Gruppe zoomen** zeigt alle ihre Layer.
+**Gruppe:** Deckkraft, Mischmodus und Sichtbarkeitsbereich gelten für die ganze Gruppe. QGIS kennt sie nur, wenn die Gruppe *als Gruppe dargestellt* wird; die erste Änderung schaltet das ein (Knopf **Als Gruppe darstellen**, ausschalten nimmt die Einstellungen der Gruppe zurück). **Exklusiv** lässt immer nur einen Layer der Gruppe sichtbar; die Layerliste zeigt dann Kreise statt Haken. **Auf Gruppe zoomen** zeigt alle ihre Layer.
+
+**Daten** eines Vektorlayers oder einer Tabelle: Die Gruppe **Felder** legt Felder an (**Feld hinzufügen**: Name, Typ, Länge, Genauigkeit, Alias, Kommentar), **löscht** und **benennt** sie **um**; dazu der **Feldrechner**. Im Bearbeitungsmodus landet die Änderung im Bearbeitungspuffer und lässt sich rückgängig machen, sonst wird sie nach einer Rückfrage direkt in die Datenquelle geschrieben. Kann die Datenquelle keine Felder ändern, sind die Knöpfe ausgegraut. **Felder** unter Datenentwurf öffnet die Feldliste der Layereigenschaften.
 
 **Beschriftung** eines Vektorlayers: **Beschriften** schaltet die Beschriftung ein. Ein Linienlayer bekommt dabei die Platzierung *Parallel*, weil QGIS Linien mit *Um Punkt* nicht beschriftet. Ein Layer kann mehrere **Beschriftungsklassen** haben, jede für eigene Objekte mit eigenem Text und Stil. Die Klasse wählt die Liste; die Knöpfe daneben legen eine **neue Klasse** an (Kopie der gewählten) oder **löschen** die gewählte. **Filter** legt fest, welche Objekte eine Klasse beschriftet, **Klasse beschriften** schaltet sie ein oder aus, und **Feld** wählt das Feld für den Text; sein Knopf ε öffnet den Ausdruckseditor für einen Text aus mehreren Feldern.
 

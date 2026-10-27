@@ -2,7 +2,7 @@
 
 [Inhalt](index.md)
 
-Alles im Ribbon lässt sich ändern: Tabs und Gruppen ausblenden, umbenennen und umsortieren, Befehle in jede Gruppe legen, eigene Tabs und Gruppen anlegen und die Befehle der Schnellzugriffsleiste und der Galerien wählen. Eine Zusammenstellung dieser Änderungen heißt **Anordnung**.
+Alles im Ribbon lässt sich ändern: Tabs und Gruppen ausblenden oder löschen, umbenennen und umsortieren, Befehle in jede Gruppe legen, eigene Tabs und Gruppen anlegen und die Befehle der Schnellzugriffsleiste und der Galerien wählen. Eine Zusammenstellung dieser Änderungen heißt **Anordnung**.
 
 ## Der Editor
 
@@ -13,7 +13,7 @@ Alles im Ribbon lässt sich ändern: Tabs und Gruppen ausblenden, umbenennen und
 - **Oben:** die Tabs. Kontext-Tabs stehen rechts und tragen ihre Farbe.
 - **Schnellzugriff:** die Befehle der Schnellzugriffsleiste.
 - **Mitte:** eine Vorschau des gewählten Tabs mit seinen Gruppen.
-- **Unten links:** die Befehle. **Suchen** findet sie nach Name oder Beschreibung. Die Liste daneben filtert: *Alle*, *Nicht im Ribbon*, *Erweiterungen (Plugins)*, *Eigene Skripte und Modelle*, *Werkzeugkasten (alle Werkzeuge)* oder ein Tab. *Nicht im Ribbon* enthält auch weitere QGIS-Befehle ohne festen Platz im mitgelieferten Ribbon, etwa Herauszoomen, Aktualisieren, Feldrechner oder Zeitsteuerung. Ein Häkchen zeigt, dass ein Befehl schon im gewählten Tab steht. **Gruppen** zeigt ganze Gruppen statt einzelner Befehle.
+- **Unten links:** die Befehle. **Suchen** findet sie nach Name oder Beschreibung. Die Liste daneben filtert: *Alle*, *Nicht im Ribbon*, *Erweiterungen (Plugins)*, *Eigene Skripte und Modelle*, *Werkzeugkasten (alle Werkzeuge)* oder ein Tab. *Nicht im Ribbon* enthält auch weitere QGIS-Befehle ohne festen Platz im mitgelieferten Ribbon, etwa Herauszoomen, Aktualisieren, Zeitsteuerung, Layer duplizieren, Projekt schließen, Tastenkürzel, die Seiten der Layereigenschaften (**Eigenschaften: …**) und der Projekteigenschaften. Ein Häkchen zeigt, dass ein Befehl schon im gewählten Tab steht. **Gruppen** zeigt ganze Gruppen statt einzelner Befehle.
 - **Unten rechts:** die Eigenschaften des gewählten Tabs, der Gruppe oder des Befehls (Beschriftung, Sichtbarkeit, Größe).
 
 Im Ribbon ändert sich erst etwas mit **Speichern**. **Abbrechen** fragt nach, bevor Änderungen verworfen werden. Jeder Schritt lässt sich mit den Pfeilen oben rechts rückgängig machen (Strg+Z, Strg+Y). **Standard wiederherstellen** setzt Tabs, Gruppen und Schnellzugriff auf den gelieferten Stand zurück; auch das lässt sich rückgängig machen.
@@ -30,7 +30,8 @@ Im Ribbon ändert sich erst etwas mit **Speichern**. **Abbrechen** fragt nach, b
 | Gruppe eines anderen Tabs übernehmen | Befehle auf **Gruppen** umschalten, Kachel in die Vorschau oder auf einen Tab ziehen | Kachel wählen, Eingabe |
 | Neuer Tab | **＋ Tab** | – |
 | Tabs sortieren | Tab ziehen (Haupt-Tabs bleiben vor den Kontext-Tabs) | Tab wählen, Strg+Pfeil |
-| Entfernen | zurück in die Befehle ziehen | Entf |
+| Entfernen, Löschen | zurück in die Befehle ziehen | Entf |
+| Gelöschten Tab zurückholen | **Gelöschten Tab wiederherstellen** unten im Fenster | – |
 | Ein- und ausblenden | Auge an Tab oder Gruppe | Leertaste |
 | Umbenennen | Doppelklick (eigene Tabs, alle Gruppen) | F2 |
 | Größe eines Eintrags | Eigenschaften: groß, mittel, klein | – |
@@ -45,6 +46,10 @@ Hinweise:
 - Eine Gruppe des gelieferten Ribbons wird bei der ersten Änderung zur eigenen Fassung. Sie ist als *angepasst* markiert und lässt sich einzeln zurücksetzen.
 - Split-Buttons, Menüs, Galerien und Zeilen kleiner Buttons bleiben je eine Einheit. Sie lassen sich verschieben und entfernen; ▾ zeigt ihren Inhalt.
 - Leere eigene Gruppen werden beim Speichern verworfen.
+- Auch Tabs und Gruppen des gelieferten Ribbons lassen sich löschen. Vor dem Löschen eines Standard-Tabs fragt der Editor nach; Gruppen werden ohne Rückfrage gelöscht.
+- Eine gelöschte Gruppe holt die Palette **Gruppen** zurück, einen gelöschten Tab samt seinen Gruppen **Gelöschten Tab wiederherstellen**. **Standard wiederherstellen** bringt alles zurück.
+- Kontext-Tabs lassen sich nur ausblenden, und mindestens ein Haupt-Tab bleibt immer.
+- Die Befehle gelöschter Tabs und Gruppen bleiben über die Suche und die Befehle im Editor erreichbar; Einträge im Schnellzugriff bleiben stehen.
 
 ## Galerie anpassen
 

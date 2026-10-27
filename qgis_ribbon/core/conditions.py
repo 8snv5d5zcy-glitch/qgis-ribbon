@@ -17,13 +17,15 @@ automatischen Wechsel auf einen Tab aus (``activate_on``).
 """
 
 from dataclasses import dataclass, fields
-from typing import Optional
+from typing import FrozenSet, Optional
 from .i18n import tr
 
 # Layerarten im Snapshot. QGIS kennt weniger Typen als ArcGIS Pro: WMS, WMTS
 # und XYZ sind Rasterlayer, WFS ist ein Vektorlayer. ``group``: in der
 # Layerliste ist eine Gruppe gewählt (kein aktiver Layer).
 LAYER_KINDS = ("vector", "table", "raster", "vector_tile", "point_cloud", "mesh", "other", "group")
+# Was der Datenanbieter eines Vektorlayers mit Feldern kann
+FIELD_CAPS = ("add", "delete", "rename")
 
 
 @dataclass(frozen=True)
@@ -39,10 +41,14 @@ class Snapshot:
     layer_kind: Optional[str] = None
     editable: bool = False       # Layer im Bearbeitungsmodus
     has_selection: bool = False  # mindestens ein Objekt gewählt
+    field_caps: FrozenSet[str] = frozenset()  # Felder anlegen/löschen/umbenennen (``FIELD_CAPS``)
 
     def __post_init__(self):
         if self.layer_kind is not None and self.layer_kind not in LAYER_KINDS:
             raise ValueError(tr("Invalid layer kind: %r") % self.layer_kind)
+        unknown = set(self.field_caps) - set(FIELD_CAPS)
+        if unknown:
+            raise ValueError(tr("Invalid field capability: %r") % sorted(unknown)[0])
 
 
 SNAPSHOT_FIELDS = tuple(f.name for f in fields(Snapshot))
@@ -85,6 +91,15 @@ CONDITIONS = {
     "active_layer_has_selection": (
         ("has_selection",), lambda s: s.has_selection,
         tr("At least one feature is selected in the active layer.")),
+    "active_layer_can_add_fields": (
+        ("field_caps",), lambda s: "add" in s.field_caps,
+        tr("Fields can be added to the active layer.")),
+    "active_layer_can_delete_fields": (
+        ("field_caps",), lambda s: "delete" in s.field_caps,
+        tr("Fields of the active layer can be deleted.")),
+    "active_layer_can_rename_fields": (
+        ("field_caps",), lambda s: "rename" in s.field_caps,
+        tr("Fields of the active layer can be renamed.")),
 }
 
 EVENTS = {

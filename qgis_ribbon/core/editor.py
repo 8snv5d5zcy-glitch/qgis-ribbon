@@ -21,9 +21,10 @@ Regeln:
 - Kontext-Tabs nehmen nur Befehle, die dort bedienbar sein können: Es muss
   einen Layer-Zustand geben, in dem der Tab sichtbar *und* der Befehl
   bedienbar ist (``fits``; z. B. kein Rasterbefehl im Tab für Vektorlayer).
-- Tabs und Gruppen der Definition werden nie gelöscht, nur ausgeblendet.
-  Eine Gruppe der Definition, die in einen anderen Tab gezogen wird, kommt
-  dort als Kopie hinzu.
+- Tabs und Gruppen der Definition lassen sich löschen (``removed`` der
+  Anordnung), Kontext-Tabs der Definition nur ausblenden; mindestens ein
+  Haupt-Tab bleibt. Eine Gruppe der Definition, die in einen anderen Tab
+  gezogen wird, kommt dort als Kopie hinzu.
 
 Fehlgeschlagene Operationen lösen ``EditError`` aus und lassen die Anordnung
 unverändert.
@@ -34,7 +35,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from . import customization as cz
-from .conditions import LAYER_KINDS, Snapshot, all_true
+from .conditions import FIELD_CAPS, LAYER_KINDS, Snapshot, all_true
 from .model import CommandRef, Menu, Row, Split, iter_commands
 from .i18n import tr
 
@@ -105,9 +106,10 @@ def ribbon_commands(base, arr):
     return out
 
 
-_SNAPSHOTS = tuple(Snapshot(kind, editable, selection)
+_SNAPSHOTS = tuple(Snapshot(kind, editable, selection, caps)
                    for kind in (None,) + LAYER_KINDS
-                   for editable in (False, True) for selection in (False, True))
+                   for editable in (False, True) for selection in (False, True)
+                   for caps in (frozenset(), frozenset(FIELD_CAPS)))
 
 
 def fits(base, tab, commands):
@@ -284,16 +286,10 @@ def reset_group(arr, base, tab_id, gi):
 
 
 def remove_group(arr, tab_id, gi):
-    """Eigene Gruppen und Kopien löschen; Gruppen der Definition nur ausblenden.
-
-    -> True, wenn gelöscht, False, wenn nur ausgeblendet.
-    """
+    """Gruppe löschen (Gruppen der Definition an ihrem Platz: vermerkt in ``removed``). -> True."""
     tab = arr.tab(tab_id)
     group = group_at(arr, tab_id, gi)
-    if not cz.can_remove_group(tab, group):
-        group.visible = False
-        return False
-    del tab.groups[gi]
+    cz.remove_group(tab, group, arr)
     return True
 
 
@@ -333,7 +329,7 @@ def move_group(arr, base, tab_id, gi, dst_tab, index):
     if hint:
         raise EditError(hint)
     index = _clamp(index, len(target.groups))
-    if cz.can_remove_group(tab, group):
+    if not tab.is_home(group):
         del tab.groups[gi]
         moved = group
     else:
@@ -418,13 +414,23 @@ def set_tab_visible(arr, tab_id, visible):
 
 
 def remove_tab(arr, tab_id):
-    """Eigene Tabs löschen, Tabs der Definition nur ausblenden. -> True, wenn gelöscht."""
+    """Tab löschen; Kontext-Tabs der Definition nur ausblenden. -> True, wenn gelöscht."""
     tab = arr.tab(tab_id)
-    if not cz.can_remove_tab(tab):
+    if cz.is_last_main_tab(arr, tab):
+        raise EditError(tr("At least one main tab must remain."))
+    if not cz.can_remove_tab(tab, arr):
         tab.visible = False
         return False
-    arr.tabs.remove(tab)
+    cz.remove_tab(arr, tab)
     return True
+
+
+def restore_tab(arr, base, tab_id):
+    """Gelöschten Tab der Definition zurückholen. -> ``Place``."""
+    if tab_id not in {t.id for t in cz.removed_tabs(arr, base)}:
+        raise EditError(tr("This tab is not deleted."))
+    cz.restore_tab(arr, base, tab_id)
+    return Place(tab_id)
 
 
 def tab_gaps(arr, tab_id):
@@ -535,6 +541,7 @@ class Editor(object):
         except EditError:
             self._restore(before)
             raise
+        cz.prune_removed(self.arr)   # z. B. gelöschte Gruppe wieder in ihrem Tab
         if (self.arr, self.qat) != before:
             self._undo.append((label, before))
             del self._undo[:-HISTORY_LIMIT]
@@ -649,6 +656,12 @@ class Editor(object):
 
     def remove_tab(self, tab_id):
         return self.run(tr("Remove tab"), remove_tab, self.arr, tab_id)
+
+    def restore_tab(self, tab_id):
+        return self.run(tr("Restore tab"), restore_tab, self.arr, self.base, tab_id)
+
+    def removed_tabs(self):
+        return cz.removed_tabs(self.arr, self.base)
 
     def move_tab(self, tab_id, index):
         return self.run(tr("Move tab"), move_tab, self.arr, tab_id, index)

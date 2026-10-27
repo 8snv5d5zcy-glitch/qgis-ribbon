@@ -164,6 +164,37 @@ def test_event_activates_tab(logic):
     assert logic.update(Snapshot("vector", editable=True), events=("editing_started",)).select is None
 
 
+def test_event_does_not_leave_tabs_to_stay_on():
+    import copy
+    ribbon = config_loader.parse(copy.deepcopy(DEFINITION))
+    logic = ContextLogic(ribbon, stay_on={"analyse"})
+    logic.tab_selected("analyse")
+    ch = logic.update(Snapshot("vector", editable=True), events=("editing_started",))
+    assert ch.select is None and logic.current_tab == "analyse"
+    # Aus anderen Tabs wird weiter gewechselt
+    logic.tab_selected("karte")
+    logic.update(Snapshot("vector"))
+    assert logic.update(Snapshot("vector", editable=True), events=("editing_started",)).select == "bearbeiten"
+
+
+def test_own_tabs_are_kept_on_event():
+    import copy
+    from qgis_ribbon.core import customization as cz
+    base = config_loader.parse(copy.deepcopy(DEFINITION))
+    arr = cz.standard(base)
+    mine = cz.new_tab(arr, base, after=0, label="Mein Ablauf")
+    cz.add_command(cz.new_group(arr, base, mine, label="G"), "neu")
+    eff = cz.apply(base, arr)
+    logic = ContextLogic(eff)
+    assert logic.stay_on == {mine.id}
+    logic.tab_selected(mine.id)
+    assert logic.update(Snapshot("vector", editable=True), events=("editing_started",)).select is None
+    assert logic.current_tab == mine.id
+    # Aus einem Standard-Tab wird weiter gewechselt
+    logic.tab_selected("karte")
+    assert logic.update(Snapshot("vector"), events=("editing_started",)).select == "bearbeiten"
+
+
 def test_main_tab_is_unaffected_by_layer_change(logic):
     logic.tab_selected("analyse")
     for snap in (VECTOR, TABLE, RASTER, Snapshot()):

@@ -352,6 +352,13 @@ contextual_tabs:
         items:
           - {command: "attributtabelle", size: "large"}
           - {command: "tabelle_der_auswahl", size: "large"}
+      - id: "felder"
+        label: "Fields"
+        items:
+          - {command: "feld_hinzufuegen", size: "large"}
+          - {command: "feld_loeschen", size: "medium"}
+          - {command: "feld_umbenennen", size: "medium"}
+          - {command: "feldrechner", size: "medium"}
       - id: "auswahl"
         label: "Selection"
         items:
@@ -389,6 +396,13 @@ contextual_tabs:
         items:
           - {command: "attributtabelle", size: "large"}
           - {command: "tabelle_der_auswahl", size: "large"}
+      - id: "felder"
+        label: "Fields"
+        items:
+          - {command: "feld_hinzufuegen", size: "large"}
+          - {command: "feld_loeschen", size: "medium"}
+          - {command: "feld_umbenennen", size: "medium"}
+          - {command: "feldrechner", size: "medium"}
       - id: "auswahl"
         label: "Selection"
         items:
@@ -1771,3 +1785,524 @@ commands:
     label: "Results Viewer"
     source: {type: "plugin_action", plugin: "processing", object_name: "resultsViewer"}
     description: "Show or hide the panel with processing results."
+  feld_hinzufuegen:
+    label: "Add Field"
+    source: {type: "custom", id: "ribbon.feld_hinzufuegen"}
+    description: "Create a new field with name, type, length, alias and comment. Undoable in edit mode, otherwise written to the data source after confirmation."
+    enabled_when: ["active_layer_can_add_fields"]
+  feld_loeschen:
+    label: "Delete Field"
+    source: {type: "custom", id: "ribbon.feld_loeschen"}
+    description: "Choose fields from a list and delete them. Undoable in edit mode, otherwise written to the data source after confirmation."
+    enabled_when: ["active_layer_can_delete_fields"]
+  feld_umbenennen:
+    label: "Rename Field"
+    source: {type: "custom", id: "ribbon.feld_umbenennen"}
+    description: "Rename a field. Undoable in edit mode, otherwise written to the data source after confirmation."
+    enabled_when: ["active_layer_can_rename_fields"]
+  projekt_schliessen:
+    label: "Close Project"
+    source: {type: "qgis_action", object_name: "mActionCloseProject"}
+    description: "Close the current project."
+  qgis_beenden:
+    label: "Exit QGIS"
+    source: {type: "qgis_action", object_name: "mActionExit"}
+    description: "Exit QGIS; you are asked about unsaved changes first."
+  projekteigenschaften:
+    label: "Project Properties"
+    source: {type: "qgis_action", object_name: "mActionProjectProperties"}
+    description: "Edit the properties of the project (CRS, styles, data sources, variables …)."
+  projekt_zuruecknehmen:
+    label: "Revert Project"
+    source: {type: "qgis_action", object_name: "mActionRevertProject"}
+    description: "Revert the project to its last saved state."
+  dwg_importieren:
+    label: "Import DWG/DXF"
+    source: {type: "qgis_action", object_name: "mActionDwgImport"}
+    description: "Import layers from a DWG or DXF drawing."
+  neu_aus_vorlage:
+    label: "New from Template"
+    source: {type: "qgis_menu", object_name: "mProjectFromTemplateMenu"}
+    description: "Create a new project from a project template."
+  zuletzt_verwendet:
+    label: "Recent Projects"
+    source: {type: "qgis_menu", object_name: "mRecentProjectsMenu"}
+    description: "Open one of the recently used projects."
+  oeffnen_aus:
+    label: "Open From"
+    source: {type: "qgis_menu", object_name: "mProjectFromStorageMenu"}
+    description: "Open a project from a database or another project storage."
+  speichern_in:
+    label: "Save To"
+    source: {type: "qgis_menu", object_name: "mProjectToStorageMenu"}
+    description: "Save the project to a database or another project storage."
+  layout_oeffnen:
+    label: "Open Layout"
+    source: {type: "qgis_menu", object_name: "mLayoutsMenu"}
+    description: "Open one of the print layouts of the project."
+  projektmodelle:
+    label: "Project Models"
+    source: {type: "qgis_menu", object_name: "mMenuProjectModels"}
+    description: "Run processing models stored in the project."
+  in_uebersicht_anzeigen:
+    label: "Show in Overview"
+    source: {type: "qgis_action", object_name: "mActionAddToOverview"}
+    description: "Show the selected layers in the overview map."
+    enabled_when: ["active_layer"]
+  alle_in_uebersicht:
+    label: "Show All in Overview"
+    source: {type: "qgis_action", object_name: "mActionAddAllToOverview"}
+    description: "Show all layers in the overview map."
+  alle_aus_uebersicht:
+    label: "Remove All from Overview"
+    source: {type: "qgis_action", object_name: "mActionRemoveAllFromOverview"}
+    description: "Remove all layers from the overview map."
+  layer_kopieren:
+    label: "Copy Layer"
+    source: {type: "qgis_action", object_name: "mActionCopyLayer"}
+    description: "Copy the selected layers or groups with their style to the clipboard."
+    enabled_when: ["active_layer_or_group"]
+  layer_einfuegen:
+    label: "Paste Layer"
+    source: {type: "qgis_action", object_name: "mActionPasteLayer"}
+    description: "Paste copied layers or groups into the Layers panel."
+  stil_kopieren:
+    label: "Copy Style"
+    source: {type: "qgis_action", object_name: "mActionCopyStyle"}
+    description: "Copy the style of the active layer to the clipboard."
+    enabled_when: ["active_layer"]
+  layer_duplizieren:
+    label: "Duplicate Layer"
+    source: {type: "qgis_action", object_name: "mActionDuplicateLayer"}
+    description: "Duplicate the selected layers with style and settings."
+    enabled_when: ["active_layer"]
+  layer_entfernen:
+    label: "Remove Layer"
+    source: {type: "qgis_action", object_name: "mActionRemoveLayer"}
+    description: "Remove the selected layers or groups from the project. The data is kept."
+    enabled_when: ["active_layer_or_group"]
+  layer_einbetten:
+    label: "Embed Layers and Groups"
+    source: {type: "qgis_action", object_name: "mActionEmbedLayers"}
+    description: "Embed layers and groups from another project."
+  beschriftung_gestalten:
+    label: "Labeling Panel"
+    source: {type: "qgis_action", object_name: "mActionLabeling"}
+    description: "Edit the labels of the active layer in the Layer Styling panel."
+  layereigenschaften:
+    label: "Layer Properties"
+    source: {type: "qgis_action", object_name: "mActionLayerProperties"}
+    description: "Open the properties of the active layer."
+    enabled_when: ["active_layer"]
+  layer_kbs_setzen:
+    label: "Set Layer CRS"
+    source: {type: "qgis_action", object_name: "mActionSetLayerCRS"}
+    description: "Set the coordinate reference system of the selected layers (without reprojecting the data)."
+    enabled_when: ["active_layer"]
+  projekt_kbs_vom_layer:
+    label: "Set Project CRS from Layer"
+    source: {type: "qgis_action", object_name: "mActionSetProjectCRSFromLayer"}
+    description: "Use the coordinate reference system of the active layer for the project."
+    enabled_when: ["active_layer"]
+  sichtbarkeit_massstab:
+    label: "Set Scale Visibility"
+    source: {type: "qgis_action", object_name: "mActionSetLayerScaleVisibility"}
+    description: "Set the scale range in which the selected layers are visible."
+    enabled_when: ["active_layer"]
+  speichern_gewaehlte:
+    label: "Save Edits of Selected Layers"
+    source: {type: "qgis_action", object_name: "mActionSaveEdits"}
+    description: "Save the edits of the layers selected in the Layers panel."
+  verwerfen_gewaehlte:
+    label: "Roll Back Edits of Selected Layers"
+    source: {type: "qgis_action", object_name: "mActionRollbackEdits"}
+    description: "Roll back the edits of the layers selected in the Layers panel."
+  abbrechen_gewaehlte:
+    label: "Cancel Edits of Selected Layers"
+    source: {type: "qgis_action", object_name: "mActionCancelEdits"}
+    description: "Roll back the edits of the selected layers and stop editing."
+  abbrechen_alle:
+    label: "Cancel Edits of All Layers"
+    source: {type: "qgis_action", object_name: "mActionCancelAllEdits"}
+    description: "Roll back the edits of all layers and stop editing everywhere."
+  tabelle_sichtbare:
+    label: "Table of Visible Features"
+    source: {type: "qgis_action", object_name: "mActionOpenTableVisible"}
+    description: "Open the attribute table with the features visible on the map."
+    enabled_when: ["active_layer_has_fields"]
+  tabelle_bearbeitete:
+    label: "Table of Edited Features"
+    source: {type: "qgis_action", object_name: "mActionOpenTableEdited"}
+    description: "Open the attribute table with the edited and new features."
+    enabled_when: ["active_layer_has_fields"]
+  neuer_gpx_layer:
+    label: "New GPX Layer"
+    source: {type: "qgis_action", object_name: "mActionNewGpxLayer"}
+    description: "Create a new GPX file with waypoints, routes and tracks."
+  gpx_hinzufuegen:
+    label: "Add GPX Layer"
+    source: {type: "qgis_action", object_name: "mActionAddGpsLayer"}
+    description: "Add waypoints, routes and tracks from a GPX file."
+  punktwolke_hinzufuegen:
+    label: "Add Point Cloud Layer"
+    source: {type: "qgis_action", object_name: "mActionAddPointCloudLayer"}
+    description: "Add a point cloud (e.g. LAS, LAZ, COPC, EPT)."
+  vektorkacheln_hinzufuegen:
+    label: "Add Vector Tile Layer"
+    source: {type: "qgis_action", object_name: "mActionAddVectorTileLayer"}
+    description: "Add vector tiles from a file or a service."
+  xyz_hinzufuegen:
+    label: "Add XYZ Layer"
+    source: {type: "qgis_action", object_name: "mActionAddXyzLayer"}
+    description: "Add a tiled map via an XYZ address."
+  mssql_hinzufuegen:
+    label: "Add MS SQL Server Layer"
+    source: {type: "qgis_action", object_name: "mActionAddMssqlLayer"}
+    description: "Add a layer from an MS SQL Server database."
+  oracle_hinzufuegen:
+    label: "Add Oracle Layer"
+    source: {type: "qgis_action", object_name: "mActionAddOracleLayer"}
+    description: "Add a layer from an Oracle database."
+  hana_hinzufuegen:
+    label: "Add SAP HANA Layer"
+    source: {type: "qgis_action", object_name: "mActionAddHanaLayer"}
+    description: "Add a layer from an SAP HANA database."
+  stil_speichern:
+    label: "Save Style"
+    source: {type: "custom", id: "ribbon.stil_speichern"}
+    description: "Save the style of the active layer as a QGIS layer style file (.qml)."
+    enabled_when: ["active_layer"]
+  optionen:
+    label: "Options"
+    source: {type: "qgis_action", object_name: "mActionOptions"}
+    description: "Open the general settings of QGIS."
+  tastenkuerzel:
+    label: "Keyboard Shortcuts"
+    source: {type: "qgis_action", object_name: "mActionConfigureShortcuts"}
+    description: "Configure the keyboard shortcuts of the QGIS commands."
+  benutzerprojektionen:
+    label: "Custom Projections"
+    source: {type: "qgis_action", object_name: "mActionCustomProjection"}
+    description: "Create and edit custom coordinate reference systems."
+  oberflaechenanpassung:
+    label: "Interface Customization"
+    source: {type: "qgis_action", object_name: "mActionCustomization"}
+    description: "Show or hide menus, toolbars and panels of QGIS."
+  benutzerprofile:
+    label: "User Profiles"
+    source: {type: "qgis_menu", object_name: "mUserProfileMenu"}
+    description: "Switch to another user profile."
+  neues_profil:
+    label: "New Profile"
+    source: {type: "qgis_action", object_name: "mActionNewProfile"}
+    description: "Create a new user profile with its own settings."
+  profilordner_oeffnen:
+    label: "Open Profile Folder"
+    source: {type: "qgis_action", object_name: "mActionOpenActiveProfileFolder"}
+    description: "Open the folder of the current user profile in the file manager."
+  nach_wert_waehlen:
+    label: "Select by Value"
+    source: {type: "qgis_action", object_name: "mActionSelectByForm"}
+    description: "Select or filter features with a form of field values."
+    enabled_when: ["active_layer_has_fields"]
+  erneut_waehlen:
+    label: "Reselect Features"
+    source: {type: "qgis_action", object_name: "mActionReselect"}
+    description: "Restore the selection that was cleared last."
+    enabled_when: ["active_layer_has_fields"]
+  objektanzahl:
+    label: "Show Feature Count"
+    source: {type: "iface_method", method: "layerTreeView.defaultActions.showFeatureCount"}
+    description: "Show or hide the feature count behind the layer in the Layers panel."
+    enabled_when: ["active_layer_has_fields"]
+  umbenennen:
+    label: "Rename Layer or Group"
+    source: {type: "iface_method", method: "layerTreeView.defaultActions.renameGroupOrLayer"}
+    description: "Rename the selected layer or group in the Layers panel."
+    enabled_when: ["active_layer_or_group"]
+  nach_oben_bringen:
+    label: "Move to Top"
+    source: {type: "iface_method", method: "layerTreeView.defaultActions.moveToTop"}
+    description: "Move the selected layers or groups to the top of their group."
+    enabled_when: ["active_layer_or_group"]
+  nach_unten_schieben:
+    label: "Move to Bottom"
+    source: {type: "iface_method", method: "layerTreeView.defaultActions.moveToBottom"}
+    description: "Move the selected layers or groups to the bottom of their group."
+    enabled_when: ["active_layer_or_group"]
+  aus_gruppe_nehmen:
+    label: "Move Out of Group"
+    source: {type: "iface_method", method: "layerTreeView.defaultActions.moveOutOfGroup"}
+    description: "Move the selected layers out of their group one level up."
+    enabled_when: ["active_layer_or_group"]
+  gruppe_hinzufuegen:
+    label: "Add Group"
+    source: {type: "iface_method", method: "layerTreeView.defaultActions.addGroup"}
+    description: "Create a new group in the Layers panel."
+  gewaehlte_gruppieren:
+    label: "Group Selected"
+    source: {type: "iface_method", method: "layerTreeView.defaultActions.groupSelected"}
+    description: "Put the selected layers and groups into a new group."
+    enabled_when: ["active_layer_or_group"]
+  alle_kinder_einschalten:
+    label: "Check All Children"
+    source: {type: "iface_method", method: "layerTreeView.defaultActions.checkAndAllChildren"}
+    description: "Make the group and all its layers and subgroups visible."
+    enabled_when: ["active_node_is_group"]
+  alle_kinder_ausschalten:
+    label: "Uncheck All Children"
+    source: {type: "iface_method", method: "layerTreeView.defaultActions.uncheckAndAllChildren"}
+    description: "Hide the group and all its layers and subgroups."
+    enabled_when: ["active_node_is_group"]
+  eigenschaften_information:
+    label: "Properties: Information"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Information"]
+    description: "Open the layer properties on the Information page (source, extent, count)."
+    enabled_when: ["active_layer"]
+  eigenschaften_symbolisierung:
+    label: "Properties: Symbology"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Style"]
+    description: "Open the layer properties on the Symbology page."
+    enabled_when: ["active_layer"]
+  eigenschaften_beschriftungen:
+    label: "Properties: Labels"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Labels", "mOptsPage_Labeling"]
+    description: "Open the layer properties on the Labels page (all layer types)."
+    enabled_when: ["active_layer"]
+  eigenschaften_3d:
+    label: "Properties: 3D View"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_3DView"]
+    description: "Open the layer properties on the 3D View page."
+    enabled_when: ["active_layer"]
+  eigenschaften_diagramme:
+    label: "Properties: Diagrams"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Diagrams"]
+    description: "Open the layer properties on the Diagrams page."
+    enabled_when: ["active_layer_has_fields"]
+  eigenschaften_attributformular:
+    label: "Properties: Attributes Form"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_AttributesForm"]
+    description: "Configure the form and the edit widgets of the fields."
+    enabled_when: ["active_layer_has_fields"]
+  eigenschaften_hilfsspeicher:
+    label: "Properties: Auxiliary Storage"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_AuxiliaryStorage"]
+    description: "Open the layer properties on the Auxiliary Storage page (data for labels and diagrams)."
+    enabled_when: ["active_layer_has_fields"]
+  eigenschaften_aktionen:
+    label: "Properties: Actions"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Actions"]
+    description: "Configure the actions of the layer (e.g. a link or script per feature)."
+    enabled_when: ["active_layer_has_fields"]
+  eigenschaften_anzeige:
+    label: "Properties: Display"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Display"]
+    description: "Set the display name and map tips of the layer."
+    enabled_when: ["active_layer"]
+  eigenschaften_darstellung:
+    label: "Properties: Rendering"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Rendering"]
+    description: "Set the scale range, simplification and other rendering options of the layer."
+    enabled_when: ["active_layer"]
+  eigenschaften_zeitlich:
+    label: "Properties: Temporal"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Temporal"]
+    description: "Set the temporal properties of the layer for the Temporal Controller."
+    enabled_when: ["active_layer"]
+  eigenschaften_variablen:
+    label: "Properties: Variables"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Variables"]
+    description: "Set the variables of the layer for expressions."
+    enabled_when: ["active_layer_has_fields"]
+  eigenschaften_hoehe:
+    label: "Properties: Elevation"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Elevation"]
+    description: "Set the elevation properties of the layer for profiles and 3D."
+    enabled_when: ["active_layer"]
+  eigenschaften_metadaten:
+    label: "Properties: Metadata"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Metadata"]
+    description: "Edit the metadata of the layer."
+    enabled_when: ["active_layer"]
+  eigenschaften_abhaengigkeiten:
+    label: "Properties: Dependencies"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_DataDependencies"]
+    description: "Set the layers whose changes make this layer reload."
+    enabled_when: ["active_layer_has_fields"]
+  eigenschaften_legende:
+    label: "Properties: Legend"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Legend"]
+    description: "Configure the legend entries and embedded widgets of the layer."
+    enabled_when: ["active_layer"]
+  eigenschaften_server:
+    label: "Properties: QGIS Server"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Server"]
+    description: "Set the properties of the layer for publishing with QGIS Server."
+    enabled_when: ["active_layer"]
+  eigenschaften_digitalisieren:
+    label: "Properties: Digitizing"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Digitizing"]
+    description: "Set the geometry checks and digitizing defaults of the layer."
+    enabled_when: ["active_layer_is_vector"]
+  eigenschaften_transparenz:
+    label: "Properties: Transparency"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Transparency"]
+    description: "Set the transparent values and no data of the raster."
+    enabled_when: ["active_layer_is_raster"]
+  eigenschaften_pyramiden:
+    label: "Properties: Pyramids"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_Pyramids"]
+    description: "Build overviews (pyramids) of the raster."
+    enabled_when: ["active_layer_is_raster"]
+  eigenschaften_rasterattribute:
+    label: "Properties: Attribute Tables"
+    source:
+      type: "custom"
+      id: "ribbon.layer_eigenschaften"
+      args: ["mOptsPage_RasterAttributeTable"]
+    description: "Show, load and edit the attribute tables of the raster."
+    enabled_when: ["active_layer_is_raster"]
+  projekt_allgemein:
+    label: "Project Properties: General"
+    source:
+      type: "iface_method"
+      method: "showProjectPropertiesDialog"
+      args: ["mProjOptsGeneral"]
+    description: "Set the title, home folder, units and paths of the project."
+  projekt_metadaten:
+    label: "Project Properties: Metadata"
+    source:
+      type: "iface_method"
+      method: "showProjectPropertiesDialog"
+      args: ["mMetadataPage"]
+    description: "Edit the metadata of the project."
+  projekt_ansicht:
+    label: "Project Properties: View Settings"
+    source:
+      type: "iface_method"
+      method: "showProjectPropertiesDialog"
+      args: ["mViewSettingsPage"]
+    description: "Set the scales and extent of the map view for the project."
+  projekt_kbs:
+    label: "Project Properties: CRS"
+    source:
+      type: "iface_method"
+      method: "showProjectPropertiesDialog"
+      args: ["mProjOptsCRS"]
+    description: "Set the coordinate reference system of the project."
+  projekt_transformationen:
+    label: "Project Properties: Transformations"
+    source:
+      type: "iface_method"
+      method: "showProjectPropertiesDialog"
+      args: ["mProjTransformations"]
+    description: "Set the datum transformations between coordinate reference systems."
+  projekt_stile:
+    label: "Project Properties: Styles"
+    source:
+      type: "iface_method"
+      method: "showProjectPropertiesDialog"
+      args: ["mProjOptsSymbols"]
+    description: "Set the default symbols and color ramps of the project."
+  projekt_farben:
+    label: "Project Properties: Colors"
+    source:
+      type: "iface_method"
+      method: "showProjectPropertiesDialog"
+      args: ["mTabColors"]
+    description: "Set the colors of the project (project colors and color space)."
+  projekt_datenquellen:
+    label: "Project Properties: Data Sources"
+    source:
+      type: "iface_method"
+      method: "showProjectPropertiesDialog"
+      args: ["mTab_DataSources"]
+    description: "Set the identifiability, required layers and transactions of the layers."
+  projekt_variablen:
+    label: "Project Properties: Variables"
+    source:
+      type: "iface_method"
+      method: "showProjectPropertiesDialog"
+      args: ["mTab_Variables"]
+    description: "Set the variables of the project for expressions."
+  projekt_makros:
+    label: "Project Properties: Macros"
+    source:
+      type: "iface_method"
+      method: "showProjectPropertiesDialog"
+      args: ["mProjOptsMacros"]
+    description: "Edit the Python macros of the project."
+  projekt_server:
+    label: "Project Properties: QGIS Server"
+    source:
+      type: "iface_method"
+      method: "showProjectPropertiesDialog"
+      args: ["mProjOptsOWS"]
+    description: "Configure the services of the project for QGIS Server."
+  projekt_zeitlich:
+    label: "Project Properties: Temporal"
+    source:
+      type: "iface_method"
+      method: "showProjectPropertiesDialog"
+      args: ["mTemporalOptions"]
+    description: "Set the time range of the project."

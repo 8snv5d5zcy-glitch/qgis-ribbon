@@ -17,7 +17,7 @@ from qgis.PyQt.QtCore import QModelIndex, QRectF, Qt, pyqtSignal
 from qgis.PyQt.QtGui import QPainter, QPen, QStandardItem, QStandardItemModel
 from qgis.PyQt.QtWidgets import QCompleter, QLineEdit, QToolBar
 
-from ..core.search import PATH_SEP, Entry, SearchIndex, ribbon_entries
+from ..core.search import PATH_SEP, Entry, SearchIndex, pool_entries, ribbon_entries
 from ..qgis_integration.action_resolver import clean_text
 from . import icons, theme
 from ..core.i18n import tr
@@ -103,10 +103,11 @@ class SearchBox(QLineEdit):
     def build_index(self):
         if self.index is None:
             entries = ribbon_entries(self._ribbon)
-            # Nur Befehle mit Ort im Ribbon; Befehle, die nur im Editor zur
-            # Auswahl stehen, findet die Suche als QGIS-Aktion
+            # Befehle mit Ort im Ribbon, dann der Befehlsvorrat ohne Ort; was
+            # eine QGIS-Aktion spiegelt, findet die Suche als QGIS-Aktion
             mirrored = {e.ref[0].source.get("object_name") for e in entries
                         if e.ref[0].source.type in ("qgis_action", "plugin_action")}
+            entries += pool_entries(self._ribbon, {e.ref[0].id for e in entries})
             entries += qgis_action_entries(self._ctx.env.iface.mainWindow(), mirrored)
             self.index = SearchIndex(entries)
         return self.index

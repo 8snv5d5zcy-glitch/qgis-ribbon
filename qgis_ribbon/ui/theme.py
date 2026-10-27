@@ -38,7 +38,7 @@ SMALL_WIDTH = 26
 GROUP_LABEL_HEIGHT = 20
 GROUP_PADDING = 6        # links/rechts in einer Gruppe
 GROUP_SPACING = 2        # zwischen Spalten einer Gruppe
-GROUP_GAP = 1            # zwischen Gruppen (Trennlinie liegt darin)
+GROUP_GAP = 5            # zwischen Gruppen (Trennlinie liegt in der Mitte)
 PAGE_TOP = 6
 PAGE_HEIGHT = PAGE_TOP + CONTENT_HEIGHT + GROUP_LABEL_HEIGHT + 2
 HEADER_HEIGHT = 44
@@ -160,7 +160,7 @@ def palette_tokens(palette):
     dis = _hex(palette.color(QPalette.Disabled, QPalette.WindowText))
     dark = palette.color(QPalette.Window).lightness() < theme_tokens.DARK_BELOW
     return {
-        "win": win, "surf": base, "bord": text, "div": text, "text": text, "muted": text,
+        "win": win, "surf": base, "bord": text, "div": text, "gdiv": text, "text": text, "muted": text,
         "faint": dis, "hover": hi, "press": hi, "ctx": hi, "ctxS": base, "ctxT": text,
         "shadow": "#00000000", "tip": text, "tipText": base, "err": text,
         "acc": hi, "accS": hi, "accT": hi_text, "accB": hi_text, "icf": hi + "00",

@@ -21,7 +21,7 @@ The ribbon consists of the **header** (Quick Access Toolbar, tabs, command searc
 
 ![The Edit tab](../images/en/tab_edit.png)
 
-When you start editing a layer, the ribbon switches to the **Edit** tab.
+When you start editing a layer, the ribbon switches to the **Edit** tab. It does not leave a tab of your own (see [Customizing the ribbon](customize.md)); your workflow stays in place.
 
 In **Editing**, **Edit**, **Save** and **Discard** act on the active layer only; editing stays on after saving or discarding. **Save All** and **Discard All** act on every layer being edited. QGIS asks before discarding.
 
@@ -46,7 +46,9 @@ Some tabs only appear when they fit the active layer in the Layers panel. They s
 
 The groups for the layer type follow, for example **Aggregation** for point layers (point cluster, point displacement, heatmap; **None** restores the previous symbology), the **Renderer**, **Point Size** and **Max. Error** of a point cloud, or the displayed datasets (**Scalar**, **Vectors**) and the **Mesh Frame** of a mesh.
 
-**Group:** opacity, blending mode and visibility range apply to the whole group. QGIS only has them when the group is *rendered as a group*; the first change switches that on (button **Render as Group**; switching it off removes the group's settings). **Exclusive** keeps only one layer of the group visible, **Zoom to Group** shows all of its layers.
+**Group:** opacity, blending mode and visibility range apply to the whole group. QGIS only has them when the group is *rendered as a group*; the first change switches that on (button **Render as Group**; switching it off removes the group's settings). **Exclusive** keeps only one layer of the group visible; the Layers panel then shows circles instead of check boxes. **Zoom to Group** shows all of its layers.
+
+**Data** of a vector layer or a table: the group **Fields** creates fields (**Add Field**: name, type, length, precision, alias, comment), **deletes** and **renames** them; next to them the **Field Calculator**. In edit mode the change goes into the edit buffer and can be undone, otherwise it is written to the data source directly after confirmation. If the data source cannot change fields, the buttons are grayed out. **Fields** under Data Design opens the field list of the layer properties.
 
 **Labeling** for a vector layer: **Label** switches the labels on. A line layer then gets the placement *Parallel*, because QGIS does not draw line labels with *Around point*. A layer can have several **label classes**, each for its own features with its own text and style. Choose a class in the list; the buttons next to it create a **new class** (a copy of the selected one) or **delete** the selected class. **Filter** decides which features a class labels, **Label Class Features** switches the class on or off, and **Field** chooses the field for the text; its button ε opens the expression editor for a text built from several fields.
 

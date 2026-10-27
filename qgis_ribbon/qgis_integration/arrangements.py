@@ -92,6 +92,13 @@ class Arrangements(QObject):
         else:
             self.user.set_quick_access(",".join(qat))
         self.user.set_layout(cz.to_dict(arr, self.base))
+        # Eigene Kürzel gelöschter Tabs verfallen
+        gone = {r for r in cz.effective_removed(arr) if "/" not in r}
+        if gone:
+            keytips = self.user.keytips()
+            kept = cz.keytips_without_tabs(keytips, gone)
+            if kept != keytips:
+                self.user.set_keytips(kept)
         self.changed.emit()
 
     def reset_layout(self):

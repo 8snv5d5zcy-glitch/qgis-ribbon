@@ -19,7 +19,7 @@ from qgis.gui import (QgsBlendModeComboBox, QgsColorButton, QgsDoubleSpinBox,
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QFontDatabase, QIcon, QPainter
 from qgis.PyQt.QtWidgets import (QCheckBox, QComboBox, QFontComboBox, QHBoxLayout, QLabel,
-                                 QSizePolicy, QWidget)
+                                 QSizePolicy, QSlider, QWidget)
 
 from ...qgis_integration import (builtin_commands, compare, custom_commands, kontext_ops, layer_ops,
                                  raster_ops)
@@ -27,7 +27,7 @@ from .. import icons, theme
 from ..html_text import escape
 from ...core.i18n import tr
 
-EDITOR_WIDTHS = {"scale": 110, "opacity": 130, "blend": 120, "font": 140, "size": 52,
+EDITOR_WIDTHS = {"scale": 110, "opacity": 200, "blend": 120, "font": 140, "size": 52,
                  "style": 90, "color": 36, "class": 120, "field": 150, "number": 72,
                  "interval": 84, "dataset": 140}
 
@@ -53,6 +53,7 @@ class LayerControl(QWidget):
     editor_kind = None
     show_label = True       # False: der Editor trägt die Beschriftung selbst (Kontrollkästchen)
     group_aware = False     # True: bei gewählter Gruppe wirkt es auf deren Gruppenebene
+    label_gap = 4           # Abstand zwischen Icon, Beschriftung und Editor
 
     def __init__(self, env, command, ctx, parent=None, size="medium"):
         QWidget.__init__(self, parent)
@@ -64,7 +65,7 @@ class LayerControl(QWidget):
         self.setObjectName("ribbon_control_" + command.id)
         lay = QHBoxLayout(self)
         lay.setContentsMargins(2, 0, 2, 0)
-        lay.setSpacing(4)
+        lay.setSpacing(self.label_gap)
         if size != "small" and self.show_label:
             fallback = ctx.resolver.theme_icon(command.icon) if command.icon else None
             icon = icons.command_icon(command, fallback)
@@ -224,12 +225,21 @@ class ScaleControl(LayerControl):
             self.write(lambda layer: layer_ops.set_layer_scale(layer, self.which, value))
 
 
+OPACITY_SLIDER_MIN = 120   # Schiebereglerteil der Deckkraft, damit er sich gut greifen lässt
+
+
 class OpacityControl(LayerControl):
     editor_kind = "opacity"
     group_aware = True
+    label_gap = 8
 
     def create_editor(self):
         w = QgsOpacityWidget(self)
+        slider = w.findChild(QSlider)
+        if slider is not None:
+            slider.setMinimumWidth(OPACITY_SLIDER_MIN)
+        if w.layout() is not None:
+            w.layout().setSpacing(8)
         w.opacityChanged.connect(
             lambda value: self.write(lambda layer: layer_ops.set_opacity(layer, value)))
         return w

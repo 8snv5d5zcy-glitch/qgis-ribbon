@@ -12,6 +12,7 @@ modes:
     surf: "#FFFFFF"     # Ribbon-Fläche, Popups, Docks
     bord: "#DDE1E7"     # Rahmen
     div: "#E6E9EE"      # Trennlinien
+    gdiv: "#B4BBC6"     # Trennlinien zwischen Ribbon-Gruppen (deutlicher)
     text: "#1B2027"
     muted: "#5A6370"    # Gruppenbeschriftung, inaktive Tabs
     faint: "#A2A9B3"    # gesperrt
@@ -28,6 +29,7 @@ modes:
     surf: "#1A1E24"
     bord: "#2E3540"
     div: "#262B33"
+    gdiv: "#434C59"
     text: "#E6E9ED"
     muted: "#A0A9B5"
     faint: "#5A636E"

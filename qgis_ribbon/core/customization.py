@@ -12,8 +12,14 @@ gegenüber der Definition (``ribbon_arcgis.yaml``) umgestellt hat:
   und Größe; einzeln auf den Standard zurücksetzbar;
 - Inhalt und Reihenfolge der Galerien (z. B. Editor- und Analysewerkzeuge).
 
-Tabs und Gruppen der Definition werden nie gelöscht, nur ausgeblendet. Eigene
-Tabs und Gruppen und Kopien von Gruppen in anderen Tabs lassen sich löschen.
+Tabs und Gruppen lassen sich ausblenden oder löschen, auch die der Definition
+(im Tab Erweiterungen also auch die Gruppen der Plugins). Ausnahmen:
+Kontext-Tabs der Definition lassen sich nur ausblenden (sie hängen an
+Bedingungen), und mindestens ein Haupt-Tab bleibt. Gelöschte Tabs und Gruppen
+der Definition stehen in ``removed`` (Tab-IDs bzw. Verweise "tab/gruppe");
+sonst kämen sie beim nächsten Lesen als „neu in der Definition“ wieder.
+Wiederherstellen: eine gelöschte Gruppe wieder in ihren Tab einfügen,
+einen gelöschten Tab über ``restore_tab``, alles über ``standard``.
 Kontext-Tabs behalten ihren Platz hinter den Haupt-Tabs.
 
 Gespeichert wird nur, was vom Standard abweicht (``to_dict``): ein
@@ -24,7 +30,7 @@ angepasster Anordnung (am Ende). Unbekannte IDs (z. B. nach einer Änderung der
 Definition oder aus einer fremden Datei) werden übergangen und als Hinweis
 gemeldet, nie als Fehler.
 
-Format 2 (JSON, Schlüssel wie in der Ribbon-Definition)::
+Format 3 (JSON, Schlüssel wie in der Ribbon-Definition)::
 
     {"tabs": [
         {"tab": "karte"},
@@ -38,14 +44,18 @@ Format 2 (JSON, Schlüssel wie in der Ribbon-Definition)::
                 {"command": "puffer", "size": "large"}]},
             {"group": "karte/navigieren"}]},
         {"id": "eigener_tab_1", "label": "Mein Tab", "groups": [...]}],
-     "galleries": {"editor_galerie": ["verschieben", "drehen"]}}
+     "galleries": {"editor_galerie": ["verschieben", "drehen"]},
+     "removed": ["teilen", "karte/zwischenablage"]}
 
 Eine Gruppe der Definition mit ``items`` ist die persönliche Fassung, ohne
 ``items`` folgt sie der Definition. Einträge sind einzelne Befehle
 (``command`` mit ``size``) oder ganze Einheiten der Definition (``element``:
 Split, Menü, Galerie-Menü, Zeile) mit stabilem Schlüssel (``element_key``);
 Splits und Menüs tragen eine Größe, Zeilen nicht. Format 1 (ohne
-persönliche Fassungen) wird unverändert gelesen.
+persönliche Fassungen) und Format 2 (ohne ``removed``) werden unverändert
+gelesen. Gelöschte Einträge, die die Definition nicht (mehr) kennt (z. B. die
+Gruppe eines gerade nicht geladenen Plugins), bleiben stehen, damit sie
+gelöscht bleiben, wenn es wieder da ist.
 
 Eine Datei zum Teilen (``make_bundle``/``read_bundle``) enthält zusätzlich die
 Schnellzugriffsleiste und die eigenen Kürzel.
@@ -55,14 +65,14 @@ import copy
 import dataclasses
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from .model import (SIZES, Command, CommandRef, Group, Menu, Ribbon, Row, Split, SubMenu, Tab)
 from .i18n import tr
 
 FORMAT = "qgis_ribbon_anordnung"
-VERSION = 2
-READ_VERSIONS = (1, 2)
+VERSION = 3
+READ_VERSIONS = (1, 2, 3)
 CUSTOM_TAB_PREFIX = "eigener_tab_"
 CUSTOM_GROUP_PREFIX = "eigene_gruppe_"
 NEW_TAB_LABEL = tr("New Tab")
@@ -121,7 +131,7 @@ class TabEntry:
     groups: List[GroupEntry] = field(default_factory=list)
 
     def is_home(self, group):
-        """Gruppe der Definition an ihrem eigenen Platz (nicht löschbar, nur ausblendbar)."""
+        """Gruppe der Definition an ihrem eigenen Platz (beim Löschen in ``removed`` vermerkt)."""
         return self.standard and group.ref is not None and group.home_tab == self.id
 
 
@@ -129,6 +139,8 @@ class TabEntry:
 class Arrangement:
     tabs: List[TabEntry] = field(default_factory=list)
     galleries: Dict[str, List[str]] = field(default_factory=dict)
+    # Gelöschte Tabs (ID) und Gruppen (Verweis "tab/gruppe") der Definition
+    removed: Set[str] = field(default_factory=set)
 
     def copy(self):
         return copy.deepcopy(self)
@@ -348,6 +360,7 @@ class _Reader(object):
         self.std_tabs = {t.id: t for t in base.tabs}
         self.std_groups = standard_groups(base)
         self.custom_ids = set()
+        self.removed = set()
 
     def warn(self, text):
         self.warnings.append(text)
@@ -435,20 +448,39 @@ class _Reader(object):
                 return None
             if tid in used:
                 return None
-            entry = _std_tab(base_tab)
+            self.removed.discard(tid)   # aufgeführt: nicht gelöscht
+            entry = self.std_tab(base_tab)
             entry.visible = visible
             if "groups" in raw:
                 entry.groups = self.groups(raw["groups"], tid)
                 present = {g.ref for g in entry.groups if entry.is_home(g)}
-                # Gruppen, die die Definition neu bekommen hat, hinten anfügen
+                self.removed -= present
+                # Gruppen, die die Definition neu bekommen hat, hinten anfügen (gelöschte nicht)
                 entry.groups += [_std_group(base_tab, g) for g in base_tab.groups
-                                 if group_ref(tid, g.id) not in present]
+                                 if group_ref(tid, g.id) not in present | self.removed]
             return entry
         tid = self._custom_id(raw.get("id"), tr("Custom tab"))
         if tid is None:
             return None
         return TabEntry(id=tid, label=self._label(raw, NEW_TAB_LABEL), visible=visible,
                         groups=self.groups(raw.get("groups"), tid))
+
+    def std_tab(self, base_tab):
+        """Tab der Definition ohne die gelöschten Gruppen."""
+        entry = _std_tab(base_tab)
+        entry.groups = [g for g in entry.groups if g.ref not in self.removed]
+        return entry
+
+    def read_removed(self, raw):
+        if not isinstance(raw, list):
+            return
+        for r in raw:
+            if not isinstance(r, str) or not r:
+                continue
+            base_tab = self.std_tabs.get(r)
+            if base_tab is not None and base_tab.contextual:
+                continue   # Kontext-Tabs lassen sich nur ausblenden
+            self.removed.add(r)
 
     def galleries(self, raw):
         out = {}
@@ -476,6 +508,7 @@ class _Reader(object):
         if not isinstance(data, dict):
             self.warn(tr("Arrangement unreadable, default applies"))
             return standard(self.base)
+        self.read_removed(data.get("removed"))
         tabs, used = [], set()
         for raw in data.get("tabs") or []:
             if not isinstance(raw, dict):
@@ -485,19 +518,20 @@ class _Reader(object):
                 tabs.append(entry)
                 used.add(entry.id)
         if not data.get("tabs"):
-            tabs = standard(self.base).tabs
-            used = {t.id for t in tabs}
+            tabs, used = [], set()   # alle Tabs der Definition (ohne gelöschte), wie unten
         # Tabs, die die Definition neu bekommen hat: Haupt-Tabs hinter den letzten Haupt-Tab
         for base_tab in self.base.tabs:
-            if base_tab.id in used:
+            if base_tab.id in used or base_tab.id in self.removed:
                 continue
-            entry = _std_tab(base_tab)
+            entry = self.std_tab(base_tab)
             if base_tab.contextual:
                 tabs.append(entry)
             else:
                 last = max([i for i, t in enumerate(tabs) if not t.contextual] or [-1])
                 tabs.insert(last + 1, entry)
-        arr = Arrangement(tabs=_ordered(tabs), galleries=self.galleries(data.get("galleries")))
+        arr = Arrangement(tabs=_ordered(tabs), galleries=self.galleries(data.get("galleries")),
+                          removed=set(self.removed))
+        prune_removed(arr)
         return arr
 
 
@@ -509,7 +543,7 @@ def _ordered(tabs):
 def from_dict(data, base):
     """Gespeicherte Anpassung -> (``Arrangement``, Hinweise). ``None``/leer = Standard.
 
-    Liest Format 1 und Format 2; Format 1 ist eine Teilmenge.
+    Liest Format 1 bis 3; ältere Formate sind Teilmengen.
     """
     reader = _Reader(base)
     arr = reader.read(data)
@@ -573,6 +607,9 @@ def to_dict(arr, base):
             if gid in known and list(ids) != [c.id for c in known[gid].gallery.items]}
     if gals:
         data["galleries"] = gals
+    removed = effective_removed(arr)
+    if removed:
+        data["removed"] = sorted(removed)
     return data or None
 
 
@@ -766,24 +803,94 @@ def add_command(group, command_id, size="large", after=None, base=None):
     return item
 
 
-def can_remove_tab(tab):
-    return not tab.standard
+def present_ids(arr):
+    """IDs der vorhandenen Tabs und Verweise der Gruppen an ihrem eigenen Platz."""
+    out = set()
+    for t in arr.tabs:
+        out.add(t.id)
+        out.update(g.ref for g in t.groups if t.is_home(g))
+    return out
+
+
+def effective_removed(arr):
+    """Gelöschte Einträge, die nicht (wieder) vorhanden sind."""
+    return set(arr.removed) - present_ids(arr)
+
+
+def prune_removed(arr):
+    """Wieder Eingefügtes aus ``removed`` nehmen (z. B. Gruppe zurück in ihren Tab)."""
+    arr.removed = effective_removed(arr)
+
+
+def is_last_main_tab(arr, tab):
+    return not tab.contextual and not any(t is not tab and not t.contextual for t in arr.tabs)
+
+
+def can_remove_tab(tab, arr=None):
+    """Kontext-Tabs der Definition nur ausblenden; mindestens ein Haupt-Tab bleibt."""
+    if tab.standard and tab.contextual:
+        return False
+    return arr is None or not is_last_main_tab(arr, tab)
 
 
 def can_remove_group(tab, group):
-    return not tab.is_home(group)
+    """Jede Gruppe lässt sich löschen (Gruppen der Definition an ihrem Platz über ``removed``)."""
+    return True
 
 
 def remove_tab(arr, tab):
-    if not can_remove_tab(tab):
-        raise ValueError(tr("Tabs of the definition can only be hidden"))
+    if not can_remove_tab(tab, arr):
+        if tab.contextual:
+            raise ValueError(tr("Contextual tabs of the definition can only be hidden."))
+        raise ValueError(tr("At least one main tab must remain."))
     arr.tabs.remove(tab)
+    if tab.standard:
+        arr.removed.add(tab.id)
 
 
-def remove_group(tab, group):
-    if not can_remove_group(tab, group):
-        raise ValueError(tr("Groups of the definition can only be hidden"))
+def remove_group(tab, group, arr=None):
+    """Gruppe aus dem Tab löschen. Gruppen der Definition an ihrem Platz brauchen ``arr``."""
+    if tab.is_home(group):
+        if arr is None:
+            raise ValueError(tr("Deleting a group of the definition needs the arrangement"))
+        arr.removed.add(group.ref)
     tab.groups.remove(group)
+
+
+def keytips_without_tabs(keytips, tab_ids):
+    """Eigene Kürzel ohne die der Tabs ``tab_ids`` (``tab:<id>`` und ``<id>/<befehl>``)."""
+    tab_ids = set(tab_ids)
+    return {k: v for k, v in keytips.items()
+            if not (k.startswith("tab:") and k[4:] in tab_ids) and k.split("/", 1)[0] not in tab_ids}
+
+
+def removed_tabs(arr, base):
+    """Gelöschte Haupt-Tabs der Definition (zum Wiederherstellen), in Reihenfolge der Definition."""
+    gone = effective_removed(arr)
+    return [t for t in base.tabs if t.id in gone and not t.contextual]
+
+
+def restore_tab(arr, base, tab_id):
+    """Gelöschten Tab der Definition wiederherstellen (mit allen Gruppen, wie in der Definition).
+
+    Er kommt hinter den nächsten vorhandenen Tab, der in der Definition vor ihm steht.
+    """
+    base_tab = base.tab(tab_id)
+    if tab_id in {t.id for t in arr.tabs}:
+        raise ValueError(tr("The tab “%s” is not deleted.") % base_tab.label)
+    arr.removed.discard(tab_id)
+    arr.removed -= {r for r in arr.removed if r.startswith(tab_id + "/")}
+    order = [t.id for t in base.tabs]
+    mine = order.index(tab_id)
+    pos = 0
+    for i, t in enumerate(arr.tabs):
+        if t.contextual:
+            break
+        if t.standard and t.id in order and order.index(t.id) < mine:
+            pos = i + 1
+    entry = _std_tab(base_tab)
+    arr.tabs.insert(pos, entry)
+    return entry
 
 
 def move_tab(arr, index, delta):

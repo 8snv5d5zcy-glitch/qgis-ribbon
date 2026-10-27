@@ -2,7 +2,7 @@
 
 [Contents](index.md)
 
-Everything in the ribbon can be changed: hide, rename or reorder tabs and groups, put commands into any group, create your own tabs and groups, and choose the commands of the Quick Access Toolbar and of the galleries. A set of these changes is called an **arrangement**.
+Everything in the ribbon can be changed: hide, delete, rename or reorder tabs and groups, put commands into any group, create your own tabs and groups, and choose the commands of the Quick Access Toolbar and of the galleries. A set of these changes is called an **arrangement**.
 
 ## The editor
 
@@ -13,7 +13,7 @@ Everything in the ribbon can be changed: hide, rename or reorder tabs and groups
 - **Top:** the tabs. Contextual tabs are on the right and marked with their color.
 - **Quick Access:** the commands of the Quick Access Toolbar.
 - **Middle:** a preview of the selected tab with its groups.
-- **Bottom left:** the commands. **Search** finds them by name or description. The list next to it filters: *All*, *Not in the ribbon*, *Extensions (plugins)*, *Own scripts and models*, *Toolbox (all tools)* or one tab. *Not in the ribbon* also lists further QGIS commands that have no place in the shipped ribbon, for example Zoom Out, Refresh, Field Calculator or Temporal Controller. A check mark shows that a command is already in the selected tab. **Groups** shows whole groups instead of single commands.
+- **Bottom left:** the commands. **Search** finds them by name or description. The list next to it filters: *All*, *Not in the ribbon*, *Extensions (plugins)*, *Own scripts and models*, *Toolbox (all tools)* or one tab. *Not in the ribbon* also lists further QGIS commands that have no place in the shipped ribbon, for example Zoom Out, Refresh, Temporal Controller, Duplicate Layer, Close Project, Keyboard Shortcuts, the pages of the layer properties (**Properties: …**) and of the project properties. A check mark shows that a command is already in the selected tab. **Groups** shows whole groups instead of single commands.
 - **Bottom right:** the properties of the selected tab, group or command (label, visibility, size).
 
 Nothing changes in the ribbon until you click **Save**. **Cancel** asks before discarding changes. Every step can be undone with the arrows at the top right (Ctrl+Z, Ctrl+Y). **Restore Defaults** resets tabs, groups and Quick Access to the shipped state; this can also be undone.
@@ -30,7 +30,8 @@ Nothing changes in the ribbon until you click **Save**. **Cancel** asks before d
 | Copy a group of another tab | switch the commands to **Groups** and drag the tile into the preview or onto a tab | select the tile, Enter |
 | New tab | **＋ Tab** | – |
 | Reorder tabs | drag the tab (main tabs stay before contextual tabs) | select the tab, Ctrl+arrow |
-| Remove | drag it back into the commands | Delete |
+| Remove, delete | drag it back into the commands | Delete |
+| Bring back a deleted tab | **Restore Deleted Tab** at the bottom of the window | – |
 | Show or hide | eye icon on a tab or group | Space |
 | Rename | double-click (your own tabs, all groups) | F2 |
 | Item size | properties: large, medium, small | – |
@@ -45,6 +46,10 @@ Notes:
 - A group of the shipped ribbon becomes your own version as soon as you change it. It is marked as *customized* and can be reset on its own.
 - Split buttons, menus, galleries and rows of small buttons stay one unit. They can be moved and removed; ▾ shows their content.
 - Empty groups of your own are dropped when saving.
+- Tabs and groups of the shipped ribbon can be deleted, too. The editor asks before it deletes a default tab; groups are deleted without asking.
+- The palette **Groups** brings back a deleted group, **Restore Deleted Tab** brings back a deleted tab with all its groups. **Restore Defaults** brings back everything.
+- Contextual tabs can only be hidden, and at least one main tab always remains.
+- The commands of deleted tabs and groups stay available through the search and the commands in the editor; entries in the Quick Access Toolbar stay.
 
 ## Customizing a gallery
 
