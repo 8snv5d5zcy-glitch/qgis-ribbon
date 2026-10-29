@@ -51,7 +51,7 @@ def icon_set():
             _FAILED = True
             try:
                 from qgis.core import Qgis, QgsMessageLog
-                QgsMessageLog.logMessage(str(exc), "QGIS Ribbon", Qgis.Warning)
+                QgsMessageLog.logMessage(str(exc), "QGIS Ribbon", Qgis.MessageLevel.Warning)
             except ImportError:
                 pass
     return _SET
@@ -64,10 +64,10 @@ def _renderer(name, size, mode, state):
     if renderer is not None:
         return renderer
     motif = icon_set().motifs[name]
-    if mode == QIcon.Disabled:
+    if mode == QIcon.Mode.Disabled:
         contour = accent = t["faint"][:7]
         fill = None
-    elif state == QIcon.On:
+    elif state == QIcon.State.On:
         contour, accent, fill = t["accT"][:7], t["acc"][:7], t["acc"][:7]
     else:
         contour, accent, fill = t["text"][:7], t["acc"][:7], t["acc"][:7]
@@ -91,7 +91,7 @@ class KonturIconEngine(QIconEngine):
 
     def paint(self, painter, rect, mode, state):
         if not self._own():
-            self.fallback.paint(painter, rect, Qt.AlignCenter, mode, state)
+            self.fallback.paint(painter, rect, Qt.AlignmentFlag.AlignCenter, mode, state)
             return
         side = min(rect.width(), rect.height())
         target = QRectF(rect.x() + (rect.width() - side) / 2.0,
@@ -106,9 +106,9 @@ class KonturIconEngine(QIconEngine):
         if pix is not None:
             return pix
         pix = QPixmap(size)
-        pix.fill(Qt.transparent)
+        pix.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pix)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.paint(painter, pix.rect(), mode, state)
         painter.end()
         if len(_PIXMAPS) > _CACHE_LIMIT:

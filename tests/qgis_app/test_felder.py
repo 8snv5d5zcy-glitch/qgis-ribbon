@@ -26,7 +26,7 @@ def memory():
 def gpkg(tmp_path):
     path = str(tmp_path / "felder.gpkg")
     fields = QgsFields()
-    fields.append(QgsField("art", QMetaType.QString))
+    fields.append(QgsField("art", QMetaType.Type.QString))
     opts = QgsVectorFileWriter.SaveVectorOptions()
     opts.driverName = "GPKG"
     opts.layerName = "punkte"
@@ -146,7 +146,7 @@ def test_rename_back_in_one_edit_session_is_refused(gpkg):
 
 def test_only_own_fields_can_be_deleted():
     layer = memory()
-    layer.addExpressionField("1 + 1", QgsField("virtuell", QMetaType.Int))
+    layer.addExpressionField("1 + 1", QgsField("virtuell", QMetaType.Type.Int))
     assert names(layer)[-1] == "virtuell"
     assert field_ops.own_fields(layer) == ["name", "wert"]
 
@@ -160,7 +160,7 @@ def no_dialogs(monkeypatch):
 
     def exec_dialog(dlg):
         state["fill"](dlg)
-        return QDialog.Accepted if dlg.buttons.button(QDialogButtonBox.Ok).isEnabled() else QDialog.Rejected
+        return QDialog.DialogCode.Accepted if dlg.buttons.button(QDialogButtonBox.StandardButton.Ok).isEnabled() else QDialog.DialogCode.Rejected
 
     def confirm(parent, layer):
         state["asked"] += 1
@@ -177,7 +177,7 @@ def test_add_dialog_checks_and_writes(fake_iface, no_dialogs):
     seen = {}
 
     def fill(dlg):
-        assert not dlg.buttons.button(QDialogButtonBox.Ok).isEnabled()
+        assert not dlg.buttons.button(QDialogButtonBox.StandardButton.Ok).isEnabled()
         assert dlg.hint.text() == "Einen Feldnamen eingeben."
         dlg.name.setText("WERT")
         seen["dup"] = dlg.hint.text()
@@ -212,7 +212,7 @@ def test_delete_and_rename_dialogs(fake_iface, no_dialogs):
         assert [dlg.list.item(i).text() for i in range(dlg.list.count())] == ["name", "wert"]
         assert dlg.hint.text() == "Die zu löschenden Felder abhaken."
         from qgis.PyQt.QtCore import Qt
-        dlg.list.item(1).setCheckState(Qt.Checked)
+        dlg.list.item(1).setCheckState(Qt.CheckState.Checked)
     no_dialogs["fill"] = tick
     assert field_dialogs.open_delete(fake_iface) is True and names(layer) == ["name"]
 

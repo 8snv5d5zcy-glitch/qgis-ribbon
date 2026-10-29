@@ -48,7 +48,7 @@ class QuickAccessBar(QWidget):
         self.menu = QMenu(self.customize)
         self.menu.aboutToShow.connect(self._fill_menu)
         self.customize.setMenu(self.menu)
-        self.customize.setPopupMode(QToolButton.InstantPopup)
+        self.customize.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self._lay.addWidget(self.customize)
 
     def set_commands(self, commands):
@@ -69,7 +69,7 @@ class QuickAccessBar(QWidget):
 
     def _fill_menu(self):
         # Untermenüs vom letzten Öffnen (Anordnungen) löschen; clear() entfernt nur die Aktionen
-        for sub in self.menu.findChildren(QMenu, options=Qt.FindDirectChildrenOnly):
+        for sub in self.menu.findChildren(QMenu, options=Qt.FindChildOption.FindDirectChildrenOnly):
             sub.deleteLater()
         self.menu.clear()
         title = self.menu.addAction(CUSTOMIZE_TEXT)

@@ -25,7 +25,7 @@ Beginnt die Bearbeitung eines Layers, wechselt das Ribbon zum Tab **Bearbeiten**
 
 In **Bearbeitung** wirken **Bearbeiten**, **Speichern** und **Verwerfen** nur auf den aktiven Layer; nach Speichern oder Verwerfen bleibt die Bearbeitung an. **Alle speichern** und **Alle verwerfen** wirken auf alle Layer in Bearbeitung. Vor dem Verwerfen kommt eine Rückfrage.
 
-**Konstruktion › Erweiterte Digitalisierung** schaltet die Konstruktionshilfen ein oder aus (Abstand, Winkel, Koordinaten beim Digitalisieren). Der Schalter ist bedienbar, solange ein Werkzeug aktiv ist, das sie unterstützt, etwa **Erstellen** oder **Ändern**. Solange er an ist, öffnet QGIS das Panel bei jedem solchen Werkzeug; **Konstruktionspanel** blendet es ein oder aus. Die kleinen Icons in **Einrasten** schalten Spurverfolgung, Selbsteinrasten und das Einrasten auf Schnittpunkte.
+**Konstruktion › Erweiterte Digitalisierung** schaltet die Konstruktionshilfen ein oder aus (Abstand, Winkel, Koordinaten beim Digitalisieren). Der Schalter ist bedienbar, solange ein Werkzeug aktiv ist, das sie unterstützt, etwa **Erstellen** oder **Ändern**. Das Panel öffnet sich dabei nicht; **Konstruktionspanel** im Dropdown des Buttons blendet es ein oder aus, ohne die Hilfen ein- oder auszuschalten. Die kleinen Icons in **Einrasten** schalten Spurverfolgung, Selbsteinrasten und das Einrasten auf Schnittpunkte.
 
 ## Kontext-Tabs
 
@@ -45,6 +45,8 @@ Manche Tabs erscheinen nur, wenn sie zum aktiven Layer im Bedienfeld Layer passe
 - **Vergleichen:** **Wischen** ist ein Kartenwerkzeug: Mit gedrückter Maustaste über die Karte ziehen, hinter der Kante ist der Layer ausgeblendet und gibt den Blick auf die Layer darunter frei. Die Zugrichtung bestimmt, ob die Kante senkrecht oder waagerecht liegt; beim Loslassen ist der Layer wieder ganz zu sehen. **Flimmern** blendet den Layer im eingestellten Takt (Millisekunden) aus und ein, bis es wieder ausgeschaltet oder ein anderer Layer gewählt wird. Beides ändert weder die Layerliste noch das Projekt.
 
 Danach folgen die Gruppen des Layertyps, zum Beispiel **Aggregation** für Punktlayer (Punktcluster, Punktverdrängung, Heatmap; **Keine** stellt die vorige Darstellung wieder her), die **Darstellungsart**, **Punktgröße** und der **maximale Fehler** einer Punktwolke oder die dargestellten Datensätze (**Skalar**, **Vektoren**) und das **Netzgitter** eines Netzes.
+
+Bei Vektorlayern steht hinter **Zeichnen** die Gruppe **Symbol**: Unter **Klasse** eine Kategorie, Klasse oder Regel wählen (oder in der Layerliste auf die Klasse klicken), dann **Füllfarbe**, **Randfarbe** und **Breite** direkt ändern. Die Breite ist bei Punkten die Größe, bei Linien die Linienbreite und bei Flächen die Randbreite. Mit **Alle Kategorien** (bzw. **Alle Klassen**, **Alle Regeln**) gilt die Breite für jede Klasse; die Farben sind dann grau, weil jede Klasse ihre eigene hat. **Symbol bearbeiten** öffnet den Symboleditor von QGIS für die gewählte Klasse. Jede Änderung lässt sich wie im Panel Layer-Styling rückgängig machen. Ist ein Wert über einen Ausdruck bestimmt, bleibt das Feld grau; der Tooltip nennt den Grund.
 
 **Gruppe:** Deckkraft, Mischmodus und Sichtbarkeitsbereich gelten für die ganze Gruppe. QGIS kennt sie nur, wenn die Gruppe *als Gruppe dargestellt* wird; die erste Änderung schaltet das ein (Knopf **Als Gruppe darstellen**, ausschalten nimmt die Einstellungen der Gruppe zurück). **Exklusiv** lässt immer nur einen Layer der Gruppe sichtbar; die Layerliste zeigt dann Kreise statt Haken. **Auf Gruppe zoomen** zeigt alle ihre Layer.
 
@@ -77,7 +79,7 @@ Die kleinen Icons links in der Kopfzeile bilden die **Schnellzugriffsleiste**. I
 - **Reihenfolge:** im Editor, siehe [Ribbon anpassen](customize.md).
 - **Standard wiederherstellen** im Menü ▾ stellt die gelieferten Befehle wieder her.
 
-Das Menü ▾ enthält außerdem die Einstellungen des Ribbons: Kürzel, Minimieren, Editor, Anordnungen, Darstellung, klassische QGIS-Oberfläche und diese Anleitung. Dieselben Einträge stehen im Rechtsklick-Menü des Ribbons:
+Das Menü ▾ enthält außerdem die Einstellungen des Ribbons: Kürzel, Minimieren, Editor, Anordnungen, Darstellung, QGIS-Menüleiste ausblenden, klassische QGIS-Oberfläche und diese Anleitung. Dieselben Einträge stehen im Rechtsklick-Menü des Ribbons:
 
 ![Rechtsklick-Menü des Ribbons](../images/de/context_menu.png)
 

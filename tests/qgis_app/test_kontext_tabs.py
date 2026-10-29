@@ -3,9 +3,9 @@ import copy
 import subprocess
 
 import pytest
-from qgis.core import (QgsCategorizedSymbolRenderer, QgsFeature, QgsGeometry, QgsMeshLayer,
-                       QgsPointCloudLayer, QgsPointXY, QgsProject, QgsRectangle, QgsVectorLayer,
-                       QgsVectorTileBasicLabeling, QgsVectorTileLayer)
+from qgis.core import (QgsCategorizedSymbolRenderer, QgsCoordinateReferenceSystem, QgsCsException, QgsFeature,
+                       QgsGeometry, QgsMeshLayer, QgsPointCloudLayer, QgsPointXY, QgsProject, QgsRectangle,
+                       QgsVectorLayer, QgsVectorTileBasicLabeling, QgsVectorTileLayer)
 from qgis.gui import QgsMapMouseEvent
 from qgis.PyQt.QtCore import QEvent, QModelIndex, QPoint, QRectF, Qt
 from qgis.PyQt.QtGui import QColor, QImage, QPainter
@@ -193,6 +193,22 @@ def test_group_layer_on_off_and_extent(project):
     assert {lyr.name() for lyr in kontext_ops.group_layers(group)} == {"A", "B"}
 
 
+def test_group_extent_skips_failed_transform(project, monkeypatch):
+    _prj, group, (a, _b, _c) = project
+
+    class FailingTransform:
+        def __init__(self, *args):
+            pass
+
+        def transformBoundingBox(self, rect):  # noqa: N802 (QGIS-Name)
+            raise QgsCsException("nicht transformierbar")
+
+    monkeypatch.setattr(kontext_ops, "QgsCoordinateTransform", FailingTransform)
+    extent = kontext_ops.group_extent(group, QgsCoordinateReferenceSystem("EPSG:3857"))
+    assert extent.isNull()                                      # Layer übersprungen, kein Abbruch
+    assert not kontext_ops.group_extent(group, a.crs()).isNull()  # gleiches KBS: ohne Transformation
+
+
 def test_layers_without_resolves_group_layer(project):
     _prj, group, (a, b, c) = project
     gl = kontext_ops.ensure_group_layer(group)
@@ -301,8 +317,8 @@ def test_group_controls_create_group_layer_on_first_change(ribbon, fake_iface, p
     gl.setOpacity(0.7)                               # außerhalb geändert: Ribbon folgt
     settle()
     assert opacity.editor.opacity() == pytest.approx(0.7)
-    blend.editor.setBlendMode(QPainter.CompositionMode_Multiply)
-    assert gl.blendMode() == QPainter.CompositionMode_Multiply
+    blend.editor.setBlendMode(QPainter.CompositionMode.CompositionMode_Multiply)
+    assert gl.blendMode() == QPainter.CompositionMode.CompositionMode_Multiply
     fake_iface.set_active_layer(a)                   # Layer statt Gruppe
     settle()
     assert feature.isEnabled() and opacity.editor.opacity() == pytest.approx(1.0)
@@ -340,8 +356,8 @@ def test_feature_blend_and_aggregation_gallery(ribbon, fake_iface):
     fake_iface.set_active_layer(layer)
     settle()
     feature = control(w, "objekt")
-    feature.editor.setBlendMode(QPainter.CompositionMode_Darken)
-    assert layer.featureBlendMode() == QPainter.CompositionMode_Darken
+    feature.editor.setBlendMode(QPainter.CompositionMode.CompositionMode_Darken)
+    assert layer.featureBlendMode() == QPainter.CompositionMode.CompositionMode_Darken
     btn = w.findChild(QToolButton, "ribbon_gallery_btn_aggregation")
     btn.menu().aboutToShow.emit()
     acts = {a.text(): a for a in btn.menu().actions() if a.text()}
@@ -373,9 +389,9 @@ def wait_rendered(comparison):
     raise AssertionError("nicht gerendert")
 
 
-def mouse(canvas, kind, x, y, button=Qt.LeftButton):
-    buttons = Qt.NoButton if kind == QEvent.MouseButtonRelease else button
-    return QgsMapMouseEvent(canvas, kind, QPoint(x, y), button, buttons, Qt.NoModifier)
+def mouse(canvas, kind, x, y, button=Qt.MouseButton.LeftButton):
+    buttons = Qt.MouseButton.NoButton if kind == QEvent.Type.MouseButtonRelease else button
+    return QgsMapMouseEvent(canvas, kind, QPoint(x, y), button, buttons, Qt.KeyboardModifier.NoModifier)
 
 
 def test_swipe_tool_and_flicker(ribbon, fake_iface, project, settings):
@@ -394,19 +410,19 @@ def test_swipe_tool_and_flicker(ribbon, fake_iface, project, settings):
     assert isinstance(canvas.mapTool(), compare.SwipeTool) and comparison.swiping
     wait_rendered(comparison)
     tool = canvas.mapTool()
-    tool.canvasPressEvent(mouse(canvas, QEvent.MouseButtonPress, 10, 10))
-    tool.canvasMoveEvent(mouse(canvas, QEvent.MouseMove, 60, 12))
+    tool.canvasPressEvent(mouse(canvas, QEvent.Type.MouseButtonPress, 10, 10))
+    tool.canvasMoveEvent(mouse(canvas, QEvent.Type.MouseMove, 60, 12))
     orientation, _point, hide_before = comparison.overlay.edge
     assert orientation == "v" and hide_before
-    tool.canvasReleaseEvent(mouse(canvas, QEvent.MouseButtonRelease, 60, 12))
+    tool.canvasReleaseEvent(mouse(canvas, QEvent.Type.MouseButtonRelease, 60, 12))
     assert comparison.overlay.edge is None
     # Qt zeichnet das Bild über die Karte (Aufruf mit drei Argumenten)
     overlay = comparison.overlay
-    green = QImage(overlay.image.size(), QImage.Format_ARGB32)
+    green = QImage(overlay.image.size(), QImage.Format.Format_ARGB32)
     green.fill(QColor(0, 255, 0))
     overlay.image, overlay.full = green, True
     scene = canvas.scene()
-    out = QImage(int(scene.width()), int(scene.height()), QImage.Format_ARGB32)
+    out = QImage(int(scene.width()), int(scene.height()), QImage.Format.Format_ARGB32)
     out.fill(QColor(0, 0, 0, 0))
     painter = QPainter(out)
     scene.render(painter, QRectF(out.rect()), scene.sceneRect())

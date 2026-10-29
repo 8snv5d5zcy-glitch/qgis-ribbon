@@ -23,8 +23,8 @@ from ..core.i18n import tr
 
 TITLE = tr("Customize KeyTips")
 COL_ELEMENT, COL_PLACE, COL_AUTO, COL_OWN, COL_EFFECTIVE = range(5)
-ROLE_KEY = Qt.UserRole + 1
-ROLE_LEVEL = Qt.UserRole + 2
+ROLE_KEY = Qt.ItemDataRole.UserRole + 1
+ROLE_LEVEL = Qt.ItemDataRole.UserRole + 2
 TABS_LEVEL = "__tabs__"
 HINT = tr("Press and release Alt to show the KeyTips in the ribbon. Own KeyTip: double-click in the “Own” "
           "column, 1–2 letters, empty = automatic. The other KeyTips of a level adapt. Quick Access (1–9) "
@@ -68,16 +68,17 @@ class KeyTipDialog(QDialog):
         self.tree.setObjectName("ribbon_keytip_tree")
         self.tree.setHeaderLabels([tr("Item"), tr("Location"), tr("Automatic"), tr("Own"), tr("Effective")])
         self.tree.setItemDelegate(_OwnColumnDelegate(self.tree))
-        self.tree.setEditTriggers(QTreeWidget.DoubleClicked | QTreeWidget.EditKeyPressed
-                                  | QTreeWidget.SelectedClicked)
+        self.tree.setEditTriggers(QTreeWidget.EditTrigger.DoubleClicked | QTreeWidget.EditTrigger.EditKeyPressed
+                                  | QTreeWidget.EditTrigger.SelectedClicked)
         self.tree.itemChanged.connect(self._changed)
         lay.addWidget(self.tree)
         self.status = QLabel(self)
         self.status.setWordWrap(True)
         lay.addWidget(self.status)
-        self.buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel, self)
+        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save
+                                        | QDialogButtonBox.StandardButton.Cancel, self)
         self.reset_button = QPushButton(tr("Reset All"), self)
-        self.buttons.addButton(self.reset_button, QDialogButtonBox.ResetRole)
+        self.buttons.addButton(self.reset_button, QDialogButtonBox.ButtonRole.ResetRole)
         self.reset_button.clicked.connect(self.reset_all)
         guide.help_button(self.buttons, "keyboard", self)
         self.buttons.accepted.connect(self.save)
@@ -128,7 +129,7 @@ class KeyTipDialog(QDialog):
         item = QTreeWidgetItem(parent, [label, place, auto, self.overrides.get(key, ""), ""])
         item.setData(COL_OWN, ROLE_KEY, key)
         item.setData(COL_OWN, ROLE_LEVEL, level)
-        item.setFlags(item.flags() | Qt.ItemIsEditable)
+        item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
         # Automatisch gedämpft, damit nur Konflikte (rot) und Wirksam auffallen
         item.setForeground(COL_AUTO, QBrush(theme.muted_text(self.tree.palette())))
         self._items[key] = item
@@ -173,10 +174,10 @@ class KeyTipDialog(QDialog):
                 problem = keytips.code_error(own)
                 if problem is None and code != own:
                     problem = self._conflict_text(level, key, own)
-            item.setData(COL_OWN, Qt.ToolTipRole, problem or "")
+            item.setData(COL_OWN, Qt.ItemDataRole.ToolTipRole, problem or "")
             item.setForeground(COL_OWN, QBrush(theme.color("err")) if problem
                                else QBrush(self.tree.palette().text().color()))
-            item.setData(COL_EFFECTIVE, Qt.UserRole + 3, problem)
+            item.setData(COL_EFFECTIVE, Qt.ItemDataRole.UserRole + 3, problem)
         self._filling = False
         self._update_status()
 
@@ -191,12 +192,12 @@ class KeyTipDialog(QDialog):
         return tr("Conflicts with another KeyTip")
 
     def problems(self):
-        return [(self._items[k].text(COL_ELEMENT), self._items[k].data(COL_EFFECTIVE, Qt.UserRole + 3))
-                for k in self._items if self._items[k].data(COL_EFFECTIVE, Qt.UserRole + 3)]
+        return [(self._items[k].text(COL_ELEMENT), self._items[k].data(COL_EFFECTIVE, Qt.ItemDataRole.UserRole + 3))
+                for k in self._items if self._items[k].data(COL_EFFECTIVE, Qt.ItemDataRole.UserRole + 3)]
 
     def _update_status(self):
         problems = self.problems()
-        save = self.buttons.button(QDialogButtonBox.Save)
+        save = self.buttons.button(QDialogButtonBox.StandardButton.Save)
         save.setEnabled(not problems)
         if problems:
             self.status.setText(tr("Cannot be saved: ") + "; ".join(

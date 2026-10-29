@@ -61,9 +61,9 @@ class _NextMenu(QObject):
         self.moved = None
 
     def eventFilter(self, obj, event):  # noqa: N802 (Qt)
-        if self.done or event.type() != QEvent.Show or not obj.isWidgetType():
+        if self.done or event.type() != QEvent.Type.Show or not obj.isWidgetType():
             return False
-        if not obj.isWindow() or obj.windowType() == Qt.ToolTip:
+        if not obj.isWindow() or obj.windowType() == Qt.WindowType.ToolTip:
             return False
         self.done = True
         if isinstance(obj, QMenu):

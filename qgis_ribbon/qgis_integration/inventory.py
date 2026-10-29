@@ -44,7 +44,7 @@ def _shortcut(action):
     seqs = action.shortcuts()
     if not seqs:
         return None
-    return ", ".join(s.toString(QKeySequence.PortableText) for s in seqs)
+    return ", ".join(s.toString(QKeySequence.SequenceFormat.PortableText) for s in seqs)
 
 
 def _menu_paths(menubar):
@@ -160,7 +160,7 @@ def collect(iface):
     for sc in mw.findChildren(QShortcut):
         shortcuts.append({
             "object_name": sc.objectName() or None,
-            "key": sc.key().toString(QKeySequence.PortableText),
+            "key": sc.key().toString(QKeySequence.SequenceFormat.PortableText),
         })
 
     processing = []

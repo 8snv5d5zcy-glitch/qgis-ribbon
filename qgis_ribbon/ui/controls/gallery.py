@@ -48,7 +48,7 @@ def provider(command, ctx):
 def _tile(action, parent):
     btn = QToolButton(parent)
     btn.setAutoRaise(True)
-    btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+    btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
     btn.setIconSize(QSize(theme.LARGE_ICON, theme.LARGE_ICON))
     btn.setFixedSize(TILE_WIDTH, theme.CONTENT_HEIGHT - 4)
     btn.setProperty("ribbon_tile", True)
@@ -77,7 +77,7 @@ class GalleryGrid(QWidget):
             act = ProxyAction(cmd, ctx, self)
             btn = _tile(act, self)
             btn.setObjectName("ribbon_tile_" + cmd.id)
-            btn.setFocusPolicy(Qt.StrongFocus)
+            btn.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
             if on_click is not None:
                 act.triggered.connect(on_click)
             self.actions_.append(act)
@@ -90,23 +90,23 @@ class GalleryGrid(QWidget):
             tile.installEventFilter(self)
 
     def eventFilter(self, obj, event):
-        if event.type() == QEvent.KeyPress and obj in self.tiles:
+        if event.type() == QEvent.Type.KeyPress and obj in self.tiles:
             return self.handle_key(self.tiles.index(obj), event)
         return False
 
     def handle_key(self, current, event):
         key = event.key()
-        if key in (Qt.Key_Return, Qt.Key_Enter, Qt.Key_Space):
+        if key in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
             if self.tiles[current].isEnabled():
                 self.tiles[current].defaultAction().trigger()
             return True
-        step = {Qt.Key_Left: -1, Qt.Key_Right: 1, Qt.Key_Up: -self.columns,
-                Qt.Key_Down: self.columns}.get(key)
+        step = {Qt.Key.Key_Left: -1, Qt.Key.Key_Right: 1, Qt.Key.Key_Up: -self.columns,
+                Qt.Key.Key_Down: self.columns}.get(key)
         if step is None:
             return False
         target = current + step
         if 0 <= target < len(self.tiles) and not self.tiles[target].isHidden():
-            self.tiles[target].setFocus(Qt.TabFocusReason)
+            self.tiles[target].setFocus(Qt.FocusReason.TabFocusReason)
             return True
         # Rand: an das umgebende Menü weiterreichen (nächster Menüeintrag)
         parent = self.parentWidget()
@@ -230,7 +230,7 @@ def gallery_button(command, size, ctx, parent, items=()):
     res = ctx.resolver.resolve(command)
     btn.setToolTip(tooltip(command.label, res, command.description))
     btn.setMenu(menu)
-    btn.setPopupMode(QToolButton.InstantPopup)
+    btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
     btn.setObjectName("ribbon_gallery_btn_" + command.id)
     btn._state = _CommandState(command, btn, ctx, res.available)
     remember(btn, command.label, True)
@@ -274,12 +274,12 @@ class RibbonGallery(QWidget):
             "<br>" + escape(command.description) if command.description else ""))
         self.menu = build_menu(items, ctx, self.expand, gallery=command)
         self.expand.setMenu(self.menu)
-        self.expand.setPopupMode(QToolButton.InstantPopup)
+        self.expand.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.expand.setObjectName("ribbon_gallery_expand_" + command.id)
         lay.addWidget(self.expand)
         self.expand_target = ctx.add_target(self.expand, command.label + tr(" (all)"),
                                             lambda: activate_button(self.expand), command)
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setFixedHeight(theme.CONTENT_HEIGHT)
         self.setProperty("ribbon_size", "large")
         self._state = _CommandState(command, self, ctx)
@@ -300,7 +300,8 @@ class RibbonGallery(QWidget):
     def set_compact(self, on):
         self.compact = bool(on)
         for tile in self.grid.tiles:
-            tile.setToolButtonStyle(Qt.ToolButtonIconOnly if on else Qt.ToolButtonTextUnderIcon)
+            tile.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly
+                                    if on else Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
             tile.setFixedWidth(COMPACT_TILE_WIDTH if on else TILE_WIDTH)
         self.set_visible(self.ideal_count())
 

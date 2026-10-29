@@ -26,7 +26,7 @@ PLACEHOLDER = tr("Search commands")
 HINT = "Alt Q"          # KeyTip-Hinweis rechts im leeren Feld
 WIDTH = 220
 LIMIT = 15
-ROLE_ENTRY = Qt.UserRole + 1
+ROLE_ENTRY = Qt.ItemDataRole.UserRole + 1
 
 
 def qgis_action_entries(main_window, skip_names):
@@ -57,7 +57,7 @@ def qgis_action_entries(main_window, skip_names):
     for act in main_window.menuBar().actions():
         if act.menu() is not None:
             walk(act.menu(), clean_text(act.menu().title()))
-    for tb in main_window.findChildren(QToolBar, options=Qt.FindDirectChildrenOnly):
+    for tb in main_window.findChildren(QToolBar, options=Qt.FindChildOption.FindDirectChildrenOnly):
         if tb.objectName().startswith("QgisRibbon"):
             continue
         for act in tb.actions():
@@ -81,7 +81,7 @@ class SearchBox(QLineEdit):
         self.setClearButtonEnabled(True)
         self.setFixedWidth(WIDTH)
         self.addAction(icons.ui_icon("suchen", QgsApplication.getThemeIcon("/search.svg")),
-                       QLineEdit.LeadingPosition)
+                       QLineEdit.ActionPosition.LeadingPosition)
         self._ribbon = ribbon
         self._ctx = ctx
         self._run = run
@@ -91,8 +91,8 @@ class SearchBox(QLineEdit):
         self.model = QStandardItemModel(self)
         self.completer = QCompleter(self)
         self.completer.setModel(self.model)
-        self.completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
-        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.completer.setCompletionMode(QCompleter.CompletionMode.UnfilteredPopupCompletion)
+        self.completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.completer.setMaxVisibleItems(LIMIT)
         self.completer.setWidget(self)
         # setWidget statt setCompleter: das Feld übernimmt den Treffertext nicht
@@ -118,7 +118,7 @@ class SearchBox(QLineEdit):
             return
         # KeyTip-Hinweis als kleine Marke rechts im leeren Feld
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         font = self.font()
         if font.pointSizeF() > 0:
             font.setPointSizeF(font.pointSizeF() * 0.85)
@@ -132,7 +132,7 @@ class SearchBox(QLineEdit):
         painter.setPen(pen)
         painter.drawRoundedRect(rect, 4, 4)
         painter.setPen(theme.color("muted"))
-        painter.drawText(rect, Qt.AlignCenter, HINT)
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, HINT)
         painter.end()
 
     def focusInEvent(self, event):
@@ -140,7 +140,7 @@ class SearchBox(QLineEdit):
         self.build_index()
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key.Key_Escape:
             self.clear()
             self.completer.popup().hide()
             canvas = self._ctx.env.iface.mapCanvas()

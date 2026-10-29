@@ -8,7 +8,7 @@ fügt zur Auswahl hinzu, Strg entfernt aus ihr.
 """
 
 from qgis.core import (Qgis, QgsCoordinateTransform, QgsFeatureRequest, QgsGeometry, QgsPointXY,
-                       QgsProject, QgsWkbTypes)
+                       QgsProject)
 from qgis.gui import QgsMapTool, QgsRubberBand
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QColor
@@ -19,9 +19,9 @@ LINE_COLOR = QColor(255, 0, 0, 160)
 
 
 def selection_behavior(modifiers):
-    if modifiers & Qt.ShiftModifier:
+    if modifiers & Qt.KeyboardModifier.ShiftModifier:
         return Qgis.SelectBehavior.AddToSelection
-    if modifiers & Qt.ControlModifier:
+    if modifiers & Qt.KeyboardModifier.ControlModifier:
         return Qgis.SelectBehavior.RemoveFromSelection
     return Qgis.SelectBehavior.SetSelection
 
@@ -49,11 +49,11 @@ class SelectByLineTool(QgsMapTool):
         self._layer = layer_getter
         self._points = []
         self._band = None
-        self.setCursor(Qt.CrossCursor)
+        self.setCursor(Qt.CursorShape.CrossCursor)
 
     def _rubber_band(self):
         if self._band is None:
-            self._band = QgsRubberBand(self.canvas(), QgsWkbTypes.LineGeometry)
+            self._band = QgsRubberBand(self.canvas(), Qgis.GeometryType.Line)
             self._band.setColor(LINE_COLOR)
             self._band.setWidth(2)
         return self._band
@@ -67,13 +67,13 @@ class SelectByLineTool(QgsMapTool):
     def reset(self):
         self._points = []
         if self._band is not None:
-            self._band.reset(QgsWkbTypes.LineGeometry)
+            self._band.reset(Qgis.GeometryType.Line)
 
     def canvasPressEvent(self, event):
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self._points.append(QgsPointXY(event.mapPoint()))
             self._redraw()
-        elif event.button() == Qt.RightButton:
+        elif event.button() == Qt.MouseButton.RightButton:
             self.finish(event.modifiers())
 
     def canvasDoubleClickEvent(self, event):
@@ -84,17 +84,17 @@ class SelectByLineTool(QgsMapTool):
             self._redraw(QgsPointXY(event.mapPoint()))
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key.Key_Escape:
             self.reset()
             event.accept()
-        elif event.key() == Qt.Key_Backspace and self._points:
+        elif event.key() == Qt.Key.Key_Backspace and self._points:
             self._points.pop()
             self._redraw()
             event.accept()
         else:
             event.ignore()
 
-    def finish(self, modifiers=Qt.NoModifier):
+    def finish(self, modifiers=Qt.KeyboardModifier.NoModifier):
         points = self._points
         self.reset()
         layer = self._layer()

@@ -44,11 +44,12 @@ def test_no_esri_ids_or_esri_texts(raw_text):
 
 
 def test_unplaced_commands_are_editor_offers(ribbon):
-    # Befehle ohne Ort stehen nur im Editor zur Auswahl: einfache Buttons mit Beschreibung
+    # Befehle ohne Ort stehen nur im Editor zur Auswahl: einfache Buttons mit Beschreibung;
+    # Ausnahme: die Galerie „Abfragbare Layer“, standardmäßig aus dem Erkunden-Dropdown genommen
     used = {c.id for t in ribbon.tabs for c in iter_commands(t)} | {c.id for c in ribbon.quick_access}
     unplaced = [ribbon.commands[c] for c in set(ribbon.commands) - used]
     assert unplaced and len(used) > 150
-    assert all(c.kind == "button" and c.description for c in unplaced), [c.id for c in unplaced]
+    assert all((c.kind == "button" or c.id == "abfragbare_layer") and c.description for c in unplaced),         [c.id for c in unplaced]
 
 
 # Wörter, in denen ae/oe/ue/ss richtig geschrieben sind (keine Ersatzschreibweise)
@@ -111,3 +112,19 @@ def test_context_conditions(ribbon):
     assert all(t.visible_when for t in ribbon.tabs if t.contextual)
     assert ribbon.commands["felder"].enabled_when == ("active_layer_has_fields",)
     assert ribbon.commands["beschriftung_schalten"].enabled_when == ("active_layer_is_vector",)
+
+
+def test_accessibility_and_construction_without_duplicates(ribbon):
+    """Farbsehschwäche ohne doppelten Eintrag, Konstruktion als ein Split."""
+    from qgis_ribbon.core.model import CommandRef, Split
+
+    def group(tab_id, group_id):
+        tab = next(t for t in ribbon.tabs if t.id == tab_id)
+        return next(g for g in tab.groups if g.id == group_id)
+
+    (el,) = group("ansicht", "barrierefreiheit").elements
+    assert isinstance(el, CommandRef) and el.command.id == "farbsehschwaeche_simulieren"
+    assert "vorschau_deuteranopie" in ribbon.commands   # bleibt im Befehlsvorrat
+    (el,) = group("bearbeiten", "konstruktion").elements
+    assert isinstance(el, Split) and el.command.id == "erweiterte_digitalisierung"
+    assert [c.id for c in el.items] == ["konstruktionspanel"]

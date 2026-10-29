@@ -178,7 +178,7 @@ def activate_button(btn):
     """Button per Tastatur auslösen: Menü öffnen oder Aktion auslösen. False, wenn grau."""
     if not btn.isEnabled():
         return False
-    if btn.menu() is not None and btn.popupMode() == QToolButton.InstantPopup:
+    if btn.menu() is not None and btn.popupMode() == QToolButton.ToolButtonPopupMode.InstantPopup:
         # popup statt showMenu: showMenu blockiert (exec) und hielte den Ereignisfilter fest
         btn.menu().popup(btn.mapToGlobal(btn.rect().bottomLeft()))
     elif btn.defaultAction() is not None:
@@ -194,7 +194,7 @@ def keyboard_menu(owner, main_action, menu):
         return False
     popup = QMenu(owner)
     popup.setToolTipsVisible(True)
-    popup.setAttribute(Qt.WA_DeleteOnClose)
+    popup.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
     popup.setObjectName("ribbon_keyboard_menu")
     if main_action is not None and main_action.isEnabled():
         popup.addAction(main_action)
@@ -216,21 +216,21 @@ def _base_button(parent, size):
 def set_size(btn, size):
     """Button auf groß/mittel/klein einstellen (beim Aufbau und bei adaptiver Breite)."""
     if size == "large":
-        btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         btn.setIconSize(QSize(theme.LARGE_ICON, theme.LARGE_ICON))
         btn.setMinimumWidth(theme.LARGE_MIN_WIDTH)
         btn.setMaximumWidth(16777215)
         btn.setFixedHeight(theme.CONTENT_HEIGHT)
-        btn.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        btn.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
     elif size == "medium":
-        btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         btn.setIconSize(QSize(theme.SMALL_ICON, theme.SMALL_ICON))
         btn.setMinimumWidth(0)
         btn.setMaximumWidth(16777215)
         btn.setFixedHeight(theme.ROW_HEIGHT)
-        btn.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        btn.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
     else:
-        btn.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         btn.setIconSize(QSize(theme.SMALL_ICON, theme.SMALL_ICON))
         btn.setMinimumWidth(0)
         btn.setFixedSize(theme.SMALL_WIDTH, theme.ROW_HEIGHT)
@@ -238,7 +238,7 @@ def set_size(btn, size):
         btn.setProperty("ribbon_size", size)
         # Neu polieren nur, wenn das Stylesheet schon angewendet ist; sonst
         # greift die Eigenschaft beim ersten Polieren (spart je Button ~0,2 ms)
-        if btn.testAttribute(Qt.WA_WState_Polished):
+        if btn.testAttribute(Qt.WidgetAttribute.WA_WState_Polished):
             style = btn.style()
             style.unpolish(btn)
             style.polish(btn)
@@ -292,7 +292,7 @@ def command_button(command, size, ctx, parent, label=None):
     menu = act.resolved.menu is not None
     if menu:  # vorhandenes QGIS-Menü als Dropdown
         btn.setMenu(act.resolved.menu)
-        btn.setPopupMode(QToolButton.InstantPopup)
+        btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
     remember(btn, act.text(), menu)
     apply_size(btn, size, act.text(), menu)
     btn.setObjectName("ribbon_btn_" + command.id)
@@ -413,16 +413,16 @@ class LargeSplitButton(QWidget):
         self.top = QToolButton(self)
         self.top.setObjectName("ribbon_split_top")
         self.top.setAutoRaise(True)
-        self.top.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.top.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         self.top.setIconSize(QSize(theme.LARGE_ICON, theme.LARGE_ICON))
         self.top.setFixedHeight(SPLIT_TOP_HEIGHT)
-        self.top.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.top.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.bottom = QToolButton(self)
         self.bottom.setObjectName("ribbon_split_bottom")
         self.bottom.setAutoRaise(True)
-        self.bottom.setToolButtonStyle(Qt.ToolButtonTextOnly)
+        self.bottom.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
         self.bottom.setFixedHeight(theme.CONTENT_HEIGHT - SPLIT_TOP_HEIGHT)
-        self.bottom.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.bottom.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.menu = split_menu(split, ctx, self.bottom)
         self.action = ProxyAction(split.command, ctx, self.top, label=split.display_label)
         self.top.setDefaultAction(self.action)
@@ -430,7 +430,7 @@ class LargeSplitButton(QWidget):
         self.bottom.setText(text)
         self.bottom.setToolTip(self.action.toolTip())
         self.bottom.setMenu(self.menu)
-        self.bottom.setPopupMode(QToolButton.InstantPopup)
+        self.bottom.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         _follow_menu(self.bottom, self.menu)
         lay.addWidget(self.top)
         lay.addWidget(self.bottom)
@@ -452,7 +452,7 @@ def compact_split(split, ctx, parent, menu):
     act = ProxyAction(split.command, ctx, btn, label=split.display_label)
     btn.setDefaultAction(act)
     btn.setMenu(menu)
-    btn.setPopupMode(QToolButton.MenuButtonPopup)
+    btn.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
     btn.setObjectName("ribbon_split_compact_" + split.command.id)
     remember(btn, act.text(), True)
     ctx.widget_commands[btn] = split.command
@@ -472,14 +472,14 @@ def split_button(split, ctx, parent):
     if act.resolved.available:
         btn.setDefaultAction(act)
         btn.setMenu(menu)
-        btn.setPopupMode(QToolButton.MenuButtonPopup)
+        btn.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
         btn.keyboard = lambda: keyboard_menu(btn, act, menu)
         btn.target = ctx.add_target(btn, act.text(), btn.keyboard, split.command)
     else:
         btn.setIcon(act.icon())
         btn.setToolTip(act.toolTip())
         btn.setMenu(menu)
-        btn.setPopupMode(QToolButton.InstantPopup)
+        btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         _follow_menu(btn, menu)
         btn.target = ctx.add_target(btn, act.text(), lambda: activate_button(btn), split.command)
     remember(btn, act.text(), True)
@@ -506,7 +506,7 @@ def menu_button(menu_el, ctx, parent):
     btn.setToolTip("<b>%s</b>" % escape(menu_el.label)
                    + ("<br>%s" % escape(description) if description else ""))
     btn.setMenu(menu)
-    btn.setPopupMode(QToolButton.InstantPopup)
+    btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
     _follow_menu(btn, menu)
     remember(btn, menu_el.label, True)
     apply_size(btn, menu_el.size, menu_el.label, True)

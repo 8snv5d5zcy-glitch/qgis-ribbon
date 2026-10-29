@@ -45,7 +45,7 @@ def open_editor(widget):
     return dlg
 
 
-def press(dlg, key, mods=Qt.NoModifier, widget=None):
+def press(dlg, key, mods=Qt.KeyboardModifier.NoModifier, widget=None):
     target = widget or QApplication.focusWidget() or dlg.focusWidget() or dlg
     QTest.keyClick(target, key, mods)
     settle()
@@ -59,7 +59,7 @@ def close(dlg):
     settle()
     # außerhalb einer Ereignisschleife löscht nur das ausdrücklich (sonst stauen sich die
     # Editoren und ihr Abbau verzögert in späteren Tests die Zeitgeber)
-    QApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+    QApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 
 
 def wait_until(condition, ms=1000):
@@ -99,46 +99,46 @@ def test_keyboard_only_editing(plugin):
     try:
         dlg.select(("tab", "karte"), focus=True)
         settle()
-        press(dlg, Qt.Key_Right)                      # nächster Tab
+        press(dlg, Qt.Key.Key_Right)                      # nächster Tab
         assert dlg.current_tab == "projekt" and labels(dlg) == ["Datei"]
-        press(dlg, Qt.Key_Down)                       # in die Vorschau: Gruppenkopf
+        press(dlg, Qt.Key.Key_Down)                       # in die Vorschau: Gruppenkopf
         assert dlg.selection == ("group", Place("projekt", 0))
-        press(dlg, Qt.Key_Down)                       # erster Eintrag
+        press(dlg, Qt.Key.Key_Down)                       # erster Eintrag
         assert dlg.selection == ("item", Place("projekt", 0, 0))
         assert QApplication.focusWidget() is dlg.widget_for(dlg.selection)
-        press(dlg, Qt.Key_Right, Qt.ControlModifier)  # verschieben
+        press(dlg, Qt.Key.Key_Right, Qt.KeyboardModifier.ControlModifier)  # verschieben
         assert items(dlg, 0) == ["Speichern", "Neues Projekt"]
         assert dlg.selection == ("item", Place("projekt", 0, 1))
-        press(dlg, Qt.Key_Delete)                     # entfernen
+        press(dlg, Qt.Key.Key_Delete)                     # entfernen
         assert items(dlg, 0) == ["Speichern"]
-        press(dlg, Qt.Key_Z, Qt.ControlModifier)      # rückgängig
+        press(dlg, Qt.Key.Key_Z, Qt.KeyboardModifier.ControlModifier)      # rückgängig
         assert items(dlg, 0) == ["Speichern", "Neues Projekt"]
-        press(dlg, Qt.Key_Y, Qt.ControlModifier)      # wiederholen
+        press(dlg, Qt.Key.Key_Y, Qt.KeyboardModifier.ControlModifier)      # wiederholen
         assert items(dlg, 0) == ["Speichern"]
         assert "angepasst" in dlg.card(0).header.accessibleName()
         # Umbenennen mit F2 im Gruppenkopf
         dlg.select(("group", Place("projekt", 0)), focus=True)
         settle()
-        press(dlg, Qt.Key_F2)
+        press(dlg, Qt.Key.Key_F2)
         edit = QApplication.focusWidget()
         assert isinstance(edit, QLineEdit) and edit.objectName() == "ribbon_editor_label"
         edit.selectAll()
         QTest.keyClicks(edit, "Dateien")
-        press(dlg, Qt.Key_Return, widget=edit)
+        press(dlg, Qt.Key.Key_Return, widget=edit)
         assert labels(dlg) == ["Dateien"]
         # Leertaste blendet aus und wieder ein
         dlg.select(("group", Place("projekt", 0)), focus=True)
-        press(dlg, Qt.Key_Space)
+        press(dlg, Qt.Key.Key_Space)
         assert not dlg.editor.arr.tab("projekt").groups[0].visible
-        press(dlg, Qt.Key_Space)
+        press(dlg, Qt.Key.Key_Space)
         assert dlg.editor.arr.tab("projekt").groups[0].visible
         # Palette: Eingabe fügt in die gewählte Gruppe ein (hinter den gewählten Eintrag)
         dlg.select(("item", Place("projekt", 0, 0)), focus=True)
         dlg.palette_box.list.setFocus()
         dlg.palette_box.select("command", "zoomen")
-        press(dlg, Qt.Key_Return, widget=dlg.palette_box.list)
+        press(dlg, Qt.Key.Key_Return, widget=dlg.palette_box.list)
         assert items(dlg, 0) == ["Speichern", "Hineinzoomen"]
-        press(dlg, Qt.Key_Return, widget=dlg.palette_box.list)          # zweimal: Hinweis, kein Fehler
+        press(dlg, Qt.Key.Key_Return, widget=dlg.palette_box.list)          # zweimal: Hinweis, kein Fehler
         assert "schon in dieser Gruppe" in dlg.status.text()
         assert dlg.isVisible()                                      # Eingabe speichert nicht
         assert dlg.save()
@@ -155,21 +155,21 @@ def test_cut_and_paste_between_tabs(plugin):
     dlg = open_editor(plugin.widget)
     try:
         dlg.select(("item", Place("karte", 0, 1)), focus=True)
-        press(dlg, Qt.Key_X, Qt.ControlModifier)
+        press(dlg, Qt.Key.Key_X, Qt.KeyboardModifier.ControlModifier)
         assert dlg.clip == Place("karte", 0, 1)
         assert dlg.widget_for(("item", Place("karte", 0, 1))).marked
         dlg.select(("tab", "projekt"), focus=True)
         dlg.select(("item", Place("projekt", 0, 0)), focus=True)
-        press(dlg, Qt.Key_V, Qt.ControlModifier)
+        press(dlg, Qt.Key.Key_V, Qt.KeyboardModifier.ControlModifier)
         assert items(dlg, 0) == ["Neues Projekt", "Hineinzoomen", "Speichern"]
         assert dlg.clip is None
         dlg.select(("tab", "karte"))
         assert items(dlg, 0) == ["Verschieben"]
         # Ausschneiden und auf „＋ Gruppe“ einfügen = neue Gruppe
         dlg.select(("item", Place("karte", 0, 0)), focus=True)
-        press(dlg, Qt.Key_X, Qt.ControlModifier)
+        press(dlg, Qt.Key.Key_X, Qt.KeyboardModifier.ControlModifier)
         dlg.select(("newgroup", "karte"), focus=True)
-        press(dlg, Qt.Key_V, Qt.ControlModifier)
+        press(dlg, Qt.Key.Key_V, Qt.KeyboardModifier.ControlModifier)
         assert labels(dlg) == ["Navigieren", "Neue Gruppe"]
         assert items(dlg, 1) == ["Verschieben"]
         assert dlg.card(0).empty is not None   # geleerte Gruppe der Definition: Hinweis zum Hineinziehen
@@ -185,18 +185,18 @@ def test_new_tab_and_group_from_keyboard(plugin):
         settle()
         tab_id = dlg.current_tab
         assert tab_id == "eigener_tab_1" and [c.title for c in dlg.tab_strip.chips][1] == "Neuer Tab"
-        press(dlg, Qt.Key_F2)
+        press(dlg, Qt.Key.Key_F2)
         edit = QApplication.focusWidget()
         edit.selectAll()
         QTest.keyClicks(edit, "Mein Tab")
-        press(dlg, Qt.Key_Return, widget=edit)
+        press(dlg, Qt.Key.Key_Return, widget=edit)
         assert dlg.editor.arr.tab(tab_id).label == "Mein Tab"
         dlg.select(("newgroup", tab_id), focus=True)
-        press(dlg, Qt.Key_Return)
+        press(dlg, Qt.Key.Key_Return)
         assert labels(dlg) == ["Neue Gruppe"] and dlg.selection == ("group", Place(tab_id, 0))
         dlg.palette_box.select("command", "deckkraft")
         dlg.palette_box.list.setFocus()
-        press(dlg, Qt.Key_Return, widget=dlg.palette_box.list)
+        press(dlg, Qt.Key.Key_Return, widget=dlg.palette_box.list)
         assert dlg.editor.arr.tab(tab_id).groups[0].items[0].size == "medium"   # Steuerelement mittel
         # Größe über die Segmente
         dlg.select(("item", Place(tab_id, 0, 0)))
@@ -207,11 +207,11 @@ def test_new_tab_and_group_from_keyboard(plugin):
         assert dlg.editor.arr.tab(tab_id).groups[0].items[0].size == "small"
         # Tab der Definition behält die Beschriftung
         dlg.select(("tab", "karte"), focus=True)
-        press(dlg, Qt.Key_F2)
+        press(dlg, Qt.Key.Key_F2)
         assert "behalten ihre Beschriftung" in dlg.status.text()
         # Strg+Pfeil verschiebt Tabs
         dlg.select(("tab", tab_id), focus=True)
-        press(dlg, Qt.Key_Left, Qt.ControlModifier)
+        press(dlg, Qt.Key.Key_Left, Qt.KeyboardModifier.ControlModifier)
         assert [t.id for t in dlg.editor.arr.tabs][0] == tab_id
         assert dlg.save()
     finally:
@@ -241,7 +241,7 @@ def test_definition_groups_delete_reset_and_restore(plugin, monkeypatch):
         assert cz.to_dict(dlg.editor.arr, plugin.base) is None
         # Gruppe der Definition: Entf löscht ohne Rückfrage, die Palette holt sie zurück
         dlg.select(("group", Place("karte", 0)), focus=True)
-        press(dlg, Qt.Key_Delete)
+        press(dlg, Qt.Key.Key_Delete)
         assert "Gruppe gelöscht" in dlg.status.text() and not asked
         assert labels(dlg) == [] and dlg.editor.arr.removed == {"karte/nav"}
         dlg.insert_from_palette(("group", "karte/nav"))
@@ -249,13 +249,13 @@ def test_definition_groups_delete_reset_and_restore(plugin, monkeypatch):
         # Tab der Definition: Entf fragt nach und löscht
         assert not dlg.restore_button.isEnabled()
         dlg.select(("tab", "projekt"), focus=True)
-        press(dlg, Qt.Key_Delete)
+        press(dlg, Qt.Key.Key_Delete)
         assert asked == ["Projekt"]
         assert [t.id for t in dlg.editor.arr.tabs] == ["karte"]
         assert dlg.editor.arr.removed == {"projekt"} and dlg.restore_button.isEnabled()
         # der letzte Haupt-Tab bleibt
         dlg.select(("tab", "karte"), focus=True)
-        press(dlg, Qt.Key_Delete)
+        press(dlg, Qt.Key.Key_Delete)
         assert [t.id for t in dlg.editor.arr.tabs] == ["karte"] and "Haupt-Tab" in dlg.status.text()
         dlg._fill_restore_menu()
         assert [a.text() for a in dlg.restore_menu.actions()] == ["Projekt"]
@@ -267,13 +267,13 @@ def test_definition_groups_delete_reset_and_restore(plugin, monkeypatch):
         # Nein bei der Rückfrage: nichts passiert
         monkeypatch.setattr(ribbon_editor, "confirm_remove_tab", lambda parent, label: False)
         dlg.select(("tab", "projekt"), focus=True)
-        press(dlg, Qt.Key_Delete)
+        press(dlg, Qt.Key.Key_Delete)
         assert [t.id for t in dlg.editor.arr.tabs] == ["karte", "projekt"]
         # alle Haupt-Tabs ausgeblendet: Speichern verweigert
         dlg.select(("tab", "karte"), focus=True)
-        press(dlg, Qt.Key_Space)
+        press(dlg, Qt.Key.Key_Space)
         dlg.select(("tab", "projekt"), focus=True)
-        press(dlg, Qt.Key_Space)
+        press(dlg, Qt.Key.Key_Space)
         assert not dlg.save() and "Haupt-Tab" in dlg.status.text()
         assert not dlg.save_button.isEnabled()
     finally:
@@ -344,14 +344,18 @@ def test_empty_custom_groups_are_dropped_on_save(plugin):
     assert plugin.user.layout() is None
 
 
-def test_contents_of_splits_and_menus_only_viewable(shipped):
+def test_contents_of_splits_and_menus_viewable(shipped):
+    """Der Pfeil zeigt den Inhalt; anpassbare Dropdowns verweisen auf Eigenschaften und Ablegen."""
     dlg = open_editor(shipped.widget)
     try:
         tiles = [t for c in dlg.preview.cards for t in c.tiles if t.menu]
         assert tiles
-        menu = dlg.show_contents(tiles[0], popup=False)
-        texts = [a.text() for a in menu.actions() if not a.isSeparator()]
-        assert texts[0] == "Inhalt (im Editor nur ansehbar)" and len(texts) > 1
+        for tile in tiles:
+            menu = dlg.show_contents(tile, popup=False)
+            texts = [a.text() for a in menu.actions() if not a.isSeparator()]
+            head = ("Inhalt (ändern in den Eigenschaften oder durch Ablegen von Befehlen auf dem Button)"
+                    if cz.dropdown_of(dlg.base, tile.item) else "Inhalt (im Editor nur ansehbar)")
+            assert texts[0] == head and len(texts) > 1
     finally:
         close(dlg)
 
@@ -450,7 +454,7 @@ from qgis.PyQt.QtGui import QDragMoveEvent, QDropEvent  # noqa: E402
 from qgis_ribbon.ui.editor_widgets import mime  # noqa: E402
 
 _MIME = []   # QMimeData am Leben halten
-ACTIONS = Qt.MoveAction | Qt.CopyAction
+ACTIONS = Qt.DropAction.MoveAction | Qt.DropAction.CopyAction
 
 
 def _data():
@@ -459,13 +463,13 @@ def _data():
 
 
 def drag_over(widget, pos):
-    ev = QDragMoveEvent(QPoint(pos), ACTIONS, _data(), Qt.LeftButton, Qt.NoModifier)
+    ev = QDragMoveEvent(QPoint(pos), ACTIONS, _data(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
     widget.dragMoveEvent(ev)
     return ev.isAccepted()
 
 
 def drop(widget, pos):
-    ev = QDropEvent(QPointF(pos), ACTIONS, _data(), Qt.LeftButton, Qt.NoModifier)
+    ev = QDropEvent(QPointF(pos), ACTIONS, _data(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
     widget.dropEvent(ev)
     settle()
     return ev.isAccepted()
@@ -740,9 +744,9 @@ class FakeDrag(object):
     def setHotSpot(self, pos):  # noqa: N802
         self.hot = pos
 
-    def exec_(self, *_args):
+    def exec(self, *_args):
         FakeDrag.script(self)
-        return Qt.MoveAction
+        return Qt.DropAction.MoveAction
 
 
 def test_drag_exec_keeps_source_until_done(plugin, monkeypatch):
@@ -770,7 +774,7 @@ def test_drag_exec_keeps_source_until_done(plugin, monkeypatch):
         assert seen["before"] == ["Neues Projekt", "Speichern"]
         assert items(dlg, 0) == ["Neues Projekt", "Speichern", "Verschieben"]
         assert dlg._drag is None and dlg._graveyard is None
-        QApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+        QApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
         assert sip.isdeleted(source)
         # Palette: Befehl ziehen, nirgends ablegen
         dlg.palette_box.select("command", "zoomen")
@@ -832,5 +836,162 @@ def test_refresh_keeps_preview_scroll(shipped):
         dlg.palette_box.set_mode("commands")
         settle()
         assert bar.value() == value
+    finally:
+        close(dlg)
+
+
+def test_gallery_customized_in_editor_as_undoable_step(shipped):
+    """Eigenschaften einer Galerie mit „Galerie anpassen …“; Ergebnis im Verlauf."""
+    from qgis.PyQt.QtWidgets import QPushButton
+    dlg = open_editor(shipped.widget)
+    try:
+        dlg.current_tab = "karte"
+        dlg.refresh()
+        settle()
+        place = next(Place("karte", gi, ii) for gi, g in enumerate(dlg.editor.arr.tab("karte").groups)
+                     for ii, it in enumerate(cz.group_items(dlg.base, g)) if it.command == "grundkarten_galerie")
+        dlg.select(("item", place))
+        settle()
+        assert [b for b in dlg.props.findChildren(QPushButton) if b.objectName() == "ribbon_editor_gallery"]
+
+        class Fake(object):
+            result_ids = ["grundkarte_opentopomap", "puffer"]
+
+            def exec(self):
+                return True
+
+            def deleteLater(self):
+                pass
+
+        dlg.gallery_dialog = lambda gid: Fake()
+        assert dlg.customize_gallery("grundkarten_galerie")
+        assert dlg.editor.gallery_ids("grundkarten_galerie") == ["grundkarte_opentopomap", "puffer"]
+        texts = [a.text().strip() for a in dlg.show_contents(dlg.selected_widget(), popup=False).actions()]
+        assert "Puffer" in texts and "basemap.de farbig" not in texts
+        dlg.undo()
+        assert dlg.editor.gallery_ids("grundkarten_galerie")[0] == "grundkarte_basemap_de_farbig"
+    finally:
+        close(dlg)
+
+
+def _split_tile(dlg):
+    """Erste Kachel eines anpassbaren Split-/Menü-Dropdowns im ausgelieferten Ribbon (wechselt den Tab)."""
+    for tab in dlg.editor.arr.tabs:
+        dlg.current_tab = tab.id
+        dlg.refresh()
+        settle()
+        for gi, card in enumerate(dlg.preview.cards):
+            for ti, tile in enumerate(card.tiles):
+                target = cz.dropdown_of(dlg.base, tile.item) if tile.menu else None
+                if target and target[0] == "menu":
+                    return gi, ti, target
+    raise AssertionError("kein anpassbares Dropdown")
+
+
+def _center(card, i):
+    return card.tiles[i].geometry().translated(card.body.pos()).center()
+
+
+def test_dropdown_customized_in_editor(shipped):
+    """„Dropdown anpassen …“ in den Eigenschaften eines Splits; Ergebnis im Verlauf und im Ribbon."""
+    from qgis.PyQt.QtWidgets import QPushButton
+    dlg = open_editor(shipped.widget)
+    try:
+        gi, ti, target = _split_tile(dlg)
+        dlg.select(("item", dlg.card(gi).tiles[ti].sel[1]))
+        settle()
+        buttons = [b for b in dlg.props.findChildren(QPushButton) if b.objectName() == "ribbon_editor_gallery"]
+        assert [b.text() for b in buttons] == ["Dropdown anpassen …"]
+        before = dlg.editor.dropdown_ids(target)
+        extra = next(c for c in dlg.base.commands if c not in before
+                     and dlg.editor.can_add_to_dropdown(target, c) is None)
+        seen = []
+
+        class Fake(object):
+            result_ids = [extra] + before[:1]
+
+            def exec(self):
+                return True
+
+            def deleteLater(self):
+                pass
+
+        dlg.gallery_dialog = lambda key, target=None: seen.append(target) or Fake()
+        assert dlg.customize_dropdown(target)
+        assert seen == [target] and dlg.editor.dropdown_ids(target) == [extra] + before[:1]
+        assert "geändert" in dlg.status.text()
+        dlg.undo()
+        assert dlg.editor.dropdown_ids(target) == before
+    finally:
+        close(dlg)
+
+
+def test_menu_dialog_offers_standard_and_buttons(shipped):
+    """Der Dialog eines Split-Dropdowns zeigt dessen Einträge und erlaubt nur Buttons."""
+    from qgis_ribbon.ui.customize_dialog import GalleryDialog
+    dlg = open_editor(shipped.widget)
+    try:
+        _gi, _ti, target = _split_tile(dlg)
+        gd = GalleryDialog(shipped.arrangements, None, dlg, editor=dlg.editor, target=target)
+        try:
+            assert gd.windowTitle().startswith("Dropdown anpassen: ")
+            assert gd.gallery_id is None and gd.needs_items
+            assert gd.standard_ids == cz.standard_menu_ids(dlg.base, target[1])
+        finally:
+            gd.deleteLater()
+    finally:
+        close(dlg)
+
+
+def test_drop_onto_dropdown_button(shipped):
+    """Befehl aus der Palette oder Kachel auf der Mitte eines Buttons mit ▾ ablegen."""
+    dlg = open_editor(shipped.widget)
+    try:
+        gi, ti, target = _split_tile(dlg)
+        before = dlg.editor.dropdown_ids(target)
+        extra = next(c for c in dlg.base.commands if c not in before
+                     and dlg.editor.can_add_to_dropdown(target, c) is None)
+        n_tiles = len(dlg.card(gi).tiles)
+        card = dlg.card(gi)
+        dlg.begin_drag(("command", extra))
+        assert drag_over(card, _center(card, ti))
+        assert card.tiles[ti].drop_into and card.drop_index is None
+        assert "Dropdown" in dlg.status.text()
+        assert drop(card, _center(card, ti))
+        assert dlg.editor.dropdown_ids(target) == before + [extra]
+        assert len(dlg.card(gi).tiles) == n_tiles and not any(t.drop_into for t in dlg.card(gi).tiles)
+        assert "steht jetzt im Dropdown" in dlg.status.text()
+        # derselbe Befehl noch einmal: kein Ziel im Button, Einfügen daneben bleibt möglich
+        card = dlg.card(gi)
+        dlg.begin_drag(("command", extra))
+        drag_over(card, _center(card, ti))
+        assert not card.tiles[ti].drop_into
+        dlg.end_drag()
+        dlg._clear_marks()
+        # Rand des Buttons: Einfügen daneben, nicht ins Dropdown
+        card = dlg.card(gi)
+        other = next(c for c in dlg.base.commands if c not in dlg.editor.dropdown_ids(target)
+                     and dlg.editor.can_add_to_dropdown(target, c) is None and c != extra)
+        dlg.begin_drag(("command", other))
+        drag_over(card, left_of(card, ti))
+        assert not card.tiles[ti].drop_into
+        dlg.end_drag()
+        dlg._clear_marks()
+        # Kachel eines einfachen Befehls hineinziehen: verschwindet aus der Gruppe, ein Schritt
+        card = dlg.card(gi)
+        simple = next((i for i, t in enumerate(card.tiles) if i != ti and t.element is not None
+                       and t.item.element is None
+                       and dlg.editor.can_add_to_dropdown(target, t.item.command) is None), None)
+        assert simple is not None
+        cid = card.tiles[simple].item.command
+        n_undo = len(dlg.editor._undo)
+        dlg.begin_drag(("item", card.tiles[simple].sel[1]))
+        assert drop(card, _center(card, ti))
+        assert cid in dlg.editor.dropdown_ids(target)
+        assert len(dlg.card(gi).tiles) == n_tiles - 1 and len(dlg.editor._undo) == n_undo + 1
+        dlg.undo()
+        assert len(dlg.card(gi).tiles) == n_tiles and cid not in dlg.editor.dropdown_ids(target)
+        dlg.undo()
+        assert dlg.editor.dropdown_ids(target) == before
     finally:
         close(dlg)

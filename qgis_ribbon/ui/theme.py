@@ -152,13 +152,13 @@ def _hex(qcolor):
 
 def palette_tokens(palette):
     """Tokens aus der Systempalette (Hochkontrast): keine eigenen Farben, keine Schatten."""
-    win = _hex(palette.color(QPalette.Window))
-    base = _hex(palette.color(QPalette.Base))
-    text = _hex(palette.color(QPalette.WindowText))
-    hi = _hex(palette.color(QPalette.Highlight))
-    hi_text = _hex(palette.color(QPalette.HighlightedText))
-    dis = _hex(palette.color(QPalette.Disabled, QPalette.WindowText))
-    dark = palette.color(QPalette.Window).lightness() < theme_tokens.DARK_BELOW
+    win = _hex(palette.color(QPalette.ColorRole.Window))
+    base = _hex(palette.color(QPalette.ColorRole.Base))
+    text = _hex(palette.color(QPalette.ColorRole.WindowText))
+    hi = _hex(palette.color(QPalette.ColorRole.Highlight))
+    hi_text = _hex(palette.color(QPalette.ColorRole.HighlightedText))
+    dis = _hex(palette.color(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText))
+    dark = palette.color(QPalette.ColorRole.Window).lightness() < theme_tokens.DARK_BELOW
     return {
         "win": win, "surf": base, "bord": text, "div": text, "gdiv": text, "text": text, "muted": text,
         "faint": dis, "hover": hi, "press": hi, "ctx": hi, "ctxS": base, "ctxT": text,
@@ -192,7 +192,7 @@ class ThemeManager(QObject):
 
     def qgis_lightness(self):
         app = QApplication.instance()
-        return app.palette().color(QPalette.Window).lightness() if app is not None else 255
+        return app.palette().color(QPalette.ColorRole.Window).lightness() if app is not None else 255
 
     def refresh(self, emit=True):
         s = self.settings()

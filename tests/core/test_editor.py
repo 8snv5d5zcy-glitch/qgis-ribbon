@@ -118,8 +118,8 @@ def test_format1_layout_reads_unchanged(base):
     assert all(g.items is None for t in arr.tabs for g in t.groups if g.ref)
 
 
-def test_bundle_version_1_is_read_and_3_is_written(base):
-    assert cz.make_bundle(None)["version"] == 3
+def test_bundle_version_1_is_read_and_4_is_written(base):
+    assert cz.make_bundle(None)["version"] == 4
     old = {"format": cz.FORMAT, "version": 1, "layout": {"tabs": [{"tab": "karte", "visible": False},
                                                                    {"tab": "analyse"}, {"tab": "vektor"}]},
            "quick_access": None, "keytips": {}}
@@ -128,8 +128,9 @@ def test_bundle_version_1_is_read_and_3_is_written(base):
     assert not warnings and not arr.tab("karte").visible
     assert cz.same_bundle(old, cz.make_bundle(old["layout"], name="X"))
     assert cz.read_bundle(dict(old, version=2)).layout == old["layout"]
+    assert cz.read_bundle(dict(old, version=3)).layout == old["layout"]
     with pytest.raises(cz.BundleError):
-        cz.read_bundle(dict(old, version=4))
+        cz.read_bundle(dict(old, version=5))
 
 
 def test_personal_version_of_definition_group(base):
@@ -450,3 +451,68 @@ def test_drop_checks_match_operations(base):
     assert ed.quick_command(base, cz.ItemEntry("verschieben")) == "verschieben"
     assert ed.quick_command(base, cz.ItemEntry("deckkraft", "medium")) is None
     assert ed.quick_command(base, cz.ItemEntry(size=None, element="row:zoomen")) is None
+
+
+def test_gallery_contents_as_undoable_step():
+    """Galerie im Editor anpassen, mit Rückgängig und Prüfung der Einträge."""
+    data = copy.deepcopy(DEFINITION)
+    data["commands"]["grundkarte"] = {"label": "Grundkarte", "kind": "control",
+                                      "source": {"type": "custom", "id": "ribbon.grundkarten_galerie"},
+                                      "gallery": {"display": "dropdown", "items": ["zoomen"]}}
+    data["tabs"][1]["groups"][0]["items"].append({"command": "grundkarte"})
+    b = config_loader.parse(data)
+    e = Editor(b, cz.standard(b))
+    e.set_gallery("grundkarte", ["zoomen", "puffer"])
+    assert e.gallery_ids("grundkarte") == ["zoomen", "puffer"] and e.dirty
+    assert e.undo_label() == "Galerie „Grundkarte“ anpassen"
+    with pytest.raises(EditError):
+        e.set_gallery("grundkarte", ["deckkraft"])   # Steuerelement
+    with pytest.raises(EditError):
+        e.set_gallery("zoomen", ["puffer"])          # keine Galerie
+    e.set_gallery("grundkarte", [])                  # Dropdown darf leer sein
+    assert e.gallery_ids("grundkarte") == []
+    e.undo()
+    e.undo()
+    assert e.gallery_ids("grundkarte") == ["zoomen"] and not e.dirty
+
+
+def test_dropdowns_of_splits_and_menus():
+    """Dropdowns von Splits und Menüs anpassen, auch per Ablegen, überall wo das Element steht."""
+    b = config_loader.parse(copy.deepcopy(DEFINITION))
+    assert set(cz.menus(b)) == {"split:rechteck", "menu:karte/auswahl/Mehr"}
+    e = Editor(b, cz.standard(b))
+    split = Place("karte", 1, 0)
+    target = cz.dropdown_of(b, e.item(split))
+    assert target == ("menu", "split:rechteck")
+    assert cz.dropdown_of(b, e.item(Place("karte", 0, 0))) is None      # einfacher Befehl
+    e.add_to_dropdown(target, "puffer")
+    assert e.dropdown_ids(target) == ["polygon", "puffer"]
+    assert e.undo_label() == "„Puffer“ in „Rechteck“"
+    assert e.can_add_to_dropdown(target, "puffer") == "„Puffer“ steht schon in diesem Dropdown."
+    assert e.can_add_to_dropdown(target, "deckkraft")                     # Steuerelement
+    with pytest.raises(EditError):
+        e.set_menu("split:rechteck", [])
+    # Einzelnen Befehl aus einer Gruppe ins Menü verschieben: ein Schritt
+    e.move_into_dropdown(Place("analyse", 0, 0), ("menu", "menu:karte/auswahl/Mehr"))
+    assert e.dropdown_ids(("menu", "menu:karte/auswahl/Mehr")) == ["loeschen", "puffer"]
+    assert cz.group_items(b, e.arr.tab("analyse").groups[0]) == []
+    data = cz.to_dict(e.arr, b)
+    assert data["menus"] == {"menu:karte/auswahl/Mehr": ["loeschen", "puffer"],
+                             "split:rechteck": ["polygon", "puffer"]}
+    # Wirksam auch in einer Kopie der Gruppe in einem anderen Tab
+    e.copy_group_ref("karte/auswahl", "analyse")
+    eff = cz.apply(b, e.arr)
+    for tab_id in ("karte", "analyse"):
+        group = next(g for g in eff.tab(tab_id).groups if g.label == "Auswahl")
+        assert [c.id for c in group.elements[0].items] == ["polygon", "puffer"]
+    shown = cz.effective_element(b, e.arr, cz.element_of(b, "split:rechteck"), "split:rechteck")
+    assert [c.id for c in shown.items] == ["polygon", "puffer"]
+    # Lesen: unbekannte Schlüssel und Einträge mit Hinweis
+    again, warnings = cz.from_dict(json.loads(json.dumps(dict(data, menus=dict(
+        data["menus"], **{"split:weg": ["puffer"]})))), b)
+    assert again.menus == e.arr.menus and len(warnings) == 1
+    e.undo()
+    e.undo()
+    e.undo()
+    assert e.dropdown_ids(target) == ["polygon"]
+    assert e.dropdown_ids(("menu", "menu:karte/auswahl/Mehr")) == ["loeschen"]

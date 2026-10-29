@@ -42,6 +42,7 @@ from ..core.editor import EditError, Editor, Place
 from ..core.model import CommandRef, Menu, Row, Split
 from ..core.search import ribbon_entries
 from . import guide, icons, theme
+from .qt_compat import event_pos
 from .editor_widgets import (MIME_TYPE, GroupCard, NewGroupCard, Palette, Preview, QuickStrip, TabChip,
                              TabStrip, chip_pixmap, drag_pixmap, menu_entries, mime, scroll_area)
 from ..core.i18n import tr
@@ -64,27 +65,30 @@ QUICK_ONLY_BUTTONS = tr("Only buttons can go into Quick Access (no controls, gal
 
 def confirm_discard(parent):
     """Rückfrage beim Schließen mit Änderungen (in Tests ersetzt)."""
-    answer = QMessageBox.question(parent, TITLE, DISCARD_TEXT, QMessageBox.Yes | QMessageBox.No,
-                                  QMessageBox.No)
-    return answer == QMessageBox.Yes
+    answer = QMessageBox.question(parent, TITLE, DISCARD_TEXT,
+                                  QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                  QMessageBox.StandardButton.No)
+    return answer == QMessageBox.StandardButton.Yes
 
 
 def confirm_remove_tab(parent, label):
     """Rückfrage vor dem Löschen eines Haupt-Tabs der Definition (in Tests ersetzt)."""
-    answer = QMessageBox.question(parent, TITLE, REMOVE_TAB_TEXT % label, QMessageBox.Yes | QMessageBox.No,
-                                  QMessageBox.No)
-    return answer == QMessageBox.Yes
+    answer = QMessageBox.question(parent, TITLE, REMOVE_TAB_TEXT % label,
+                                  QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                  QMessageBox.StandardButton.No)
+    return answer == QMessageBox.StandardButton.Yes
 
 
 def tab_title(tab):
     return "%s: %s" % (tab.context, tab.label) if tab.contextual else tab.label
 
 
-def kind_text(element):
+def kind_text(element, customizable=False):
     if isinstance(element, Split):
-        return tr("Split button of the definition (content view only)")
+        return tr("Split button of the definition") if customizable else \
+            tr("Split button of the definition (content view only)")
     if isinstance(element, Menu):
-        return tr("Menu of the definition (content view only)")
+        return tr("Menu of the definition") if customizable else tr("Menu of the definition (content view only)")
     if isinstance(element, Row):
         return tr("Row of the definition")
     if isinstance(element, CommandRef):
@@ -195,7 +199,7 @@ class RibbonEditor(QDialog):
         self.redo_button.setIconSize(QSize(18, 18))
         self.redo_button.clicked.connect(self.redo)
         for b, text in ((self.undo_button, tr("Undo")), (self.redo_button, tr("Redo"))):
-            b.setFocusPolicy(Qt.TabFocus)
+            b.setFocusPolicy(Qt.FocusPolicy.TabFocus)
             if b.icon().isNull():
                 b.setText(text)
             head.addWidget(b)
@@ -224,7 +228,7 @@ class RibbonEditor(QDialog):
         fl.addWidget(self.preview_area)
         lay.addWidget(frame)
 
-        split = QSplitter(Qt.Horizontal, self)
+        split = QSplitter(Qt.Orientation.Horizontal, self)
         self.palette_box = Palette(self, self.base, split)
         split.addWidget(self.palette_box)
         self.props = QFrame(split)
@@ -246,7 +250,7 @@ class RibbonEditor(QDialog):
         foot = QHBoxLayout()
         self.reset_button = QPushButton(tr("Restore Defaults"), self)
         self.reset_button.setToolTip(
-            tr("Tabs, groups and Quick Access as in the definition (can be undone; galleries stay)"))
+            tr("Tabs, groups and Quick Access as in the definition (can be undone; galleries and dropdowns stay)"))
         self.reset_button.clicked.connect(self.reset_all)
         foot.addWidget(self.reset_button)
         self.restore_button = QPushButton(tr("Restore Deleted Tab"), self)
@@ -274,13 +278,14 @@ class RibbonEditor(QDialog):
         foot.addWidget(self.save_button)
         lay.addLayout(foot)
 
-        keys = [(QKeySequence.Undo, self.undo), (QKeySequence.Redo, self.redo), (QKeySequence.Save, self.save),
-                (QKeySequence.HelpContents, lambda: guide.show_help("customize", self))]
-        if QKeySequence("Ctrl+Y") not in QKeySequence.keyBindings(QKeySequence.Redo):
+        keys = [(QKeySequence.StandardKey.Undo, self.undo), (QKeySequence.StandardKey.Redo, self.redo),
+                (QKeySequence.StandardKey.Save, self.save),
+                (QKeySequence.StandardKey.HelpContents, lambda: guide.show_help("customize", self))]
+        if QKeySequence("Ctrl+Y") not in QKeySequence.keyBindings(QKeySequence.StandardKey.Redo):
             keys.append((QKeySequence("Ctrl+Y"), self.redo))   # Strg+Y auch außerhalb von Windows
         for seq, slot in keys:
             sc = QShortcut(seq, self)
-            sc.setContext(Qt.WindowShortcut)
+            sc.setContext(Qt.ShortcutContext.WindowShortcut)
             sc.activated.connect(slot)
 
     # Auffrischen
@@ -332,7 +337,7 @@ class RibbonEditor(QDialog):
         tab = arr.tab(self.current_tab)
         for gi, group in enumerate(tab.groups):
             card = GroupCard(self, self.base, arr, tab.id, gi, self.preview)
-            self.preview.lay.addWidget(card, 0, Qt.AlignTop)
+            self.preview.lay.addWidget(card, 0, Qt.AlignmentFlag.AlignTop)
             self.preview.cards.append(card)
             where = tr("Group %s") % group.label
             card.header.setAccessibleName(tr("Group %s%s%s") % (
@@ -345,7 +350,7 @@ class RibbonEditor(QDialog):
                 tile.marked = self.clip == tile.sel[1]
                 self.widgets[tile.sel] = tile
         self.preview.new_card = NewGroupCard(self, tab.id, self.preview)
-        self.preview.lay.addWidget(self.preview.new_card, 0, Qt.AlignTop)
+        self.preview.lay.addWidget(self.preview.new_card, 0, Qt.AlignmentFlag.AlignTop)
         self.widgets[self.preview.new_card.sel] = self.preview.new_card
         self.preview.lay.addStretch(1)
 
@@ -388,7 +393,13 @@ class RibbonEditor(QDialog):
             text = tr("Arrangement: Default")
         else:
             name = self.arrangements.active_name()
-            text = tr("Arrangement: %s") % (name or tr("customized"))
+            current = self.arrangements.current_name()
+            if name:
+                text = tr("Arrangement: %s") % name
+            elif current:
+                text = tr("Arrangement: %s (changes not saved)") % current
+            else:
+                text = tr("Arrangement: %s") % tr("customized")
         self.arrangement_label.setText(text)
         self.undo_button.setEnabled(self.editor.can_undo)
         self.redo_button.setEnabled(self.editor.can_redo)
@@ -448,7 +459,7 @@ class RibbonEditor(QDialog):
         widget = self.widgets.get(self.selection)
         if widget is not None:
             if focus:
-                widget.setFocus(Qt.OtherFocusReason)
+                widget.setFocus(Qt.FocusReason.OtherFocusReason)
             if self.selection[0] in ("group", "item", "newgroup"):
                 self.preview_area.ensureWidgetVisible(widget, 20, 4)
             elif self.selection[0] == "tab":
@@ -630,7 +641,7 @@ class RibbonEditor(QDialog):
             self.select(sel)
         if kind not in ("tab", "group", "item") or self._label_edit is None:
             return False
-        self._label_edit.setFocus(Qt.ShortcutFocusReason)
+        self._label_edit.setFocus(Qt.FocusReason.ShortcutFocusReason)
         self._label_edit.selectAll()
         return True
 
@@ -713,43 +724,43 @@ class RibbonEditor(QDialog):
         """Taste auf einem Teil des Editors. True, wenn verarbeitet."""
         k = event.key()
         mods = event.modifiers()
-        ctrl = bool(mods & Qt.ControlModifier)
+        ctrl = bool(mods & Qt.KeyboardModifier.ControlModifier)
         kind = sel[0]
-        if k in (Qt.Key_Delete, Qt.Key_Backspace) and not ctrl:
+        if k in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace) and not ctrl:
             self.remove(sel)
             return True
-        if k == Qt.Key_F2:
+        if k == Qt.Key.Key_F2:
             self.rename(sel)
             return True
-        if ctrl and k == Qt.Key_X:
+        if ctrl and k == Qt.Key.Key_X:
             self.cut(sel)
             return True
-        if ctrl and k == Qt.Key_V:
+        if ctrl and k == Qt.Key.Key_V:
             self.paste(sel)
             return True
-        if k == Qt.Key_Space and kind in ("tab", "group"):
+        if k == Qt.Key.Key_Space and kind in ("tab", "group"):
             self.toggle_visible(sel)
             return True
-        if k in (Qt.Key_Return, Qt.Key_Enter, Qt.Key_Space):
+        if k in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
             if kind == "newgroup":
                 self.new_group()
             elif kind == "tab":
                 self._focus_first_in_preview()
-            elif kind == "item" and k != Qt.Key_Space:
+            elif kind == "item" and k != Qt.Key.Key_Space:
                 tile = self.widgets.get(sel)
                 if tile is not None and tile.menu:
                     self.show_contents(tile)
             return True
-        if k in (Qt.Key_Left, Qt.Key_Right, Qt.Key_Up, Qt.Key_Down):
-            delta = -1 if k in (Qt.Key_Left, Qt.Key_Up) else 1
+        if k in (Qt.Key.Key_Left, Qt.Key.Key_Right, Qt.Key.Key_Up, Qt.Key.Key_Down):
+            delta = -1 if k in (Qt.Key.Key_Left, Qt.Key.Key_Up) else 1
             if ctrl:
-                if kind == "item" and k in (Qt.Key_Up, Qt.Key_Down):
+                if kind == "item" and k in (Qt.Key.Key_Up, Qt.Key.Key_Down):
                     return True
                 self.move_by(sel, delta)
             else:
                 self.navigate(sel, k)
             return True
-        if k == Qt.Key_Escape and self.clip is not None:
+        if k == Qt.Key.Key_Escape and self.clip is not None:
             self.clip = None
             self.set_status(tr("Cut canceled."))
             self.refresh(focus=True)
@@ -758,7 +769,7 @@ class RibbonEditor(QDialog):
 
     def palette_key(self, event):
         """Tasten der Palette, die der Editor übernimmt (Strg+V fügt den Ausschnitt nicht ein)."""
-        if event.key() == Qt.Key_Q and event.modifiers() & Qt.ControlModifier:
+        if event.key() == Qt.Key.Key_Q and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
             self.add_to_quick_access()
             return True
         return False
@@ -780,30 +791,30 @@ class RibbonEditor(QDialog):
         if kind == "tab":
             ids = [t.id for t in self.editor.arr.tabs]
             i = ids.index(sel[1])
-            if k in (Qt.Key_Left, Qt.Key_Right):
-                j = i + (1 if k == Qt.Key_Right else -1)
+            if k in (Qt.Key.Key_Left, Qt.Key.Key_Right):
+                j = i + (1 if k == Qt.Key.Key_Right else -1)
                 if 0 <= j < len(ids):
                     self.select(("tab", ids[j]), focus=True)
-            elif k == Qt.Key_Down:
+            elif k == Qt.Key.Key_Down:
                 self._focus_first_in_preview()
             return
         if kind == "quick":
             n = len(self.quick.tiles)
-            if k in (Qt.Key_Left, Qt.Key_Right):
-                j = sel[1] + (1 if k == Qt.Key_Right else -1)
+            if k in (Qt.Key.Key_Left, Qt.Key.Key_Right):
+                j = sel[1] + (1 if k == Qt.Key.Key_Right else -1)
                 if 0 <= j < n:
                     self.select(("quick", j), focus=True)
-            elif k == Qt.Key_Down:
+            elif k == Qt.Key.Key_Down:
                 self._focus_first_in_preview()
-            elif k == Qt.Key_Up:
+            elif k == Qt.Key.Key_Up:
                 self.select(("tab", self.current_tab), focus=True)
             return
         order = self._preview_order()
         if sel not in order:
             return
         i = order.index(sel)
-        if k in (Qt.Key_Left, Qt.Key_Right):
-            j = i + (1 if k == Qt.Key_Right else -1)
+        if k in (Qt.Key.Key_Left, Qt.Key.Key_Right):
+            j = i + (1 if k == Qt.Key.Key_Right else -1)
             if 0 <= j < len(order):
                 self.select(order[j], focus=True)
             return
@@ -812,7 +823,7 @@ class RibbonEditor(QDialog):
             card = self.preview.cards[place.group]
             tile = card.tiles[place.item]
             col = card.columns[tile.col]
-            r = tile.row + (1 if k == Qt.Key_Down else -1)
+            r = tile.row + (1 if k == Qt.Key.Key_Down else -1)
             if 0 <= r < len(col):
                 self.select(col[r].sel, focus=True)
             elif r < 0:
@@ -820,17 +831,17 @@ class RibbonEditor(QDialog):
             return
         if kind == "group":
             card = self.preview.cards[sel[1].group]
-            if k == Qt.Key_Down and card.tiles:
+            if k == Qt.Key.Key_Down and card.tiles:
                 self.select(card.tiles[0].sel, focus=True)
-            elif k == Qt.Key_Up:
+            elif k == Qt.Key.Key_Up:
                 target = ("quick", 0) if self.quick.tiles else ("tab", self.current_tab)
                 self.select(target, focus=True)
             return
-        if kind == "newgroup" and k == Qt.Key_Up:
+        if kind == "newgroup" and k == Qt.Key.Key_Up:
             self.select(("tab", self.current_tab), focus=True)
 
     def keyPressEvent(self, event):  # noqa: N802 (Qt)
-        if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             event.accept()   # Eingabe speichert nie versehentlich
             return
         QDialog.keyPressEvent(self, event)
@@ -874,14 +885,17 @@ class RibbonEditor(QDialog):
         return self.do(self.editor.quick_insert, len(self.editor.quick_ids()), command_id,
                        message=tr("“%s” in Quick Access.") % self.base.commands[command_id].label)
 
-    # Inhalt von Splits und Menüs ansehen
+    # Inhalt von Splits, Menüs und Galerien ansehen
     def show_contents(self, tile, popup=True):
         menu = QMenu(self)
         menu.setObjectName("ribbon_editor_contents")
-        head = menu.addAction(tr("Content (view only in the editor)"))
+        target = cz.dropdown_of(self.base, tile.item) if tile.element is not None else None
+        head = menu.addAction(tr("Content (change in the properties or by dropping commands onto the button)")
+                              if target else tr("Content (view only in the editor)"))
         head.setEnabled(False)
         menu.addSeparator()
-        for level, label in menu_entries(tile.element):
+        shown = cz.effective_element(self.base, self.editor.arr, tile.element, tile.item.element)
+        for level, label in menu_entries(shown):
             menu.addAction("    " * level + label)
         if popup:
             menu.popup(tile.mapToGlobal(tile.rect().bottomLeft()))
@@ -923,7 +937,7 @@ class RibbonEditor(QDialog):
             b.setObjectName(name)
         b.setEnabled(enabled)
         b.clicked.connect(slot)
-        self.props_lay.addWidget(b, 0, Qt.AlignLeft)
+        self.props_lay.addWidget(b, 0, Qt.AlignmentFlag.AlignLeft)
         return b
 
     def _label_field(self, sel, text, editable=True):
@@ -1016,6 +1030,7 @@ class RibbonEditor(QDialog):
         row.addStretch(1)
         self.props_lay.addLayout(row)
         self._prop_label(tr("To insert: select a command in the palette and press Enter, or drag it here. "
+                            "Dropped onto a button with ▾, it goes into its dropdown. "
                             "Drag the group by its header to move it (also onto another tab)."),
                          "ribbon_editor_prop_muted")
 
@@ -1025,8 +1040,9 @@ class RibbonEditor(QDialog):
         element = cz.item_element(self.base, item)
         group = self.editor.arr.tab(place.tab).groups[place.group]
         tab = self.editor.arr.tab(place.tab)
+        target = cz.dropdown_of(self.base, item) if element is not None else None
         self._prop_label(cz.item_label(self.base, item), "ribbon_editor_prop_title")
-        self._prop_label(kind_text(element), "ribbon_editor_prop_muted")
+        self._prop_label(kind_text(element, target is not None), "ribbon_editor_prop_muted")
         row = QHBoxLayout()
         row.addWidget(QLabel(tr("Size:"), self.props))
         self._size_buttons = QButtonGroup(self.props)
@@ -1048,10 +1064,37 @@ class RibbonEditor(QDialog):
         description = getattr(getattr(element, "command", None), "description", None)
         if description:
             self._prop_label(description, "ribbon_editor_prop_muted")
-        entries = menu_entries(element) if element is not None else []
+        shown = cz.effective_element(self.base, self.editor.arr, element, item.element)
+        entries = menu_entries(shown) if shown is not None else []
         if entries:
             self._prop_label(tr("Content: ") + ", ".join(label for _l, label in entries), "ribbon_editor_prop_muted")
+        if target is not None:
+            text = tr("Customize Gallery …") if target[0] == "gallery" else tr("Customize Dropdown …")
+            self._prop_button(text, lambda: self.customize_dropdown(target), name="ribbon_editor_gallery")
+            self._prop_label(tr("Tip: drop a command from the palette onto the button to add it to the "
+                                "dropdown."), "ribbon_editor_prop_muted")
         self._prop_button(tr("Remove"), lambda: self.remove(sel), name="ribbon_editor_remove")
+
+    def gallery_dialog(self, gallery_id, target=None):
+        from .customize_dialog import GalleryDialog
+        return GalleryDialog(self.arrangements, gallery_id, self, editor=self.editor, target=target)
+
+    def customize_gallery(self, gallery_id):
+        return self.customize_dropdown(("gallery", gallery_id))
+
+    def customize_dropdown(self, target):
+        """Galerie oder Dropdown im Dialog anpassen; das Ergebnis wird ein Schritt im Verlauf des Editors."""
+        kind, key = target
+        dlg = self.gallery_dialog(key, target=target) if kind != "gallery" else self.gallery_dialog(key)
+        try:
+            if not dlg.exec():
+                return None
+            ids = dlg.result_ids
+        finally:
+            dlg.deleteLater()
+        message = (tr("Gallery “%s” changed. Applied only with “Save”.") if kind == "gallery"
+                   else tr("Dropdown “%s” changed. Applied only with “Save”.")) % ed.dropdown_label(self.base, target)
+        return self.do(self.editor.set_dropdown, target, ids, message=message)
 
     def set_size(self, sel, size):
         return self.do(self.editor.set_size, sel[1], size, select=sel)
@@ -1170,7 +1213,7 @@ class RibbonEditor(QDialog):
         self.begin_drag(payload)
         self._drag_running = True
         try:
-            drag.exec_(Qt.MoveAction | Qt.CopyAction, Qt.MoveAction)
+            drag.exec(Qt.DropAction.MoveAction | Qt.DropAction.CopyAction, Qt.DropAction.MoveAction)
         finally:
             self._drag_running = False
             run = self.end_drag()
@@ -1214,6 +1257,10 @@ class RibbonEditor(QDialog):
             if card.drop_index is not None:
                 card.drop_index = None
                 card.update()
+            for tile in card.tiles:
+                if tile.drop_into:
+                    tile.drop_into = False
+                    tile.update()
         new_card = self.preview.new_card
         if new_card is not None and new_card.active:
             new_card.active = False
@@ -1244,7 +1291,7 @@ class RibbonEditor(QDialog):
             event.ignore()
             return None
         try:
-            mark, run, hint = plan(widget, event.pos())
+            mark, run, hint = plan(widget, event_pos(event))
         except (EditError, KeyError, IndexError):
             mark, run, hint = None, None, None
         self._clear_marks()
@@ -1253,10 +1300,10 @@ class RibbonEditor(QDialog):
             event.ignore()
             return None
         self._drag_note(None)
-        event.setDropAction(Qt.MoveAction)
+        event.setDropAction(Qt.DropAction.MoveAction)
         event.accept()
         if not drop:
-            mark()
+            mark()   # darf einen eigenen Hinweis setzen
             return True
         return self._finish(run)
 
@@ -1275,6 +1322,9 @@ class RibbonEditor(QDialog):
             return self._plan_preview(self.preview, card.mapTo(self.preview, pos))
         if kind not in ("item", "command"):
             return None, None, None
+        into = self._plan_into_dropdown(card, pos)
+        if into is not None:
+            return into
         tab_id, gi = card.place.tab, card.place.group
         index = card.index_at(pos)
         item = self._item_of_drag()
@@ -1295,6 +1345,43 @@ class RibbonEditor(QDialog):
         def mark():
             card.drop_index = index
             card.update()
+        return mark, run, None
+
+    def _plan_into_dropdown(self, card, pos):
+        """Mitte eines Buttons mit anpassbarem Dropdown: Befehl dort hinein. None = kein solches Ziel.
+
+        Passt der Befehl nicht ins Dropdown, bleibt es beim Einfügen daneben.
+        """
+        tile = card.tile_onto(pos)
+        if tile is None:
+            return None
+        target = cz.dropdown_of(self.base, tile.item)
+        kind, value = self._drag
+        if target is None or (kind == "item" and value == tile.sel[1]):
+            return None
+        if kind == "item":
+            item = self.editor.item(value)
+            if item.element is not None:
+                return None
+            command_id = item.command
+        else:
+            command_id = value
+        if self.editor.can_add_to_dropdown(target, command_id):
+            return None
+        label = self.base.commands[command_id].label
+        message = tr("“%s” is now in the dropdown of “%s”.") % (label, ed.dropdown_label(self.base, target))
+        if kind == "item":
+            def run():
+                return self.do(self.editor.move_into_dropdown, value, target, message=message)
+        else:
+            def run():
+                return self.do(self.editor.add_to_dropdown, target, command_id, select=("item", tile.sel[1]),
+                               message=message)
+
+        def mark():
+            tile.drop_into = True
+            tile.update()
+            self._drag_note(tr("Into the dropdown of “%s”") % ed.dropdown_label(self.base, target))
         return mark, run, None
 
     def _plan_new_group(self, card, pos):
@@ -1434,28 +1521,28 @@ class RibbonEditor(QDialog):
 
     # Ereignisse der Widgets
     def drag_over_group(self, card, event):
-        self._auto_scroll(self.preview_area, card.mapToGlobal(event.pos()))
+        self._auto_scroll(self.preview_area, card.mapToGlobal(event_pos(event)))
         return self._handle(self._plan_group, card, event)
 
     def drop_on_group(self, card, event):
         return self._handle(self._plan_group, card, event, drop=True)
 
     def drag_over_new_group(self, card, event):
-        self._auto_scroll(self.preview_area, card.mapToGlobal(event.pos()))
+        self._auto_scroll(self.preview_area, card.mapToGlobal(event_pos(event)))
         return self._handle(self._plan_new_group, card, event)
 
     def drop_on_new_group(self, card, event):
         return self._handle(self._plan_new_group, card, event, drop=True)
 
     def drag_over_preview(self, preview, event):
-        self._auto_scroll(self.preview_area, preview.mapToGlobal(event.pos()))
+        self._auto_scroll(self.preview_area, preview.mapToGlobal(event_pos(event)))
         return self._handle(self._plan_preview, preview, event)
 
     def drop_on_preview(self, preview, event):
         return self._handle(self._plan_preview, preview, event, drop=True)
 
     def drag_over_tab(self, chip, event):
-        self._auto_scroll(self.tab_area, chip.mapToGlobal(event.pos()))
+        self._auto_scroll(self.tab_area, chip.mapToGlobal(event_pos(event)))
         self._hover(chip)
         return self._handle(self._plan_tab, chip, event)
 
@@ -1469,7 +1556,7 @@ class RibbonEditor(QDialog):
         return self._handle(self._plan_tab, chip, event, drop=True)
 
     def drag_over_strip(self, strip, event):
-        self._auto_scroll(self.tab_area, strip.mapToGlobal(event.pos()))
+        self._auto_scroll(self.tab_area, strip.mapToGlobal(event_pos(event)))
         return self._handle(self._plan_strip, strip, event)
 
     def drop_on_strip(self, strip, event):

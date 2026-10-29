@@ -583,6 +583,48 @@ MOTIFS.update({
     "pyramiden": M(k=[P("M12 3.5l8.5 15.5h-17z"), P("M7.4 12h9.2M5.2 16h13.6")], f=[P("M12 3.5l4.6 8.5H7.4z")]),
     "farben": M(k=[R(3, 3, 8, 8, 1.8), R(13, 3, 8, 8, 1.8), R(3, 13, 8, 8, 1.8), R(13, 13, 8, 8, 1.8)],
                 f=[R(3, 3, 8, 8, 1.8), R(13, 13, 8, 8, 1.8)]),
+    # Gruppe Symbol im Kontext-Tab Darstellung
+    "fuellfarbe": M(k=[R(3, 5, 13, 13, 2)], f=[R(3, 5, 13, 13, 2)],
+                    a=[P("M19 11.5s-2.6 3-2.6 4.8a2.6 2.6 0 0 0 5.2 0c0-1.8-2.6-4.8-2.6-4.8z")]),
+    "randfarbe": M(k=[R(8, 9.5, 6, 6, 1)], a=[R(3.5, 5, 15, 15, 2.2, ' stroke-width="2.6"')]),
+    "linienbreite": M(k=[P("M4 6h16")], a=[P("M4 11.5h16", ' stroke-width="2.6"'), P("M4 18h16", ' stroke-width="4"')]),
+    "symbol_bearbeiten": badge(M(k=[C(7.5, 7.5, 4.5), R(3, 13, 8, 8, 1.6), P("M14 4.5l6 6")],
+                                 f=[C(7.5, 7.5, 4.5)]), PEN),
+})
+
+# Einstellungen, Hilfe, Menüs, Dekorationen, Layersichtbarkeit
+PUZZLE_D = "M4.5 7.5H8a2.5 2.5 0 0 1 5 0h3.5V11a2.5 2.5 0 0 1 0 5v3.5h-12z"
+PROFILE_D = "M3 17l4.5-6 3.5 3 4-7 6 10"
+PROFILE = M(k=[P("M3 20.5h18"), P(PROFILE_D)], f=[P(PROFILE_D + "V20.5H3z")])
+EYE_OFF_SMALL = M(a=EYE_SMALL["a"] + [P("M14.8 22.2l7.4-7.4")])
+
+MOTIFS.update({
+    "menue": M(k=[P("M4 6.5h16M4 12h16M4 17.5h16")]),
+    "erweiterungen_verwalten": badge(M(k=[P(PUZZLE_D)], f=[P(PUZZLE_D)]), DOWN_ARROW),
+    "fehler": M(k=[E(12, 13.5, 5, 6.5), P("M12 7v13M7 11.5H3.5M20.5 11.5H17M7 16H3.5M20.5 16H17"
+                                            "M9.2 7.6L7.5 5M14.8 7.6l1.7-2.6")], f=[E(12, 13.5, 5, 6.5)]),
+    "webseite": badge(GLOBE, OUT_ARROW),
+    "dokumentation": add(DOC, M(a=[P("M10 11.5l-2 2.5 2 2.5M14 11.5l2 2.5-2 2.5")])),
+    "panels": M(k=[R(2.8, 4, 18.4, 16, 2), P("M9.5 4v16")],
+                f=[P("M4.8 4h4.7v16H4.8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z")]),
+    "werkzeugleisten": M(k=[R(2.5, 4, 19, 6, 1.8), R(2.5, 14, 19, 6, 1.8)],
+                         a=[P("M6 7h.1M9 7h.1M12 7h.1M6 17h.1M9 17h.1")], f=[R(2.5, 4, 19, 6, 1.8)]),
+    "vollbild": M(k=[P("M3 8.5V3h5.5M15.5 3H21v5.5M21 15.5V21h-5.5M8.5 21H3v-5.5")], a=[R(8, 8, 8, 8, 1.2)]),
+    "schloss": M(k=[R(5, 10.5, 14, 10, 2), P("M8 10.5V7.5a4 4 0 0 1 8 0v3")], a=[P("M12 14.3v2.6")],
+                 f=[R(5, 10.5, 14, 10, 2)]),
+    "dekoration": badge(MAP, STAR),
+    "dekoration_gitter": badge(MAP, M(a=[P("M14.5 16h8M14.5 20h8M16.5 14v8M20.5 14v8")])),
+    "massstabsleiste": M(k=[R(3, 12, 18, 4)], a=[P("M3 8.5v3M12 8.5v3M21 8.5v3")], f=[R(3, 12, 6, 4), R(15, 12, 6, 4)]),
+    "nordpfeil": M(k=[P("M12 8l5 13-5-3.3-5 3.3z")], a=[P("M10 6V2.5l4 3.5V2.5")], f=[P("M12 8v9.7L7 21z")]),
+    "titel": M(k=[R(3, 4, 18, 16, 2)], a=[P("M7.5 8.5h9M12 8.5v8")]),
+    "copyright": M(k=[C(12, 12, 9)], a=[P("M15 9.6a3.5 3.5 0 1 0 0 4.8")], f=[C(12, 12, 9)]),
+    "layoutausdehnung": badge(MAP, M(a=[R(14.5, 14.5, 8, 8, 1, DASH)])),
+    "layer_zeigen": badge(LAYERS, EYE_SMALL),
+    "layer_verbergen": badge(LAYERS, EYE_OFF_SMALL),
+    "layer_umschalten": badge(LAYERS, LOOP),
+    "globus_neu": badge(GLOBE, PLUS),
+    "hoehenprofil": PROFILE,
+    "hoehenfilter": badge(PROFILE, M(a=[P("M14.5 15h8l-3 3.5v3.5l-2-1v-2.5z")])),
 })
 
 # Befehls-ID -> Motiv
@@ -720,6 +762,41 @@ COMMANDS = {
     "punktwolke_punktgroesse": "punktgroesse", "punktwolke_fehler": "punktfehler", "netz_skalar": "netz_skalar",
     "netz_vektor": "netz_vektor", "netz_gitter": "netz_gitter", "gruppe_als_ebene": "gruppe_als_ebene",
     "gruppe_exklusiv": "gruppe_exklusiv", "gruppe_zoomen": "gruppe_zoomen",
+    # Einstellungsfenster, Hilfe und Menüs der Menüleiste
+    "erweiterungen_verwalten": "erweiterungen_verwalten", "ueber_qgis": "info",
+    "qgis_version_pruefen": "aktualisieren", "problem_melden": "fehler", "qgis_homepage": "webseite",
+    "pyqgis_api": "python", "cpp_api": "dokumentation", "qgis_mitmachen": "webseite", "qgis_spenden": "webseite",
+    "kommerzielle_unterstuetzung": "webseite", "qgis_foerdermitglieder": "webseite",
+    "hilfe_erweiterungen": "ui_hilfe", "panels": "panels", "werkzeugleisten": "werkzeugleisten",
+    "vollbild": "vollbild", "nur_karte": "grundkarte", "panels_umschalten": "panels",
+    "optionen_allgemein": "optionen", "optionen_system": "einstellungen", "optionen_kbs": "kbs",
+    "optionen_transformationen": "transformationen", "optionen_datenquellen": "datenbank",
+    "optionen_gdal": "optionen", "optionen_darstellung": "darstellungsart",
+    "optionen_vektordarstellung": "symbolisierung", "optionen_rasterdarstellung": "kontrast",
+    "optionen_karte_legende": "legende", "optionen_hoehe": "hoehenprofil", "optionen_farben": "farben",
+    "optionen_schriften": "schriftart", "optionen_layouts": "layoutverwaltung", "optionen_3d": "kartenansicht_3d",
+    "optionen_variablen": "variablen", "optionen_authentifizierung": "schloss", "optionen_netzwerk": "server",
+    "optionen_gps": "gpx", "optionen_gpsbabel": "gpx", "optionen_beschleunigung": "aktionen",
+    "optionen_ide": "python", "optionen_code_editor": "ausdruck", "optionen_python_konsole": "konsole",
+    "optionen_erweitert": "einstellungen",
+    "dekorationen": "dekoration", "dekoration_gitter": "dekoration_gitter",
+    "dekoration_massstabsleiste": "massstabsleiste", "dekoration_nordpfeil": "nordpfeil",
+    "dekoration_titel": "titel", "dekoration_copyright": "copyright", "dekoration_bild": "bild",
+    "dekoration_layoutausdehnungen": "layoutausdehnung", "layersichtbarkeit": "layer_zeigen",
+    "alle_layer_einblenden": "layer_zeigen", "alle_layer_ausblenden": "layer_verbergen",
+    "gewaehlte_layer_einblenden": "layer_zeigen", "gewaehlte_layer_ausblenden": "layer_verbergen",
+    "nicht_gewaehlte_layer_ausblenden": "layer_verbergen", "gewaehlte_layer_umschalten": "layer_umschalten",
+    "gewaehlte_layer_einzeln_umschalten": "layer_umschalten", "kartenansichten_3d_verwalten": "kartenansicht_3d",
+    "neue_3d_globusansicht": "globus_neu", "hoehenprofil": "hoehenprofil", "hoehenfilter": "hoehenfilter",
+    "lesezeichen_anzeigen": "lesezeichen", "punktsymbole_drehen": "drehung",
+    "punktsymbole_versetzen": "verschieben", "formular_annotation": "annotation", "html_annotation": "annotation",
+    "netzrechner": "rasterrechner", "abfrageverlauf": "verlauf", "qgis_menues": "menue",
+    "menue_projekt": "menue", "menue_bearbeiten": "menue", "menue_ansicht": "menue", "menue_layer": "menue",
+    "menue_einstellungen": "menue", "menue_erweiterungen": "menue", "menue_vektor": "menue",
+    "menue_raster": "menue", "menue_datenbank": "menue", "menue_web": "menue", "menue_netz": "menue",
+    "menue_hilfe": "menue",
+    "symbol_bearbeiten": "symbol_bearbeiten", "symbolklasse": "legende", "symbol_fuellfarbe": "fuellfarbe",
+    "symbol_randfarbe": "randfarbe", "symbol_breite": "linienbreite",
 }
 
 # Menü-Elemente ohne eigenen Befehl (nach Beschriftung)
@@ -734,6 +811,7 @@ UI = {
     "chevron_down": "ui_chevron_down", "chevron_up": "ui_chevron_up", "pin": "ui_pin",
     "auge": "ui_auge", "auge_aus": "ui_auge_aus", "plus": "ui_plus", "griff": "ui_griff", "mehr": "ui_mehr",
     "rueckgaengig": "rueckgaengig", "wiederholen": "wiederholen", "entfernen": "loeschen", "hilfe": "ui_hilfe",
+    "menue": "menue",
 }
 
 

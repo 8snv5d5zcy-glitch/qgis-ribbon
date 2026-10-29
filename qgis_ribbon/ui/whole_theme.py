@@ -105,21 +105,22 @@ def whole_palette(t, base):
     c = lambda k: theme.color(k, t)  # noqa: E731
     pal = QPalette(base)
     roles = {
-        QPalette.Window: "win", QPalette.WindowText: "text", QPalette.Base: "surf",
-        QPalette.AlternateBase: "win", QPalette.Text: "text", QPalette.Button: "surf",
-        QPalette.ButtonText: "text", QPalette.BrightText: "err", QPalette.Highlight: "accS",
-        QPalette.HighlightedText: "accT", QPalette.ToolTipBase: "tip", QPalette.ToolTipText: "surf",
-        QPalette.Link: "acc", QPalette.LinkVisited: "accT", QPalette.Light: "surf",
-        QPalette.Midlight: "hover", QPalette.Mid: "bord", QPalette.Dark: "bord",
+        QPalette.ColorRole.Window: "win", QPalette.ColorRole.WindowText: "text", QPalette.ColorRole.Base: "surf",
+        QPalette.ColorRole.AlternateBase: "win", QPalette.ColorRole.Text: "text", QPalette.ColorRole.Button: "surf",
+        QPalette.ColorRole.ButtonText: "text", QPalette.ColorRole.BrightText: "err",
+        QPalette.ColorRole.Highlight: "accS", QPalette.ColorRole.HighlightedText: "accT",
+        QPalette.ColorRole.ToolTipBase: "tip", QPalette.ColorRole.ToolTipText: "surf",
+        QPalette.ColorRole.Link: "acc", QPalette.ColorRole.LinkVisited: "accT", QPalette.ColorRole.Light: "surf",
+        QPalette.ColorRole.Midlight: "hover", QPalette.ColorRole.Mid: "bord", QPalette.ColorRole.Dark: "bord",
     }
     if hasattr(QPalette, "PlaceholderText"):
-        roles[QPalette.PlaceholderText] = "muted"
+        roles[QPalette.ColorRole.PlaceholderText] = "muted"
     for role, token in roles.items():
         pal.setColor(role, c(token))
-    pal.setColor(QPalette.Shadow, QColor(0, 0, 0))
-    for role in (QPalette.WindowText, QPalette.Text, QPalette.ButtonText):
-        pal.setColor(QPalette.Disabled, role, c("faint"))
-    pal.setColor(QPalette.Disabled, QPalette.Highlight, c("press"))
+    pal.setColor(QPalette.ColorRole.Shadow, QColor(0, 0, 0))
+    for role in (QPalette.ColorRole.WindowText, QPalette.ColorRole.Text, QPalette.ColorRole.ButtonText):
+        pal.setColor(QPalette.ColorGroup.Disabled, role, c("faint"))
+    pal.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Highlight, c("press"))
     return pal
 
 
@@ -162,8 +163,8 @@ class WholeTheme(object):
     def base_lightness(self):
         """Helligkeit von QGIS ohne die eigene Palette (für den Modus „Automatisch“)."""
         if self.active and not self._foreign_palette():
-            return self._palette_before.color(QPalette.Window).lightness()
-        return self.app.palette().color(QPalette.Window).lightness()
+            return self._palette_before.color(QPalette.ColorRole.Window).lightness()
+        return self.app.palette().color(QPalette.ColorRole.Window).lightness()
 
     def restore(self):
         if not self.active:

@@ -5,8 +5,8 @@ Schnellzugriffsleiste (Liste der Befehls-IDs), ob der Ribbon minimiert
 ist, eigene KeyTips (JSON: Schlüssel aus ``core.keytips`` -> Kürzel), die
 Anordnung der Tabs, Gruppen und Galerien (JSON, ``core.customization``), die
 gespeicherten Anordnungen (JSON: Name -> Anordnung), ob die klassische
-QGIS-Oberfläche gewählt ist und das Design (Modus, Akzent, Gesamtbild,
-Animationen, eigene Icons). Sie bleiben beim Entladen erhalten; das
+QGIS-Oberfläche gewählt und die Menüleiste ausgeblendet ist und das Design
+(Modus, Akzent, Gesamtbild, Animationen, eigene Icons). Sie bleiben beim Entladen erhalten; das
 Hauptfenster stellt ``unload()`` trotzdem exakt wieder her.
 
 Tests übergeben eine eigene Einstellungsdatei (``settings``), nie das echte
@@ -23,7 +23,9 @@ KEY_MINIMIZED = PREFIX + "minimiert"
 KEY_KEYTIPS = PREFIX + "kuerzel"
 KEY_LAYOUT = PREFIX + "anordnung"
 KEY_SAVED = PREFIX + "anordnungen"
+KEY_CURRENT = PREFIX + "anordnung_aktuell"
 KEY_CLASSIC = PREFIX + "klassisch"
+KEY_MENUBAR_HIDDEN = PREFIX + "menueleiste_aus"
 KEY_EDITOR_SIZE = PREFIX + "editor/groesse"
 KEY_DESIGN_MODE = PREFIX + "design/modus"
 KEY_DESIGN_ACCENT = PREFIX + "design/akzent"
@@ -108,6 +110,17 @@ class UserSettings(object):
         else:
             self.settings.remove(KEY_SAVED)
 
+    def current_name(self):
+        """Name der gespeicherten Anordnung, in der gerade gearbeitet wird (zuletzt geladen oder gespeichert)."""
+        value = self.settings.value(KEY_CURRENT, None)
+        return str(value) if value else None
+
+    def set_current_name(self, name):
+        if name:
+            self.settings.setValue(KEY_CURRENT, name)
+        else:
+            self.settings.remove(KEY_CURRENT)
+
     def classic(self):
         """Klassische QGIS-Oberfläche statt Ribbon."""
         return _bool(self.settings.value(KEY_CLASSIC, "false"))
@@ -117,6 +130,16 @@ class UserSettings(object):
             self.settings.setValue(KEY_CLASSIC, "true")
         else:
             self.settings.remove(KEY_CLASSIC)
+
+    def menubar_hidden(self):
+        """QGIS-Menüleiste ausgeblendet (nur, solange der Ribbon steht)."""
+        return _bool(self.settings.value(KEY_MENUBAR_HIDDEN, "false"))
+
+    def set_menubar_hidden(self, on):
+        if on:
+            self.settings.setValue(KEY_MENUBAR_HIDDEN, "true")
+        else:
+            self.settings.remove(KEY_MENUBAR_HIDDEN)
 
     # Design „Kontur“
     def editor_size(self):

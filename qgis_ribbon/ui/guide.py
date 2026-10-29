@@ -58,7 +58,7 @@ def language_of(path):
 
 class HelpBrowser(QDialog):
     def __init__(self, parent=None):
-        QDialog.__init__(self, parent, Qt.Window)
+        QDialog.__init__(self, parent, Qt.WindowType.Window)
         self.setObjectName("ribbon_help")
         theme.style_dialog(self)
         self.setWindowTitle(TITLE)
@@ -89,7 +89,7 @@ class HelpBrowser(QDialog):
     def _button(self, text, slot):
         b = QToolButton(self)
         b.setText(text)
-        b.setToolButtonStyle(Qt.ToolButtonTextOnly)
+        b.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
         b.clicked.connect(slot)
         return b
 
@@ -163,7 +163,7 @@ class HelpBrowser(QDialog):
                         img.setHeight(size.height() * width / size.width())
                         cur = QTextCursor(doc)
                         cur.setPosition(frag.position())
-                        cur.setPosition(frag.position() + frag.length(), QTextCursor.KeepAnchor)
+                        cur.setPosition(frag.position() + frag.length(), QTextCursor.MoveMode.KeepAnchor)
                         cur.setCharFormat(img)
                 it += 1
             block = block.next()
@@ -211,7 +211,7 @@ def close_help():
 
 def help_button(box, topic, parent):
     """Knopf „Hilfe“ in einer ``QDialogButtonBox``, öffnet das Thema."""
-    btn = box.addButton(QDialogButtonBox.Help)
+    btn = box.addButton(QDialogButtonBox.StandardButton.Help)
     btn.setText(tr("Help"))
     box.helpRequested.connect(lambda: show_help(topic, parent))
     return btn

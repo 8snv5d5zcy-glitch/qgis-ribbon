@@ -69,7 +69,7 @@ class ActionResolver(object):
     def _build_index(self):
         # Die meisten Aktionen sind direkte Kinder des Hauptfensters.
         index = {}
-        for act in self.iface.mainWindow().findChildren(QAction, options=Qt.FindDirectChildrenOnly):
+        for act in self.iface.mainWindow().findChildren(QAction, options=Qt.FindChildOption.FindDirectChildrenOnly):
             name = act.objectName()
             if name and name not in index:
                 index[name] = act
@@ -97,7 +97,7 @@ class ActionResolver(object):
         das ganze Hauptfenster kostete im echten QGIS 9 ms je Aktion.
         """
         mw = self.iface.mainWindow()
-        scopes = mw.findChildren(QToolBar, options=Qt.FindDirectChildrenOnly)
+        scopes = mw.findChildren(QToolBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
         if hasattr(mw, "menuBar"):
             scopes.append(mw.menuBar())
         for scope in scopes:
@@ -126,7 +126,7 @@ class ActionResolver(object):
             res = handler(command)
         except Exception as exc:  # Resolver darf den Aufbau nie abbrechen
             QgsMessageLog.logMessage(tr("Command %s cannot be resolved: %s") % (command.id, exc),
-                                     LOG_TAG, Qgis.Warning)
+                                     LOG_TAG, Qgis.MessageLevel.Warning)
             res = unavailable(tr("Error while resolving: %s") % exc)
         if command.icon:
             res.icon = self.theme_icon(command.icon)
@@ -142,7 +142,7 @@ class ActionResolver(object):
     def _from_action(self, act):
         seq = act.shortcut()
         return Resolved(action=act, icon=act.icon(), qgis_text=clean_text(act.text()),
-                        shortcut=seq.toString(QKeySequence.NativeText) if not seq.isEmpty() else None)
+                        shortcut=seq.toString(QKeySequence.SequenceFormat.NativeText) if not seq.isEmpty() else None)
 
     def _resolve_qgis_action(self, command):
         name = command.source.get("object_name")
@@ -184,7 +184,7 @@ class ActionResolver(object):
     def _resolve_dock(self, command):
         name = command.source.get("object_name")
         mw = self.iface.mainWindow()
-        dock = (mw.findChild(QDockWidget, name, options=Qt.FindDirectChildrenOnly)
+        dock = (mw.findChild(QDockWidget, name, options=Qt.FindChildOption.FindDirectChildrenOnly)
                 or mw.findChild(QDockWidget, name))
         if dock is None:
             return unavailable(tr("Panel %s not found") % name)
@@ -228,7 +228,7 @@ class ActionResolver(object):
                     layer = iface.activeLayer()
                     if layer is None:
                         iface.messageBar().pushMessage(
-                            LOG_TAG, tr("No active layer selected."), level=Qgis.Warning, duration=4)
+                            LOG_TAG, tr("No active layer selected."), level=Qgis.MessageLevel.Warning, duration=4)
                         return
                     a = layer
                 values.append(a)
@@ -280,6 +280,9 @@ class ActionResolver(object):
             # Steuerelemente und Galerien baut die Oberfläche (ui.controls)
             return Resolved()
         result = factory(self.env, command)
+        if isinstance(result, QMenu):
+            # Eigenes Menü: wird wie ein QGIS-Menü eingehängt
+            return Resolved(menu=result, icon=result.icon())
         if isinstance(result, QAction):
             # Eigene Aktion mit Zustand: wird wie eine QGIS-Aktion gespiegelt
             return Resolved(action=result, icon=result.icon())
@@ -309,10 +312,10 @@ class ActionResolver(object):
 
     def report(self, command, exc):
         QgsMessageLog.logMessage(tr("Command %s failed: %s") % (command.id, exc),
-                                 LOG_TAG, Qgis.Critical)
+                                 LOG_TAG, Qgis.MessageLevel.Critical)
         self.iface.messageBar().pushMessage(
             LOG_TAG, tr("“%s” failed: %s") % (command.label, exc),
-            level=Qgis.Critical, duration=6)
+            level=Qgis.MessageLevel.Critical, duration=6)
 
 
 def _plugin_attribute_action(plugin, name):

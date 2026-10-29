@@ -14,15 +14,16 @@ Registrierung: ``register_all()`` beim Aufbau, ``unregister_all()`` beim
 Entladen (``custom_commands``, Art ``control``).
 """
 
+from qgis.core import QgsSymbolLayerUtils
 from qgis.gui import (QgsBlendModeComboBox, QgsColorButton, QgsDoubleSpinBox,
                       QgsFieldExpressionWidget, QgsOpacityWidget, QgsScaleWidget, QgsSpinBox)
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import QSize, Qt
 from qgis.PyQt.QtGui import QFontDatabase, QIcon, QPainter
 from qgis.PyQt.QtWidgets import (QCheckBox, QComboBox, QFontComboBox, QHBoxLayout, QLabel,
                                  QSizePolicy, QSlider, QWidget)
 
 from ...qgis_integration import (builtin_commands, compare, custom_commands, kontext_ops, layer_ops,
-                                 raster_ops)
+                                 raster_ops, symbol_ops)
 from .. import icons, theme
 from ..html_text import escape
 from ...core.i18n import tr
@@ -42,8 +43,8 @@ class IconLabel(QWidget):
 
     def paintEvent(self, _event):  # noqa: N802 (Qt)
         painter = QPainter(self)
-        mode = QIcon.Normal if self.isEnabled() else QIcon.Disabled
-        self.icon.paint(painter, self.rect(), Qt.AlignCenter, mode)
+        mode = QIcon.Mode.Normal if self.isEnabled() else QIcon.Mode.Disabled
+        self.icon.paint(painter, self.rect(), Qt.AlignmentFlag.AlignCenter, mode)
         painter.end()
 
 
@@ -80,7 +81,7 @@ class LayerControl(QWidget):
             self.editor.setFixedWidth(width)
         lay.addWidget(self.editor)
         self.setFixedHeight(theme.ROW_HEIGHT)
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setToolTip(self._tooltip())
         if env.layers is not None:
             env.layers.subscribe(self.refresh)
@@ -92,7 +93,7 @@ class LayerControl(QWidget):
         """Per Tastatur (KeyTip, Suche): Fokus in den Editor. False, wenn nicht bedienbar."""
         if not self.isEnabled():
             return False
-        self.editor.setFocus(Qt.ShortcutFocusReason)
+        self.editor.setFocus(Qt.FocusReason.ShortcutFocusReason)
         return True
 
     def _tooltip(self):
@@ -265,7 +266,7 @@ class BlendModeControl(LayerControl):
         self.editor.setBlendMode(layer_ops.blend_mode(layer))
 
     def read_default(self):
-        self.editor.setBlendMode(QPainter.CompositionMode_SourceOver)
+        self.editor.setBlendMode(QPainter.CompositionMode.CompositionMode_SourceOver)
 
 
 class FeatureBlendModeControl(LayerControl):
@@ -324,7 +325,7 @@ class FontSizeControl(LabelControl):
     def create_editor(self):
         w = QComboBox(self)
         w.setEditable(True)
-        w.setInsertPolicy(QComboBox.NoInsert)
+        w.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         w.addItems([format_size(s) for s in layer_ops.FONT_SIZES])
         w.activated.connect(lambda _i: self._apply())
         w.lineEdit().editingFinished.connect(self._apply)
@@ -474,6 +475,135 @@ class LabelFieldControl(LabelControl):
             if not layer_ops.labels_enabled(layer):
                 layer_ops.set_labels_enabled(layer, True)
         self.write(change)
+
+
+# -- Symbol (Kontext-Tab Darstellung) ------------------------------------------
+
+class SymbolControl(LayerControl):
+    """Steuerelemente der Gruppe Symbol: wirken auf die gewählte Klasse des aktiven Vektorlayers.
+
+    Grau, wenn der Wert für die Klasse nicht gilt (Linien ohne Füllung, Farben
+    bei „Alle …“) oder über einen Ausdruck bestimmt wird; der Grund steht im
+    Tooltip (``blocked``).
+    """
+
+    what = None
+
+    def __init__(self, env, command, ctx, parent=None, size="medium"):
+        self.state = builtin_commands.symbol_class_state(env)
+        LayerControl.__init__(self, env, command, ctx, parent, size)
+        ctx.hub.connect(self.state, "changed", self.refresh)
+
+    def suitable(self, layer):
+        return symbol_ops.has_classes(layer)
+
+    def blocked(self, layer):
+        """Grund, warum das Steuerelement für die gewählte Klasse nicht gilt, sonst None."""
+        if not symbol_ops.has_classes(layer):
+            return tr("The renderer of this layer has no symbols (for example heatmap).")
+        if self.what is None:
+            return None
+        key = self.state.selected(layer)
+        syms = symbol_ops.symbols(layer, key)
+        if self.what != symbol_ops.WIDTH and len(syms) != 1:
+            return tr("Each class has its own color. Choose a class.")
+        if not any(symbol_ops.has(sym, self.what) for sym in syms):
+            return {symbol_ops.FILL: tr("Lines have no fill color."),
+                    symbol_ops.STROKE: tr("The symbol has no outline."),
+                    symbol_ops.WIDTH: tr("The symbol has no width.")}[self.what]
+        if any(symbol_ops.data_defined(sym, self.what) for sym in syms):
+            return tr("Set by an expression or field (data-defined); change it in the symbol editor.")
+        return None
+
+    def sync(self):
+        layer = self.layer()
+        reason = self.blocked(layer) if layer_ops.is_vector(layer) else None
+        usable = self.suitable(layer) and reason is None
+        self.setEnabled(usable and self._ctx.allowed(self.command))
+        tip = self._tooltip()
+        self.setToolTip("%s<br><i>%s</i>" % (tip, escape(reason)) if reason else tip)
+
+    def write_symbol(self, edit):
+        """``edit(symbol)`` auf die gewählte Klasse, als Schritt auf dem Stil-Rückgängig-Stapel."""
+        def change(layer):
+            key = self.state.selected(layer)
+            symbol_ops.change(layer, key, edit, self.command.label, merge_key=(layer.id(), key, self.what))
+        self.write(change)
+
+
+class SymbolClassControl(SymbolControl):
+    """Klasse wählen: „Alle …“ und die Klassen des Renderers mit Symbolvorschau."""
+
+    editor_kind = "class"
+
+    def create_editor(self):
+        w = QComboBox(self)
+        w.setIconSize(QSize(16, 16))
+        w.activated.connect(self._chosen)
+        return w
+
+    def read(self, layer):
+        self.editor.clear()
+        selected = self.state.selected(layer)
+        for key, label, sym in symbol_ops.classes(layer):
+            icon = QgsSymbolLayerUtils.symbolPreviewIcon(sym, QSize(16, 16)) if sym is not None else QIcon()
+            self.editor.addItem(icon, label, key)
+            if key == selected:
+                self.editor.setCurrentIndex(self.editor.count() - 1)
+
+    def _chosen(self, index):
+        key = self.editor.itemData(index)
+        layer = self.layer()
+        if key is not None and not self._reading and self.suitable(layer):
+            self.state.select(layer, key)
+
+
+class SymbolColorControl(SymbolControl):
+    """Füllfarbe oder Rand-/Linienfarbe der gewählten Klasse."""
+
+    editor_kind = "color"
+
+    def __init__(self, env, command, ctx, parent=None, size="medium", what=symbol_ops.FILL):
+        self.what = what
+        SymbolControl.__init__(self, env, command, ctx, parent, size)
+
+    def create_editor(self):
+        w = QgsColorButton(self)
+        w.setAllowOpacity(True)
+        w.setShowNoColor(False)
+        w.setColorDialogTitle(self.command.label)
+        w.colorChanged.connect(lambda color: self.write_symbol(
+            lambda sym: symbol_ops.set_color(sym, self.what, color)))
+        return w
+
+    def read(self, layer):
+        sym = symbol_ops.symbol(layer, self.state.selected(layer))
+        color = symbol_ops.color(sym, self.what) if sym is not None else None
+        if color is not None and color.isValid():
+            self.editor.setColor(color)
+
+
+class SymbolWidthControl(SymbolControl):
+    """Punkte: Größe, Linien: Breite, Flächen: Randbreite; bei „Alle …“ für jede Klasse."""
+
+    editor_kind = "number"
+    what = symbol_ops.WIDTH
+
+    def create_editor(self):
+        w = QgsDoubleSpinBox(self)
+        w.setRange(*symbol_ops.WIDTH_RANGE)
+        w.setDecimals(2)
+        w.setSingleStep(0.2)
+        w.setShowClearButton(False)
+        w.valueChanged.connect(lambda value: self.write_symbol(lambda sym: symbol_ops.set_width(sym, value)))
+        return w
+
+    def read(self, layer):
+        syms = [sym for sym in symbol_ops.symbols(layer, self.state.selected(layer))
+                if symbol_ops.width(sym) is not None]
+        if syms:
+            self.editor.setSuffix(" " + symbol_ops.width_unit(syms[0]))
+            self.editor.setValue(symbol_ops.width(syms[0]))
 
 
 class CanvasControl(LayerControl):
@@ -695,6 +825,10 @@ CONTROLS = {
     "ribbon.beschriftung_regel": _factory(LabelClassControl),
     "ribbon.beschriftung_regel_aktiv": _factory(LabelClassActiveControl),
     "ribbon.beschriftung_feld": _factory(LabelFieldControl),
+    "ribbon.symbolklasse": _factory(SymbolClassControl),
+    "ribbon.symbol_fuellfarbe": _factory(SymbolColorControl, what=symbol_ops.FILL),
+    "ribbon.symbol_randfarbe": _factory(SymbolColorControl, what=symbol_ops.STROKE),
+    "ribbon.symbol_breite": _factory(SymbolWidthControl),
     "ribbon.kartendrehung": _factory(MapRotationControl),
     "ribbon.lupe": _factory(MagnifierControl),
     "ribbon.raster_helligkeit": _factory(RasterEnhanceControl, which="brightness"),

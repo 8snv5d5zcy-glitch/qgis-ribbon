@@ -123,7 +123,7 @@ else:
         file_tb.setObjectName("mFileToolBar")
         for name, text in (("mActionNewProject", "&Neu"), ("mActionSaveProject", "&Speichern")):
             file_tb.addAction(_action(mw, name, text))
-        mw.addToolBar(Qt.TopToolBarArea, file_tb)
+        mw.addToolBar(Qt.ToolBarArea.TopToolBarArea, file_tb)
 
         nav_tb = QToolBar("Navigation", mw)
         nav_tb.setObjectName("mMapNavToolBar")
@@ -134,24 +134,24 @@ else:
             group.addAction(act)
             nav_tb.addAction(act)
         mw.findChild(QAction, "mActionPan").setChecked(True)
-        mw.addToolBar(Qt.TopToolBarArea, nav_tb)
+        mw.addToolBar(Qt.ToolBarArea.TopToolBarArea, nav_tb)
 
-        mw.addToolBarBreak(Qt.TopToolBarArea)
+        mw.addToolBarBreak(Qt.ToolBarArea.TopToolBarArea)
         plugin_tb = QToolBar("Erweiterungen", mw)
         plugin_tb.setObjectName("mPluginToolBar")
-        mw.addToolBar(Qt.TopToolBarArea, plugin_tb)
+        mw.addToolBar(Qt.ToolBarArea.TopToolBarArea, plugin_tb)
 
         digi_tb = QToolBar("Digitalisierung", mw)
         digi_tb.setObjectName("mDigitizeToolBar")
         delete = _action(mw, "mActionDeleteSelected", "Ausgewähltes löschen")
         delete.setEnabled(False)
         digi_tb.addAction(delete)
-        mw.addToolBar(Qt.TopToolBarArea, digi_tb)
+        mw.addToolBar(Qt.ToolBarArea.TopToolBarArea, digi_tb)
         digi_tb.hide()  # war schon vor dem Ribbon ausgeblendet
 
         dock = QDockWidget("Layer", mw)
         dock.setObjectName("Layers")
-        mw.addDockWidget(Qt.LeftDockWidgetArea, dock)
+        mw.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock)
 
         menu = QMenu("Layer hinzufügen", mw)
         menu.setObjectName("mAddLayerMenu")
@@ -214,4 +214,4 @@ else:
     @pytest.fixture
     def settings(tmp_path):
         """Eigene INI-Datei, damit Tests das echte QGIS-Profil nicht berühren."""
-        return QgsSettings(str(tmp_path / "settings.ini"), QSettings.IniFormat)
+        return QgsSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)

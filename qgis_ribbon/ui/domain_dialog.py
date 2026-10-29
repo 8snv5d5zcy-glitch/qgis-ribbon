@@ -45,7 +45,7 @@ class DomainDialog(QDialog):
         head = QLabel(store.title, self)
         head.setObjectName("ribbon_domain_source")
         head.setWordWrap(True)
-        head.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        head.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         lay.addWidget(head)
         self.tabs = QTabWidget(self)
         self.tabs.addTab(self._domains_page(), tr("Domains"))
@@ -54,7 +54,8 @@ class DomainDialog(QDialog):
         self.status = QLabel(self)
         self.status.setWordWrap(True)
         lay.addWidget(self.status)
-        self.buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel, self)
+        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save
+                                        | QDialogButtonBox.StandardButton.Cancel, self)
         guide.help_button(self.buttons, "tools", self)
         self.buttons.accepted.connect(self.save)
         self.buttons.rejected.connect(self.reject)
@@ -118,7 +119,7 @@ class DomainDialog(QDialog):
         self.values = QTableWidget(0, 2, page)
         self.values.setObjectName("ribbon_domain_values")
         self.values.setHorizontalHeaderLabels([tr("Code"), tr("Description")])
-        self.values.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.values.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.values.verticalHeader().setVisible(False)
         self.values.itemChanged.connect(self._edited)
         lay.addWidget(self.values)
@@ -153,9 +154,9 @@ class DomainDialog(QDialog):
         self.fields = QTableWidget(0, 3, page)
         self.fields.setObjectName("ribbon_domain_fields")
         self.fields.setHorizontalHeaderLabels([tr("Field"), tr("Type"), tr("Domain")])
-        self.fields.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.fields.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         self.fields.verticalHeader().setVisible(False)
-        self.fields.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.fields.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         lay.addWidget(self.fields)
         return page
 
@@ -173,7 +174,7 @@ class DomainDialog(QDialog):
         self.list.clear()
         for d in self.session.domains:
             item = QListWidgetItem(d.name, self.list)
-            item.setData(Qt.UserRole, d.name)
+            item.setData(Qt.ItemDataRole.UserRole, d.name)
             item.setToolTip("%s, %s" % (model.KIND_LABELS.get(d.kind, d.kind),
                                         model.TYPE_LABELS.get(d.field_type, d.field_type)))
         self._filling = False
@@ -188,7 +189,7 @@ class DomainDialog(QDialog):
     def _selected(self, item, _previous=None):
         if self._filling:
             return
-        self.current = item.data(Qt.UserRole) if item is not None else None
+        self.current = item.data(Qt.ItemDataRole.UserRole) if item is not None else None
         self._fill_editor(self.session.get(self.current) if self.current else None)
 
     def _fill_editor(self, d):
@@ -261,7 +262,7 @@ class DomainDialog(QDialog):
         item = self.list.currentItem()
         if item is not None and old_name != d.name:
             item.setText(d.name)
-            item.setData(Qt.UserRole, d.name)
+            item.setData(Qt.ItemDataRole.UserRole, d.name)
             self._fill_fields()
         if self.sender() in (self.kind_combo, self.type_combo):
             self._fill_fields()
@@ -327,7 +328,7 @@ class DomainDialog(QDialog):
             self.fields.setCellWidget(row, 2, combo)
             self.field_combos[name] = combo
         self.fields.resizeColumnsToContents()
-        self.fields.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.fields.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
 
     def _assigned(self, field_name, combo):
         self.session.assign(field_name, combo.currentData())
@@ -345,12 +346,12 @@ class DomainDialog(QDialog):
 
     def _update_status(self):
         problems = self.problems()
-        save = self.buttons.button(QDialogButtonBox.Save)
+        save = self.buttons.button(QDialogButtonBox.StandardButton.Save)
         save.setEnabled(not problems and self.session.dirty())
         bad = {where for where, _text in problems}
         for i in range(self.list.count()):
             item = self.list.item(i)
-            item.setForeground(QBrush(theme.color("err")) if item.data(Qt.UserRole) in bad
+            item.setForeground(QBrush(theme.color("err")) if item.data(Qt.ItemDataRole.UserRole) in bad
                                else QBrush(self.list.palette().text().color()))
         if problems:
             self.status.setStyleSheet("color: %s;" % theme.css("err"))
@@ -378,11 +379,11 @@ def open_dialog(iface, layer=None):
     layer = layer or iface.activeLayer()
     if not isinstance(layer, QgsVectorLayer) or not layer.isValid():
         iface.messageBar().pushMessage(LOG_TAG, tr("Please select a vector layer or a table."),
-                                       level=Qgis.Warning, duration=4)
+                                       level=Qgis.MessageLevel.Warning, duration=4)
         return None
     dlg = DomainDialog(layer, store_mod.store_for(layer), iface.mainWindow())
     try:
-        dlg.exec_()
+        dlg.exec()
     finally:
         dlg.deleteLater()
     return dlg

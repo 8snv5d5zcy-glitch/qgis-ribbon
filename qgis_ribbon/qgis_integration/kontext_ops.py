@@ -12,7 +12,7 @@ Gruppeneigenschaften im Layer-Styling („Als Gruppe darstellen“).
 
 import math
 
-from qgis.core import (Qgis, QgsColorRampShader, QgsCoordinateTransform, QgsFeatureRenderer,
+from qgis.core import (Qgis, QgsColorRampShader, QgsCoordinateTransform, QgsCsException, QgsFeatureRenderer,
                        QgsGroupLayer, QgsHeatmapRenderer, QgsLayerTreeGroup, QgsMeshDatasetIndex,
                        QgsMeshLayer, QgsPointCloudAttributeByRampRenderer,
                        QgsPointCloudClassifiedRenderer, QgsPointCloudExtentRenderer,
@@ -76,7 +76,7 @@ def group_extent(group, dest_crs, project=None):
         if layer.crs() != dest_crs:
             try:
                 rect = QgsCoordinateTransform(layer.crs(), dest_crs, project).transformBoundingBox(rect)
-            except Exception:  # noqa: BLE001 (Transformation nicht möglich: Layer überspringen)
+            except QgsCsException:  # Transformation nicht möglich: Layer überspringen
                 continue
         extent.combineExtentWith(rect)
     return extent

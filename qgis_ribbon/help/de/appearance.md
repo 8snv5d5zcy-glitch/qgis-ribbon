@@ -23,6 +23,16 @@ Mit **Kontur für ganz QGIS** folgt das ganze Fenster dem Ribbon:
 
 Ausschalten stellt den vorherigen Stil von QGIS genau wieder her. Im Hochkontrastmodus von Windows nimmt das Ribbon die Systemfarben.
 
+## QGIS-Menüleiste ausblenden
+
+Das Ribbon enthält die Befehle der Menüleiste. Wer den Platz für die Karte braucht, wählt **QGIS-Menüleiste ausblenden** im Menü ▾ oder im Rechtsklick-Menü. Die Menüs bleiben erreichbar:
+
+- über den Knopf **☰** ganz links in der Kopfzeile des Ribbons (alle Menüs der Menüleiste, auch die von Plugins),
+- mit **Alt+Buchstabe** wie bisher (zum Beispiel Alt+J für Projekt),
+- über die Befehle **QGIS-Menüs** und **Menü Projekt**, **Menü Einstellungen** … im Editor, die sich in eigene Gruppen oder die Schnellzugriffsleiste legen lassen.
+
+Tastenkürzel wie Strg+S bleiben aktiv. Erneutes Wählen blendet die Menüleiste wieder ein. QGIS merkt sich die Einstellung; in der klassischen QGIS-Oberfläche und nach dem Abschalten des Plugins ist die Menüleiste immer da.
+
 ## Klassische QGIS-Oberfläche
 
 **Klassische QGIS-Oberfläche** im Menü ▾ oder im Rechtsklick-Menü baut das Ribbon ab und bringt die Werkzeugleisten von QGIS so zurück, wie sie waren. QGIS merkt sich das für den nächsten Start.

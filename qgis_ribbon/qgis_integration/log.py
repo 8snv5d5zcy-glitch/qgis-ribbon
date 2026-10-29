@@ -12,4 +12,4 @@ LOG_TAG = "QGIS Ribbon"
 
 
 def info_later(text):
-    QTimer.singleShot(0, lambda: QgsMessageLog.logMessage(text, LOG_TAG, Qgis.Info))
+    QTimer.singleShot(0, lambda: QgsMessageLog.logMessage(text, LOG_TAG, Qgis.MessageLevel.Info))

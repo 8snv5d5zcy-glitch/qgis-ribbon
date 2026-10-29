@@ -107,43 +107,43 @@ class KeyTipController(QObject):
     def eventFilter(self, obj, event):
         t = event.type()
         if self.active:
-            if t == QEvent.ShortcutOverride:
+            if t == QEvent.Type.ShortcutOverride:
                 event.accept()
                 return True
-            if t == QEvent.KeyPress:
+            if t == QEvent.Type.KeyPress:
                 return self._key(event)
-            if t == QEvent.KeyRelease:
+            if t == QEvent.Type.KeyRelease:
                 return True
-            if t in (QEvent.MouseButtonPress, QEvent.MouseButtonDblClick,
-                     QEvent.NonClientAreaMouseButtonPress):
+            if t in (QEvent.Type.MouseButtonPress, QEvent.Type.MouseButtonDblClick,
+                     QEvent.Type.NonClientAreaMouseButtonPress):
                 self.exit()
                 return False
-            if t == QEvent.ApplicationDeactivate or (t == QEvent.WindowDeactivate and obj is self.mw):
+            if t == QEvent.Type.ApplicationDeactivate or (t == QEvent.Type.WindowDeactivate and obj is self.mw):
                 self.exit()
             return False
-        if t == QEvent.ShortcutOverride and event.key() == Qt.Key_Alt and self._alt_alone(event) \
+        if t == QEvent.Type.ShortcutOverride and event.key() == Qt.Key.Key_Alt and self._alt_alone(event) \
                 and self._window_ready():
             # Alt allein gehört dem Ribbon: die Menüleiste merkt sich „Alt gedrückt“
             # hier und holte sich beim Loslassen sonst den Fokus. Alt+Buchstabe
             # (QGIS-Menüs) läuft über den Buchstaben und bleibt unberührt.
             self._focus_before = QApplication.focusWidget()
             return True
-        if t == QEvent.ShortcutOverride and event.key() != Qt.Key_Alt:
+        if t == QEvent.Type.ShortcutOverride and event.key() != Qt.Key.Key_Alt:
             # Alt+Buchstabe läuft als Tastenkürzel (Menü), ein KeyPress kommt dann nicht
             self._armed = False
-        if t == QEvent.KeyPress:
-            if event.key() == Qt.Key_Alt:
+        if t == QEvent.Type.KeyPress:
+            if event.key() == Qt.Key.Key_Alt:
                 if not event.isAutoRepeat():  # gehaltenes Alt wiederholt: Zustand bleibt
                     self._armed = self._alt_alone(event) and self._window_ready()
             else:
                 self._armed = False
-        elif t == QEvent.KeyRelease:
-            if event.key() == Qt.Key_Alt and not event.isAutoRepeat() and self._armed \
+        elif t == QEvent.Type.KeyRelease:
+            if event.key() == Qt.Key.Key_Alt and not event.isAutoRepeat() and self._armed \
                     and self._window_ready():  # kein inzwischen geöffnetes Menü
                 self._armed = False
                 self.start()
                 return True  # sonst setzt die Menüleiste den Fokus auf sich
-        elif t in (QEvent.MouseButtonPress, QEvent.Wheel):
+        elif t in (QEvent.Type.MouseButtonPress, QEvent.Type.Wheel):
             self._armed = False
         return False
 
@@ -151,7 +151,8 @@ class KeyTipController(QObject):
     def _alt_alone(event):
         # Ob Alt selbst im Modifier steht, hängt von der Plattform ab; andere
         # Modifier schließen aus (AltGr kommt unter Windows als Strg+Alt).
-        return not event.modifiers() & (Qt.ControlModifier | Qt.ShiftModifier | Qt.MetaModifier)
+        return not event.modifiers() & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier
+                                        | Qt.KeyboardModifier.MetaModifier)
 
     def _window_ready(self):
         return (self.mw.isActiveWindow() and QApplication.activePopupWidget() is None
@@ -159,13 +160,13 @@ class KeyTipController(QObject):
 
     def _key(self, event):
         key = event.key()
-        if key == Qt.Key_Escape:
+        if key == Qt.Key.Key_Escape:
             self.back()
             return True
-        if key in (Qt.Key_Alt, Qt.Key_F10):
+        if key in (Qt.Key.Key_Alt, Qt.Key.Key_F10):
             self.exit()
             return True
-        if key == Qt.Key_Backspace:
+        if key == Qt.Key.Key_Backspace:
             self.typed = self.typed[:-1]
             self._update_labels()
             return True
@@ -182,7 +183,7 @@ class KeyTipController(QObject):
         self.active = True
         before = self._focus_before
         if before is not None and QApplication.focusWidget() is self.mw.menuBar():
-            before.setFocus(Qt.OtherFocusReason)
+            before.setFocus(Qt.FocusReason.OtherFocusReason)
         self.show_level0()
 
     def exit(self):
@@ -317,7 +318,7 @@ class KeyTipController(QObject):
         item.activate()
 
     def _focus_search(self):
-        self.rw.search.setFocus(Qt.ShortcutFocusReason)
+        self.rw.search.setFocus(Qt.FocusReason.ShortcutFocusReason)
         self.rw.search.selectAll()
         return True
 
@@ -334,7 +335,7 @@ class KeyTipController(QObject):
             parent = self._parent_for(item.widget)
             label = QLabel(item.code, parent)
             label.setObjectName("ribbon_keytip")
-            label.setAlignment(Qt.AlignCenter)
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             label.setEnabled(item.enabled())
             label.adjustSize()
             label.setMinimumWidth(max(label.width(), label.height()))

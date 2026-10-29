@@ -688,13 +688,94 @@ class Editor(object):
             self._set_qat(quick_remove(self.base, self.qat, index))
         return self.run(tr("Remove from Quick Access"), op)
 
+    # Galerien
+    def gallery_ids(self, gallery_id):
+        return cz.gallery_ids(self.arr, self.base, gallery_id)
+
+    def set_gallery(self, gallery_id, ids):
+        """Einträge einer Galerie setzen (``None`` = Standard der Definition)."""
+        if gallery_id not in cz.galleries(self.base):
+            raise EditError(tr("This gallery cannot be customized."))
+        ids = None if ids is None else list(ids)
+        if ids is not None:
+            bad = [c for c in ids if c not in self.base.commands
+                   or not cz.gallery_item_allowed(self.base.commands[c])]
+            if bad:
+                raise EditError(tr("Only buttons can go into a gallery (no controls, galleries or menus)."))
+            if not ids and cz.gallery_needs_items(self.base, gallery_id):
+                raise EditError(tr("The gallery needs at least one item."))
+        label = self.base.commands[gallery_id].label
+        return self.run(tr("Customize gallery “%s”") % label, cz.set_gallery_ids, self.arr, self.base,
+                        gallery_id, ids)
+
+    # Dropdowns von Splits und Menüs; Ziel ("gallery", ID) oder ("menu", Schlüssel)
+    def dropdown_ids(self, target):
+        return cz.dropdown_ids(self.arr, self.base, target)
+
+    def set_menu(self, key, ids):
+        """Einträge des Dropdowns eines Splits/Menüs setzen (``None`` = Standard der Definition)."""
+        if key not in cz.menus(self.base):
+            raise EditError(tr("The content of this dropdown cannot be changed."))
+        ids = None if ids is None else list(ids)
+        if ids is not None:
+            if not ids:
+                raise EditError(tr("A dropdown needs at least one item."))
+            if any(c not in self.base.commands or not cz.menu_item_allowed(self.base, key, self.base.commands[c])
+                   for c in ids):
+                raise EditError(tr("Only buttons can go into a dropdown (no controls, galleries or menus)."))
+        label = dropdown_label(self.base, ("menu", key))
+        return self.run(tr("Customize dropdown “%s”") % label, cz.set_menu_ids, self.arr, self.base, key, ids)
+
+    def set_dropdown(self, target, ids):
+        kind, key = target
+        return self.set_gallery(key, ids) if kind == "gallery" else self.set_menu(key, ids)
+
+    def can_add_to_dropdown(self, target, command_id):
+        """Grund, warum der Befehl nicht ins Dropdown kann; None = geht."""
+        if target is None:
+            return tr("The content of this dropdown cannot be changed.")
+        cmd = self.base.commands.get(command_id)
+        if cmd is None or not cz.dropdown_allowed(self.base, target, cmd):
+            return tr("Only buttons can go into a dropdown (no controls, galleries or menus).")
+        if command_id in self.dropdown_ids(target):
+            return tr("“%s” is already in this dropdown.") % cmd.label
+        return None
+
+    def add_to_dropdown(self, target, command_id):
+        """Befehl ans Ende eines Dropdowns (Galerie oder Split/Menü) hängen."""
+        hint = self.can_add_to_dropdown(target, command_id)
+        if hint:
+            raise EditError(hint)
+        ids = self.dropdown_ids(target) + [command_id]
+        label = self.base.commands[command_id].label
+        return self.run(tr("“%s” into “%s”") % (label, dropdown_label(self.base, target)),
+                        cz.set_gallery_ids if target[0] == "gallery" else cz.set_menu_ids,
+                        self.arr, self.base, target[1], ids)
+
+    def move_into_dropdown(self, place, target):
+        """Einzelnen Befehl einer Gruppe ins Dropdown verschieben (ein Schritt)."""
+        item = self.item(place)
+        if item.element is not None:
+            raise EditError(tr("Only single commands can go into a dropdown."))
+        hint = self.can_add_to_dropdown(target, item.command)
+        if hint:
+            raise EditError(hint)
+        ids = self.dropdown_ids(target) + [item.command]
+        setter = cz.set_gallery_ids if target[0] == "gallery" else cz.set_menu_ids
+
+        def op():
+            remove_item(self.arr, self.base, place)
+            setter(self.arr, self.base, target[1], ids)
+        label = self.base.commands[item.command].label
+        return self.run(tr("“%s” into “%s”") % (label, dropdown_label(self.base, target)), op)
+
     # Ganzes
     def reset_all(self):
-        """Tabs, Gruppen und Schnellzugriff wie in der Definition (Galerien bleiben)."""
+        """Tabs, Gruppen und Schnellzugriff wie in der Definition (Galerien und Dropdowns bleiben)."""
         def op():
-            gals = self.arr.galleries
+            gals, drops = self.arr.galleries, self.arr.menus
             self.arr = cz.standard(self.base)
-            self.arr.galleries = gals
+            self.arr.galleries, self.arr.menus = gals, drops
             self.qat = None
         return self.run(tr("Restore defaults"), op)
 
@@ -712,6 +793,15 @@ class Editor(object):
 
     def problems(self):
         return cz.problems(self.arr)
+
+
+def dropdown_label(base, target):
+    """Beschriftung des Elements zu einem Dropdown-Ziel."""
+    kind, key = target
+    if kind == "gallery":
+        return base.commands[key].label
+    element = cz.menus(base)[key]
+    return element.display_label if isinstance(element, Split) else element.label
 
 
 def describe(base, item, place_text=None):

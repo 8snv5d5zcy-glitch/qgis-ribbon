@@ -32,6 +32,7 @@ from ..core.model import CommandRef, Menu, Row, Split
 from ..core.search import fold
 from . import icons, theme
 from .controls.buttons import MENU_ARROW
+from .qt_compat import event_pos
 from ..core.i18n import tr
 
 MIME_TYPE = "application/x-qgis-ribbon-item"
@@ -43,8 +44,8 @@ DOT = 6
 QUICK_TILE = 26
 PALETTE_GRID = QSize(96, 78)
 PALETTE_ICON = 32
-ROLE = Qt.UserRole + 1
-ROLE_CHECK = Qt.UserRole + 2
+ROLE = Qt.ItemDataRole.UserRole + 1
+ROLE_CHECK = Qt.ItemDataRole.UserRole + 2
 
 
 def discard(widget, keep=None):
@@ -112,7 +113,8 @@ def menu_entries(element):
 def paint_icon(painter, icon, rect, faded=False):
     if icon is None or icon.isNull():
         return
-    icon.paint(painter, rect, Qt.AlignCenter, QIcon.Disabled if faded else QIcon.Normal, QIcon.Off)
+    icon.paint(painter, rect, Qt.AlignmentFlag.AlignCenter, QIcon.Mode.Disabled if faded else QIcon.Mode.Normal,
+               QIcon.State.Off)
 
 
 class Selectable(QWidget):
@@ -127,8 +129,8 @@ class Selectable(QWidget):
         self.faded = False       # ausgeblendet
         self._hover = False
         self._press = None
-        self.setFocusPolicy(Qt.StrongFocus)
-        self.setAttribute(Qt.WA_Hover, True)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
 
     def set_selected(self, on):
         if on != self.selected:
@@ -146,15 +148,15 @@ class Selectable(QWidget):
         QWidget.leaveEvent(self, event)
 
     def mousePressEvent(self, event):  # noqa: N802 (Qt)
-        if event.button() == Qt.LeftButton:
-            self._press = event.pos()
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._press = event_pos(event)
             self.owner.select(self.sel, focus=True)
-            self.clicked(event.pos())
+            self.clicked(event_pos(event))
         QWidget.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, event):  # noqa: N802 (Qt)
-        if (self._press is not None and event.buttons() & Qt.LeftButton
-                and (event.pos() - self._press).manhattanLength() >= QApplication.startDragDistance()):
+        if (self._press is not None and event.buttons() & Qt.MouseButton.LeftButton
+                and (event_pos(event) - self._press).manhattanLength() >= QApplication.startDragDistance()):
             self._press = None
             self.owner.start_drag(self)
             return
@@ -199,7 +201,7 @@ class Selectable(QWidget):
         pen.setWidthF(1.0)
         if self.marked:
             pen = QPen(theme.color("muted"))
-            pen.setStyle(Qt.DashLine)
+            pen.setStyle(Qt.PenStyle.DashLine)
         painter.setPen(pen)
         painter.setBrush(fill)
         painter.drawRoundedRect(rect, radius, radius)
@@ -222,6 +224,7 @@ class ItemTile(Selectable):
         self.kind = "row" if isinstance(self.element, Row) else (item.size or "large")
         self.menu = has_menu(self.element)
         self.missing = self.element is None
+        self.drop_into = False   # Ziehen: Befehl landet im Dropdown dieses Buttons
         self.setFixedSize(self._size())
 
     def _size(self):
@@ -248,9 +251,14 @@ class ItemTile(Selectable):
         if self.menu and self.arrow_rect().contains(pos):
             self.owner.show_contents(self)
 
+    def frame_colors(self):
+        if self.drop_into:
+            return theme.color("accS"), theme.color("acc")
+        return Selectable.frame_colors(self)
+
     def paintEvent(self, _event):  # noqa: N802 (Qt)
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.paint_frame(p)
         faded = self.faded or self.marked or self.missing
         p.setPen(self.text_color())
@@ -266,16 +274,16 @@ class ItemTile(Selectable):
             paint_icon(p, icon, QRect((self.width() - s) // 2, 6, s, s), faded)
             label = theme.wrap_label(self.label) + ((" " + MENU_ARROW) if self.menu else "")
             p.drawText(QRect(2, 6 + s + 2, self.width() - 4, self.height() - s - 10),
-                       Qt.AlignHCenter | Qt.AlignTop | Qt.TextWordWrap, label)
+                       Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop | Qt.TextFlag.TextWordWrap, label)
         else:
             s = theme.SMALL_ICON
             y = (self.height() - s) // 2
             paint_icon(p, icon, QRect(4, y, s, s), faded)
             if self.kind == "medium":
                 p.drawText(QRect(4 + s + 6, 0, self.width() - s - 10, self.height()),
-                           Qt.AlignLeft | Qt.AlignVCenter, self.label)
+                           Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.label)
             if self.menu:
-                p.drawText(self.arrow_rect(), Qt.AlignCenter, MENU_ARROW)
+                p.drawText(self.arrow_rect(), Qt.AlignmentFlag.AlignCenter, MENU_ARROW)
         p.end()
 
 
@@ -312,14 +320,14 @@ class GroupHeader(Selectable):
         lay.setSpacing(2)
         self.grip = QLabel(self)
         self.grip.setPixmap(icons.ui_icon("griff").pixmap(14, 14))
-        self.grip.setCursor(Qt.OpenHandCursor)
+        self.grip.setCursor(Qt.CursorShape.OpenHandCursor)
         self.grip.setToolTip(tr("Drag to move the group"))
         lay.addWidget(self.grip)
         lay.addStretch(1)
         self.eye = QToolButton(self)
         self.eye.setObjectName("ribbon_editor_eye")
         self.eye.setAutoRaise(True)
-        self.eye.setFocusPolicy(Qt.NoFocus)
+        self.eye.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.eye.setIcon(icons.ui_icon("auge" if visible else "auge_aus"))
         self.eye.setIconSize(QSize(14, 14))
         self.eye.setToolTip(tr("Hide group") if visible else tr("Show group"))
@@ -328,7 +336,7 @@ class GroupHeader(Selectable):
         self.more = QToolButton(self)
         self.more.setObjectName("ribbon_editor_more")
         self.more.setAutoRaise(True)
-        self.more.setFocusPolicy(Qt.NoFocus)
+        self.more.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.more.setIcon(icons.ui_icon("mehr"))
         self.more.setIconSize(QSize(14, 14))
         self.more.setToolTip(tr("More commands for the group"))
@@ -340,18 +348,18 @@ class GroupHeader(Selectable):
 
     def paintEvent(self, _event):  # noqa: N802 (Qt)
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.paint_frame(p, radius=5)
         p.setPen(self.text_color() if (self.selected or self.faded) else theme.color("muted"))
         left = 20
         right = self.width() - 40
         fm = QFontMetrics(self.font())
-        text = fm.elidedText(self.label, Qt.ElideRight, max(10, right - left - 2 * DOT))
+        text = fm.elidedText(self.label, Qt.TextElideMode.ElideRight, max(10, right - left - 2 * DOT))
         tw = fm.horizontalAdvance(text)
         x = left + max(0, (right - left - tw - (2 * DOT if self.modified else 0)) // 2)
-        p.drawText(QRect(x, 0, tw + 2, self.height()), Qt.AlignLeft | Qt.AlignVCenter, text)
+        p.drawText(QRect(x, 0, tw + 2, self.height()), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, text)
         if self.modified:
-            p.setPen(Qt.NoPen)
+            p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(theme.color("acc"))
             p.drawEllipse(QRectF(x + tw + DOT, self.height() / 2.0 - DOT / 2.0, DOT, DOT))
         p.end()
@@ -396,14 +404,14 @@ class GroupCard(QFrame):
             box.setSpacing(theme.ROW_SPACING)
             for ri, tile in enumerate(col):
                 tile.col, tile.row = ci, ri
-                box.addWidget(tile, 0, Qt.AlignLeft)
+                box.addWidget(tile, 0, Qt.AlignmentFlag.AlignLeft)
             box.addStretch(1)
             row.addLayout(box)
         self.empty = None
         if not self.tiles:
             self.empty = QLabel(tr("Drag commands here"), self.body)
             self.empty.setObjectName("ribbon_editor_empty")
-            self.empty.setAlignment(Qt.AlignCenter)
+            self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.empty.setWordWrap(True)
             self.empty.setMinimumWidth(110)
             row.addWidget(self.empty)
@@ -413,20 +421,20 @@ class GroupCard(QFrame):
         width = max(self.header.minimum_text_width(),
                     self.body.sizeHint().width()) + 2 * CARD_PADDING
         self.setFixedWidth(width)
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
     def selectables(self):
         return [self.header] + self.tiles
 
     def paintEvent(self, _event):  # noqa: N802 (Qt)
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         r = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         target = self.owner.is_target(self.place)
         pen = QPen(theme.color("acc") if (target or self.drop_index is not None) else theme.color("bord"))
         pen.setWidthF(1.5 if (target or self.drop_index is not None) else 1.0)
         if not self.visible_:
-            pen.setStyle(Qt.DashLine)
+            pen.setStyle(Qt.PenStyle.DashLine)
         p.setPen(pen)
         p.setBrush(theme.color("surf") if self.visible_ else theme.color("win"))
         p.drawRoundedRect(r, CARD_RADIUS, CARD_RADIUS)
@@ -434,7 +442,7 @@ class GroupCard(QFrame):
             x, top, bottom = self.drop_line()
             pen = QPen(theme.color("acc"))
             pen.setWidthF(2.5)
-            pen.setCapStyle(Qt.RoundCap)
+            pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             p.setPen(pen)
             p.drawLine(x, top, x, bottom)
         p.end()
@@ -450,6 +458,19 @@ class GroupCard(QFrame):
             return g.right() + 2, g.top(), g.bottom()
         g = self.tiles[idx].geometry().translated(body.topLeft())
         return g.left() - 2, g.top(), g.bottom()
+
+    def tile_onto(self, pos):
+        """Kachel mit Dropdown, auf deren Mitte ``pos`` (Kartenkoordinaten) liegt; die Ränder
+        (je ein Fünftel) bleiben Einfügemarken daneben."""
+        body = self.body.geometry()
+        for t in self.tiles:
+            if not t.menu:
+                continue
+            g = t.geometry().translated(body.topLeft())
+            margin = g.width() // 5
+            if g.top() <= pos.y() <= g.bottom() and g.left() + margin <= pos.x() <= g.right() - margin:
+                return t
+        return None
 
     def index_at(self, pos):
         """Einfügeindex für einen Punkt in der Karte (nächste Kachel, links/rechts davon)."""
@@ -497,16 +518,16 @@ class NewGroupCard(Selectable):
 
     def paintEvent(self, _event):  # noqa: N802 (Qt)
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         r = QRectF(self.rect()).adjusted(1, 1, -1, -1)
         pen = QPen(theme.color("acc") if (self.active or self.selected) else theme.color("bord"))
-        pen.setStyle(Qt.DashLine)
+        pen.setStyle(Qt.PenStyle.DashLine)
         pen.setWidthF(1.5 if self.active else 1.0)
         p.setPen(pen)
         p.setBrush(theme.color("accS") if self.active else QColor(0, 0, 0, 0))
         p.drawRoundedRect(r, CARD_RADIUS, CARD_RADIUS)
         p.setPen(theme.color("acc") if (self.active or self.selected) else theme.color("muted"))
-        p.drawText(self.rect(), Qt.AlignCenter, tr("＋ Group"))
+        p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, tr("＋ Group"))
         p.end()
 
     def dragEnterEvent(self, event):  # noqa: N802 (Qt)
@@ -564,7 +585,7 @@ class Preview(QWidget):
         p = QPainter(self)
         pen = QPen(theme.color("acc"))
         pen.setWidthF(3)
-        pen.setCapStyle(Qt.RoundCap)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         p.setPen(pen)
         x = self.gap_x(self.drop_gap)
         p.drawLine(x, 10, x, self.height() - 10)
@@ -602,7 +623,7 @@ class TabChip(Selectable):
         self.eye = QToolButton(self)
         self.eye.setObjectName("ribbon_editor_eye")
         self.eye.setAutoRaise(True)
-        self.eye.setFocusPolicy(Qt.NoFocus)
+        self.eye.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.eye.setIcon(icons.ui_icon("auge" if tab.visible else "auge_aus"))
         self.eye.setIconSize(QSize(14, 14))
         self.eye.setToolTip(tr("Hide tab") if tab.visible else tr("Show tab"))
@@ -625,10 +646,10 @@ class TabChip(Selectable):
 
     def paintEvent(self, _event):  # noqa: N802 (Qt)
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.paint_frame(p, QRect(0, 3, self.width(), self.height() - 6), radius=6)
         if self.context:
-            p.setPen(Qt.NoPen)
+            p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(theme.color("ctx"))
             p.drawRoundedRect(QRectF(6, 1, self.width() - 12, 3), 1.5, 1.5)
         p.setPen(self.text_color())
@@ -636,11 +657,12 @@ class TabChip(Selectable):
         font.setStrikeOut(self.faded)
         font.setBold(self.current)
         p.setFont(font)
-        p.drawText(QRect(10, 0, self.width() - 36, self.height()), Qt.AlignLeft | Qt.AlignVCenter, self.title)
+        p.drawText(QRect(10, 0, self.width() - 36, self.height()), Qt.AlignmentFlag.AlignLeft
+                   | Qt.AlignmentFlag.AlignVCenter, self.title)
         if self.current:
             pen = QPen(theme.color("ctx") if self.context else theme.color("acc"))
             pen.setWidthF(3)
-            pen.setCapStyle(Qt.RoundCap)
+            pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             p.setPen(pen)
             p.drawLine(12, self.height() - 2, self.width() - 30, self.height() - 2)
         p.end()
@@ -704,7 +726,7 @@ class TabStrip(QWidget):
         p = QPainter(self)
         pen = QPen(theme.color("acc"))
         pen.setWidthF(3)
-        pen.setCapStyle(Qt.RoundCap)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         p.setPen(pen)
         x = self.gap_x(self.drop_gap)
         p.drawLine(x, 4, x, self.height() - 4)
@@ -735,7 +757,7 @@ class QuickTile(Selectable):
 
     def paintEvent(self, _event):  # noqa: N802 (Qt)
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.paint_frame(p, radius=5)
         s = theme.SMALL_ICON
         paint_icon(p, icons.command_icon(self.command),
@@ -787,7 +809,7 @@ class QuickStrip(QWidget):
 
     def paintEvent(self, _event):  # noqa: N802 (Qt)
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         active = self.drop_gap is not None
         pen = QPen(theme.color("acc") if active else theme.color("div"))
         p.setPen(pen)
@@ -827,21 +849,21 @@ class PaletteDelegate(QStyledItemDelegate):
         if not index.data(ROLE_CHECK):
             return
         painter.save()
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         r = QRectF(option.rect.right() - 20, option.rect.top() + 4, 14, 14)
-        painter.setPen(Qt.NoPen)
+        painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(theme.color("acc"))
         painter.drawEllipse(r)
         pen = QPen(theme.color("surf"))
         pen.setWidthF(1.8)
-        pen.setCapStyle(Qt.RoundCap)
-        pen.setJoinStyle(Qt.RoundJoin)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
         painter.setPen(pen)
         path = QPainterPath()
         path.moveTo(r.left() + 3.5, r.center().y())
         path.lineTo(r.left() + 6, r.bottom() - 4)
         path.lineTo(r.right() - 3.2, r.top() + 4)
-        painter.setBrush(Qt.NoBrush)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawPath(path)
         painter.restore()
 
@@ -855,25 +877,25 @@ class PaletteList(QListWidget):
         QListWidget.__init__(self, parent)
         self.owner = owner
         self.setObjectName("ribbon_editor_palette")
-        self.setViewMode(QListView.IconMode)
+        self.setViewMode(QListView.ViewMode.IconMode)
         self.setIconSize(QSize(PALETTE_ICON, PALETTE_ICON))
         self.setGridSize(PALETTE_GRID)
-        self.setResizeMode(QListView.Adjust)
-        self.setMovement(QListView.Static)
+        self.setResizeMode(QListView.ResizeMode.Adjust)
+        self.setMovement(QListView.Movement.Static)
         self.setWordWrap(True)
         self.setUniformItemSizes(True)
-        self.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
-        self.setDragDropMode(QAbstractItemView.DragDrop)
+        self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
         # Rollbereich: Qt verwirft Zieh-Ereignisse an der Liste selbst, nur der Viewport reicht sie weiter
         self.viewport().setAcceptDrops(True)
-        self.setDefaultDropAction(Qt.MoveAction)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
         self.setItemDelegate(PaletteDelegate(self))
         self.drop_active = False   # Loslassen entfernt
 
     def keyPressEvent(self, event):  # noqa: N802 (Qt)
-        if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             self.activatedKey.emit()
             event.accept()
             return
@@ -908,10 +930,10 @@ class PaletteList(QListWidget):
         if not self.drop_active:
             return
         p = QPainter(self.viewport())
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         pen = QPen(theme.color("err"))
         pen.setWidthF(2)
-        pen.setStyle(Qt.DashLine)
+        pen.setStyle(Qt.PenStyle.DashLine)
         p.setPen(pen)
         fill = QColor(theme.color("err"))
         fill.setAlpha(24)
@@ -926,7 +948,7 @@ class PaletteList(QListWidget):
         p.setPen(QPen(theme.color("err")))
         p.setBrush(theme.color("surf"))
         p.drawRoundedRect(pill, h / 2.0, h / 2.0)
-        p.drawText(pill, Qt.AlignCenter, text)
+        p.drawText(pill, Qt.AlignmentFlag.AlignCenter, text)
         p.end()
 
 
@@ -1018,9 +1040,9 @@ class Palette(QWidget):
                 item = QListWidgetItem(icons.command_icon(cmd), cmd.label, self.list)
                 item.setData(ROLE, ("command", cmd.id))
                 item.setToolTip("<b>%s</b>%s" % (cmd.label, ("<br>" + cmd.description) if cmd.description else ""))
-                item.setData(Qt.AccessibleTextRole, cmd.label)
+                item.setData(Qt.ItemDataRole.AccessibleTextRole, cmd.label)
                 item.setSizeHint(PALETTE_GRID)
-                item.setData(Qt.UserRole + 3, fold(" ".join([cmd.label, cmd.description or "", cmd.id])))
+                item.setData(Qt.ItemDataRole.UserRole + 3, fold(" ".join([cmd.label, cmd.description or "", cmd.id])))
         else:
             for tab in self.base.tabs:
                 for group in tab.groups:
@@ -1032,9 +1054,9 @@ class Palette(QWidget):
                     item.setData(ROLE, ("group", ref))
                     item.setToolTip(tr("<b>%s</b> (tab “%s”)<br>%s") % (group.label, title, ", ".join(
                         cz.item_label(self.base, i) for i in cz.standard_items(self.base, ref))))
-                    item.setData(Qt.AccessibleTextRole, tr("Group %s from %s") % (group.label, title))
+                    item.setData(Qt.ItemDataRole.AccessibleTextRole, tr("Group %s from %s") % (group.label, title))
                     item.setSizeHint(PALETTE_GRID)
-                    item.setData(Qt.UserRole + 3, fold(" ".join([group.label, title])))
+                    item.setData(Qt.ItemDataRole.UserRole + 3, fold(" ".join([group.label, title])))
         self.apply_filter()
         self.update_checks(self.checked)
         self.owner.palette_mode_changed()
@@ -1060,7 +1082,7 @@ class Palette(QWidget):
         for i in range(self.list.count()):
             item = self.list.item(i)
             kind, value = tuple(item.data(ROLE))
-            hay = item.data(Qt.UserRole + 3) or ""
+            hay = item.data(Qt.ItemDataRole.UserRole + 3) or ""
             show = all(w in hay for w in words)
             if show and kind == "command" and flt in (self.FILTER_ALL, self.FILTER_UNUSED):
                 show = not ext.is_toolbox(value) or ext.own_tool(value)
@@ -1117,11 +1139,11 @@ def drag_pixmap(widget):
     """Bild der gezogenen Kachel für den Mauszeiger (wie die Kachel, leicht durchscheinend)."""
     pix = QPixmap(widget.size() * widget.devicePixelRatioF())
     pix.setDevicePixelRatio(widget.devicePixelRatioF())
-    pix.fill(Qt.transparent)
-    widget.render(pix, QPoint(), QRegion(widget.rect()), QWidget.DrawChildren)
+    pix.fill(Qt.GlobalColor.transparent)
+    widget.render(pix, QPoint(), QRegion(widget.rect()), QWidget.RenderFlag.DrawChildren)
     out = QPixmap(pix.size())
     out.setDevicePixelRatio(pix.devicePixelRatio())
-    out.fill(Qt.transparent)
+    out.fill(Qt.GlobalColor.transparent)
     p = QPainter(out)
     p.setOpacity(0.85)
     p.drawPixmap(0, 0, pix)
@@ -1137,9 +1159,9 @@ def chip_pixmap(widget, icon, text):
     ratio = widget.devicePixelRatioF()
     pix = QPixmap(QSize(w, h) * ratio)
     pix.setDevicePixelRatio(ratio)
-    pix.fill(Qt.transparent)
+    pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)
-    p.setRenderHint(QPainter.Antialiasing)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
     p.setOpacity(0.9)
     p.setPen(QPen(theme.color("acc")))
     p.setBrush(theme.color("surf"))
@@ -1148,7 +1170,7 @@ def chip_pixmap(widget, icon, text):
     paint_icon(p, icon, QRect(6, (h - s) // 2, s, s))
     p.setPen(theme.color("text"))
     p.setFont(widget.font())
-    p.drawText(QRect(s + 12, 0, w - s - 14, h), Qt.AlignLeft | Qt.AlignVCenter, text)
+    p.drawText(QRect(s + 12, 0, w - s - 14, h), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, text)
     p.end()
     return pix
 
@@ -1163,11 +1185,11 @@ def mime(payload):
 def scroll_area(widget, horizontal=True):
     area = QScrollArea()
     area.setObjectName("ribbon_editor_scroll")
-    area.setFrameShape(QFrame.NoFrame)
+    area.setFrameShape(QFrame.Shape.NoFrame)
     area.setWidgetResizable(True)
     area.setWidget(widget)
     if horizontal:
-        area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
     else:
-        area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
     return area

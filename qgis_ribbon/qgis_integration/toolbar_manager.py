@@ -48,16 +48,16 @@ class ToolbarManager(QObject):
 
     def _toolbars(self):
         """Toolbars des Hauptfensters (direkte Kinder; rekursive Suche ist teuer)."""
-        return self.mw.findChildren(QToolBar, options=Qt.FindDirectChildrenOnly)
+        return self.mw.findChildren(QToolBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
 
     def _toolbar(self, name):
-        return self.mw.findChild(QToolBar, name, options=Qt.FindDirectChildrenOnly)
+        return self.mw.findChild(QToolBar, name, options=Qt.FindChildOption.FindDirectChildrenOnly)
 
     # Ribbon-Toolbar
     def _top_toolbars(self):
         bars = [tb for tb in self._toolbars()
                 if tb is not self._ribbon
-                and self.mw.toolBarArea(tb) == Qt.TopToolBarArea]
+                and self.mw.toolBarArea(tb) == Qt.ToolBarArea.TopToolBarArea]
         visible = [tb for tb in bars if not tb.isHidden()]
         return sorted(visible or bars, key=lambda tb: (tb.geometry().y(), tb.geometry().x()))
 
@@ -71,7 +71,7 @@ class ToolbarManager(QObject):
             self.mw.insertToolBarBreak(first)
             self._break_before = first
         else:
-            self.mw.addToolBar(Qt.TopToolBarArea, toolbar)
+            self.mw.addToolBar(Qt.ToolBarArea.TopToolBarArea, toolbar)
         toolbar.show()
 
     def remove_ribbon(self):

@@ -2,11 +2,15 @@
 
 „Ribbon anpassen“ ist der grafische Editor (``ui/ribbon_editor.py``).
 
-„Galerie anpassen“ (Befehl ``ribbon.galerie_anpassen`` im Menü einer
-Galerie, Parameter: ID der Galerie) legt Einträge und Reihenfolge einer
-Galerie mit festen Einträgen fest, z. B. Editor- oder Analysewerkzeuge.
-Beide Listen zeigen die Kontur-Icons der Befehle; die Reihenfolge
-rechts lässt sich auch per Ziehen ändern.
+„Galerie anpassen“ legt Einträge und Reihenfolge einer Galerie fest, z. B.
+Editor- oder Analysewerkzeuge, Grundkarten oder eigene Einträge über dem
+QGIS-Inhalt einer Dropdown-Galerie (``customization.galleries``). Aufruf
+über den Befehl ``ribbon.galerie_anpassen`` im Menü einer Galerie
+(Parameter: ID der Galerie), das Kontextmenü einer Galerie im Ribbon und
+den Editor (``editor``: Ergebnis als Schritt im Verlauf des Editors statt
+direkt gespeichert). Beide Listen zeigen die Kontur-Icons der Befehle;
+die Reihenfolge rechts lässt sich auch per Ziehen ändern. Zur Auswahl
+stehen alle Buttons, auch Plugin-Aktionen und Werkzeuge der Toolbox.
 """
 
 from qgis.core import Qgis
@@ -25,7 +29,8 @@ from ..core.i18n import tr
 
 LOG_TAG = "QGIS Ribbon"
 GALLERY_TITLE = tr("Customize Gallery")
-ROLE = Qt.UserRole + 1
+DROPDOWN_TITLE = tr("Customize Dropdown")
+ROLE = Qt.ItemDataRole.UserRole + 1
 MODE_COMMANDS, MODE_GROUPS = "commands", "groups"
 
 
@@ -70,7 +75,7 @@ class Picker(QWidget):
         self.tree.setObjectName("ribbon_customize_picker")
         self.tree.setHeaderLabels([tr("Name"), tr("Location")])
         self.tree.setRootIsDecorated(False)
-        self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.tree.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.tree.setIconSize(QSize(theme.SMALL_ICON, theme.SMALL_ICON))
         lay.addWidget(self.tree)
         self.mode = None
@@ -120,28 +125,55 @@ class Picker(QWidget):
 
 
 class GalleryDialog(QDialog):
-    """Einträge und Reihenfolge einer Galerie mit festen Einträgen."""
+    """Einträge und Reihenfolge einer Galerie oder (``target`` ("menu", Schlüssel), nur mit
+    ``editor``) des Dropdowns eines Splits/Menüs der Definition.
 
-    def __init__(self, arrangements, gallery_id, parent=None):
+    Ohne ``editor`` speichert „Speichern“ direkt in der Anordnung; mit
+    ``editor`` (``core.editor.Editor``) steht das Ergebnis in ``result_ids``
+    (``None`` = Standard) und der Editor übernimmt es als Schritt.
+    """
+
+    def __init__(self, arrangements, gallery_id, parent=None, editor=None, target=None):
         QDialog.__init__(self, parent)
         self.setObjectName("ribbon_gallery_dialog")
         theme.style_dialog(self)
         self.arrangements = arrangements
-        self.base = arrangements.base
-        self.gallery_id = gallery_id
-        self.command = cz.galleries(self.base)[gallery_id]
-        self.standard_ids = [c.id for c in self.command.gallery.items]
-        self.setWindowTitle("%s: %s" % (GALLERY_TITLE, self.command.label))
+        self.editor = editor
+        if editor is not None:
+            self.base = editor.base
+        else:
+            # Mit allen Werkzeugen der Toolbox, soweit das Plugin sie liefert
+            self.base = arrangements.editor_base() if hasattr(arrangements, "editor_base") else arrangements.base
+        self.target = target or ("gallery", gallery_id)
+        kind, key = self.target
+        self.gallery_id = key if kind == "gallery" else None
+        self.result_ids = None
+        if kind == "gallery":
+            command = cz.galleries(self.base)[key]
+            self.standard_ids = cz.standard_gallery_ids(self.base, key)
+            self.needs_items = command.gallery.display == "ribbon"
+            allowed = cz.gallery_item_allowed
+            title = "%s: %s" % (GALLERY_TITLE, command.label)
+            where = (tr("The ribbon shows the first items, the rest when expanded.") if self.needs_items
+                     else tr("The items appear as tiles at the top of the dropdown."))
+        else:
+            from ..core.editor import dropdown_label
+            self.standard_ids = cz.standard_menu_ids(self.base, key)
+            self.needs_items = True
+            allowed = lambda cmd: cz.menu_item_allowed(self.base, key, cmd)  # noqa: E731
+            title = "%s: %s" % (DROPDOWN_TITLE, dropdown_label(self.base, self.target))
+            where = tr("The items appear in this order in the dropdown of the button.")
+        self.setWindowTitle(title)
         self.resize(760, 520)
 
         lay = QVBoxLayout(self)
         hint = QLabel(tr("Choose commands on the left and add them (double-click), set the order on the right "
-                         "(buttons or drag). The ribbon shows the first items, the rest when expanded."), self)
+                         "(buttons or drag).") + " " + where, self)
         hint.setWordWrap(True)
         lay.addWidget(hint)
         body = QHBoxLayout()
         lay.addLayout(body, 1)
-        self.picker = Picker(self.base, self, allowed=cz.gallery_item_allowed)
+        self.picker = Picker(self.base, self, allowed=allowed)
         self.picker.tree.itemDoubleClicked.connect(lambda *_a: self.add())
         body.addWidget(self.picker, 1)
         middle = QVBoxLayout()
@@ -157,8 +189,8 @@ class GalleryDialog(QDialog):
         self.list = QListWidget(self)
         self.list.setObjectName("ribbon_gallery_entries")
         self.list.setIconSize(QSize(theme.SMALL_ICON, theme.SMALL_ICON))
-        self.list.setDragDropMode(QAbstractItemView.InternalMove)
-        self.list.setDefaultDropAction(Qt.MoveAction)
+        self.list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.list.setDefaultDropAction(Qt.DropAction.MoveAction)
         self.list.model().rowsMoved.connect(lambda *_a: self._update_status())
         body.addWidget(self.list, 1)
         right = QVBoxLayout()
@@ -172,19 +204,17 @@ class GalleryDialog(QDialog):
         body.addLayout(right)
         self.status = QLabel(self)
         lay.addWidget(self.status)
-        self.buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel, self)
+        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save
+                                        | QDialogButtonBox.StandardButton.Cancel, self)
         self.reset_button = QPushButton(tr("Restore Defaults"), self)
-        self.buttons.addButton(self.reset_button, QDialogButtonBox.ResetRole)
+        self.buttons.addButton(self.reset_button, QDialogButtonBox.ButtonRole.ResetRole)
         self.reset_button.clicked.connect(self.reset)
         guide.help_button(self.buttons, "customize", self)
         self.buttons.accepted.connect(self.save)
         self.buttons.rejected.connect(self.reject)
         lay.addWidget(self.buttons)
-        self.set_ids(arrangements.gallery_items(gallery_id))
-
-    @property
-    def needs_items(self):
-        return self.command.gallery.display == "ribbon"
+        self.set_ids(editor.dropdown_ids(self.target) if editor is not None
+                     else arrangements.gallery_items(gallery_id))
 
     def ids(self):
         return [self.list.item(i).data(ROLE) for i in range(self.list.count())]
@@ -192,11 +222,13 @@ class GalleryDialog(QDialog):
     def set_ids(self, ids, current=None):
         self.list.clear()
         for cid in ids:
-            cmd = self.base.commands[cid]
+            cmd = self.base.commands.get(cid)
+            if cmd is None:
+                continue
             item = QListWidgetItem(icons.command_icon(cmd), cmd.label, self.list)
             item.setData(ROLE, cid)
             item.setToolTip(self.picker.places.get(cid, ""))
-            item.setFlags(item.flags() & ~Qt.ItemIsDropEnabled)   # Ziehen ordnet nur um
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsDropEnabled)   # Ziehen ordnet nur um
             if cid == current:
                 self.list.setCurrentItem(item)
         self._update_status()
@@ -204,9 +236,11 @@ class GalleryDialog(QDialog):
     def _update_status(self):
         ids = self.ids()
         empty = not ids and self.needs_items
-        self.buttons.button(QDialogButtonBox.Save).setEnabled(not empty)
+        self.buttons.button(QDialogButtonBox.StandardButton.Save).setEnabled(not empty)
         n = len(ids)
-        _set_status(self.status, tr("The gallery needs at least one item.") if empty
+        need = (tr("The gallery needs at least one item.") if self.gallery_id is not None
+                else tr("A dropdown needs at least one item."))
+        _set_status(self.status, need if empty
                     else tr("%d items%s") % (n, tr(" (default)") if ids == self.standard_ids else ""),
                     error=empty)
 
@@ -248,7 +282,9 @@ class GalleryDialog(QDialog):
         ids = self.ids()
         if not ids and self.needs_items:
             return False
-        self.arrangements.set_gallery(self.gallery_id, None if ids == self.standard_ids else ids)
+        self.result_ids = None if ids == self.standard_ids else ids
+        if self.editor is None:
+            self.arrangements.set_gallery(self.gallery_id, self.result_ids)
         self.accept()
         return True
 
@@ -260,11 +296,11 @@ def open_gallery_dialog(env, command):
     host = env.host
     if host is None or gallery_id not in cz.galleries(host.base):
         env.iface.messageBar().pushMessage(LOG_TAG, tr("This gallery cannot be customized."),
-                                           level=Qgis.Warning, duration=4)
+                                           level=Qgis.MessageLevel.Warning, duration=4)
         return None
     dlg = GalleryDialog(host, gallery_id, env.iface.mainWindow())
     try:
-        dlg.exec_()
+        dlg.exec()
     finally:
         dlg.deleteLater()
     return dlg

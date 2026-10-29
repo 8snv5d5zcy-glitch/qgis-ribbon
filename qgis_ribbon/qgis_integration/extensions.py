@@ -32,7 +32,7 @@ dazugekommen oder weggefallen).
 from qgis.core import QgsApplication
 from qgis.PyQt.QtCore import QEvent, QObject, Qt, QTimer, pyqtSignal
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QMenu, QToolBar, QToolButton, QWidgetAction
+from qgis.PyQt.QtWidgets import QAction, QMenu, QToolBar, QToolButton, QWidgetAction
 
 from ..core import extensions as ext
 from .action_resolver import clean_text
@@ -41,8 +41,8 @@ from ..core.i18n import tr
 QGIS_PREFIX = "mAction"
 PROCESSING_PREFIX = "mProcessing"
 PROCESSING_BUTTON = "mProcessingAlg_"
-_ACTION_EVENTS = (QEvent.ActionAdded, QEvent.ActionRemoved)
-_CHILD_EVENTS = (QEvent.ChildAdded, QEvent.ChildRemoved)
+_ACTION_EVENTS = (QEvent.Type.ActionAdded, QEvent.Type.ActionRemoved)
+_CHILD_EVENTS = (QEvent.Type.ChildAdded, QEvent.Type.ChildRemoved)
 
 
 def _own_action(act, known=()):
@@ -75,7 +75,9 @@ def _plugin_names():
             else:
                 values = [value]
             for v in values:
-                if hasattr(v, "isSeparator") and hasattr(v, "triggered"):
+                # isinstance statt hasattr: hasattr auf ein Widget, das C++ schon gelöscht hat
+                # (z. B. eine Combobox eines Plugins), wirft RuntimeError.
+                if isinstance(v, QAction):
                     out.setdefault(id(v), name)
     return out
 
@@ -120,7 +122,7 @@ class ExtensionCatalog(QObject):
     def _bars(self):
         mw = self.iface.mainWindow()
         out = []
-        for tb in mw.findChildren(QToolBar, options=Qt.FindDirectChildrenOnly):
+        for tb in mw.findChildren(QToolBar, options=Qt.FindChildOption.FindDirectChildrenOnly):
             name = tb.objectName()
             if self.exclude and name == self.exclude:
                 continue

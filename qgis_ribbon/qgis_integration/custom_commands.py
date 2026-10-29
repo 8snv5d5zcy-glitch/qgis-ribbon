@@ -2,10 +2,11 @@
 
 Drei Arten, je nach ``kind`` beim Registrieren:
 
-- ``button``: ``factory(env, command) -> callable | QAction``. Ein Callable
-  wird beim Klick ausgeführt. Eine QAction (z. B. ``StateAction``) wird wie
-  eine QGIS-Aktion gespiegelt: der Ribbon übernimmt aktiv/abgehakt über
-  deren Signal ``changed``.
+- ``button``: ``factory(env, command) -> callable | QAction | QMenu``. Ein
+  Callable wird beim Klick ausgeführt. Eine QAction (z. B. ``StateAction``)
+  wird wie eine QGIS-Aktion gespiegelt: der Ribbon übernimmt aktiv/abgehakt
+  über deren Signal ``changed``. Ein QMenu wird wie ein QGIS-Menü als
+  Dropdown eingehängt.
 - ``control``: ``factory(env, command, ctx, parent, size) -> QWidget``.
   Steuerelement im Ribbon (Regler, Combobox, Farbwahl ...). Gebaut wird es
   in ``ui``; die Fabrik registriert ``ui.controls.custom``.

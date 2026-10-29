@@ -23,6 +23,16 @@ With **Kontur for All of QGIS** the whole window follows the ribbon:
 
 Switching it off restores the previous QGIS style exactly. In the Windows high-contrast mode the ribbon uses the system colors.
 
+## Hiding the QGIS menu bar
+
+The ribbon contains the commands of the menu bar. If you need the room for the map, choose **Hide QGIS Menu Bar** in the ▾ menu or the right-click menu. The menus stay available:
+
+- via the **☰** button at the far left of the ribbon header (all menus of the menu bar, including those of plugins),
+- with **Alt+letter** as before (for example Alt+P for Project),
+- via the commands **QGIS Menus** and **Project Menu**, **Settings Menu** … in the editor, which you can put into your own groups or the Quick Access Toolbar.
+
+Keyboard shortcuts such as Ctrl+S keep working. Choosing the entry again shows the menu bar again. QGIS remembers the setting; in the classic QGIS interface and after deactivating the plugin the menu bar is always there.
+
 ## Classic QGIS interface
 
 **Classic QGIS Interface** in the ▾ menu or the right-click menu removes the ribbon and brings back the QGIS toolbars as they were. QGIS remembers this choice for the next start.

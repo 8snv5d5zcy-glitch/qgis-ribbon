@@ -263,7 +263,7 @@ class SwipeTool(QgsMapTool):
         self.comparison = comparison
         self._start = None
         self._orientation = None
-        self.setCursor(Qt.SizeAllCursor)
+        self.setCursor(Qt.CursorShape.SizeAllCursor)
 
     def activate(self):
         QgsMapTool.activate(self)
@@ -275,7 +275,7 @@ class SwipeTool(QgsMapTool):
         QgsMapTool.deactivate(self)
 
     def canvasPressEvent(self, event):  # noqa: N802 (Qt)
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self._start = event.pixelPoint()
             self._orientation = None
 
@@ -292,12 +292,12 @@ class SwipeTool(QgsMapTool):
         self.comparison.set_edge((self._orientation, QgsPointXY(event.mapPoint()), hide_before))
 
     def canvasReleaseEvent(self, event):  # noqa: N802 (Qt)
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self._start = None
             self.comparison.set_edge(None)
 
     def keyPressEvent(self, event):  # noqa: N802 (Qt)
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key.Key_Escape:
             self._start = None
             self.comparison.set_edge(None)
 

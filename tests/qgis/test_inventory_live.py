@@ -26,7 +26,8 @@ class _Obj(object):
 
 
 class QKeySequence(object):
-    PortableText = 0
+    class SequenceFormat(object):
+        PortableText = 0
 
     def __init__(self, text):
         self._t = text

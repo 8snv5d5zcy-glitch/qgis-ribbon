@@ -154,8 +154,9 @@ def placeholder(command_id):
 def referenced_ids(*data):
     """IDs von Laufzeitbefehlen in gespeicherten Daten (Anordnung, Anordnungen, Schnellzugriff).
 
-    Durchsucht dicts und Listen nach ``"command": ID`` und Listen/kommagetrennten
-    Texten unter ``quick_access``.
+    Durchsucht dicts und Listen nach ``"command": ID``, Listen/kommagetrennten
+    Texten unter ``quick_access`` und den Einträgen unter ``galleries`` und
+    ``menus`` (Galerie-ID bzw. Elementschlüssel -> Liste der IDs).
     """
     out = set()
 
@@ -164,6 +165,9 @@ def referenced_ids(*data):
             for k, v in value.items():
                 if k == "command" and is_runtime(v):
                     out.add(v)
+                elif k in ("galleries", "menus") and isinstance(v, dict):
+                    for ids in v.values():
+                        walk(ids, quick=True)
                 else:
                     walk(v, quick=(k == "quick_access"))
         elif isinstance(value, (list, tuple)):

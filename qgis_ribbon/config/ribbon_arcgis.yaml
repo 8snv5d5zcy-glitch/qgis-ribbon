@@ -32,7 +32,7 @@ tabs:
         launcher: "optionen_kartenwerkzeuge"
         items:
           - split: "erkunden"
-            items: ["abfrage_oberster_layer", "abfrage_sichtbare_layer", "abfragbare_layer", "abfrage_aktueller_layer"]
+            items: ["abfrage_oberster_layer", "abfrage_sichtbare_layer", "abfrage_aktueller_layer"]
             size: "large"
           - row: ["volle_ausdehnung", "schrittweise_hineinzoomen", "schrittweise_herauszoomen", "vorherige_ausdehnung", "naechste_ausdehnung"]
           - menu: "Bookmarks"
@@ -157,9 +157,7 @@ tabs:
       - id: "barrierefreiheit"
         label: "Accessibility"
         items:
-          - split: "farbsehschwaeche_simulieren"
-            items: ["vorschau_deuteranopie"]
-            size: "large"
+          - {command: "farbsehschwaeche_simulieren", size: "large"}
       - id: "navigation"
         label: "Navigation"
         items:
@@ -198,8 +196,9 @@ tabs:
       - id: "konstruktion"
         label: "Construction"
         items:
-          - {command: "erweiterte_digitalisierung", size: "large"}
-          - {command: "konstruktionspanel", size: "medium"}
+          - split: "erweiterte_digitalisierung"
+            items: ["konstruktionspanel"]
+            size: "large"
       - id: "objekte"
         label: "Features"
         items:
@@ -299,6 +298,14 @@ contextual_tabs:
           - {command: "masken", size: "medium"}
           - {command: "stil_importieren", size: "medium"}
           - {command: "aggregation_galerie", size: "large"}
+      - id: "symbol"
+        label: "Symbol"
+        items:
+          - {command: "symbol_bearbeiten", size: "large"}
+          - {command: "symbolklasse", size: "medium"}
+          - {command: "symbol_fuellfarbe", size: "medium"}
+          - {command: "symbol_randfarbe", size: "medium"}
+          - {command: "symbol_breite", size: "medium"}
   - id: "vektor_beschriftung"
     label: "Labeling"
     context: "Vector Layer"
@@ -622,13 +629,6 @@ commands:
       id: "ribbon.abfragemodus"
     icon: "/mActionIdentify.svg"
     description: "Select the identify tool; all visible layers are queried."
-  abfragbare_layer:
-    label: "Identifiable Layers"
-    source: {type: "custom", id: "ribbon.abfragbare_layer"}
-    kind: "control"
-    icon: "/mActionIdentify.svg"
-    description: "Choose which layers the identify tool considers; switches identify to all identifiable layers."
-    gallery: {display: "dropdown"}
   abfrage_aktueller_layer:
     label: "Identify: Current Layer"
     source:
@@ -808,7 +808,10 @@ commands:
     description: "Open the locator bar: search layers, features, places and commands."
   sucheinstellungen:
     label: "Search Settings"
-    source: {type: "iface_method", method: "showOptionsDialog"}
+    source:
+      type: "iface_method"
+      args: [null, "mOptionsLocatorSettings"]
+      method: "showOptionsDialog"
     icon: "/mActionOptions.svg"
     description: "Open the locator bar options."
   nicht_platzierte_beschriftungen:
@@ -997,10 +1000,6 @@ commands:
     label: "Python Console"
     source: {type: "qgis_action", object_name: "mActionShowPythonDialog"}
     description: "Show or hide the Python console."
-  vorschau_deuteranopie:
-    label: "Deuteranopia Preview"
-    source: {type: "qgis_action", object_name: "mActionPreviewDeuteranope"}
-    description: "Show the map as people with red-green color blindness see it."
   farbsehschwaeche_simulieren:
     label: "Simulate Color Blindness"
     source: {type: "qgis_menu", object_name: "mMenuPreviewMode"}
@@ -1633,14 +1632,49 @@ commands:
     label: "Zoom In"
     source: {type: "qgis_action", object_name: "mActionZoomIn"}
     description: "Zoom in by clicking or dragging a rectangle."
+  abfragbare_layer:
+    label: "Identifiable Layers"
+    source: {type: "custom", id: "ribbon.abfragbare_layer"}
+    kind: "control"
+    icon: "/mActionIdentify.svg"
+    description: "Choose which layers the identify tool considers; switches identify to all identifiable layers."
+    gallery: {display: "dropdown"}
+  symbol_bearbeiten:
+    label: "Edit Symbol"
+    source: {type: "custom", id: "ribbon.symbol_bearbeiten"}
+    description: "Open the QGIS symbol editor for the chosen class; with 'All …' the Layer Styling panel."
+  symbolklasse:
+    label: "Class"
+    source: {type: "custom", id: "ribbon.symbolklasse"}
+    kind: "control"
+    description: "Choose a class of the symbology (category, class, rule); colors and width apply to it. Clicking a class in the Layers panel chooses it here too."
+  symbol_fuellfarbe:
+    label: "Fill Color"
+    source: {type: "custom", id: "ribbon.symbol_fuellfarbe"}
+    kind: "control"
+    description: "Fill color of the symbol of the chosen class (not for lines)."
+  symbol_randfarbe:
+    label: "Outline Color"
+    source: {type: "custom", id: "ribbon.symbol_randfarbe"}
+    kind: "control"
+    description: "Outline or line color of the symbol of the chosen class."
+  symbol_breite:
+    label: "Width"
+    source: {type: "custom", id: "ribbon.symbol_breite"}
+    kind: "control"
+    description: "Points: size, lines: width, polygons: outline width, in the unit of the symbol. With 'All …' for every class."
+  vorschau_deuteranopie:
+    label: "Deuteranopia Preview"
+    source: {type: "qgis_action", object_name: "mActionPreviewDeuteranope"}
+    description: "Show the map as people with red-green color blindness see it."
   erweiterte_digitalisierung:
     label: "Advanced Digitizing"
-    source: {type: "iface_action", method: "cadDockWidget.enableAction"}
-    description: "Turn construction aids for digitizing on or off (distance, angle, coordinates). Only with a tool that supports them."
+    source: {type: "custom", id: "ribbon.konstruktionshilfen"}
+    description: "Turn construction aids for digitizing on or off (distance, angle, coordinates). Only with a tool that supports them. The panel stays as it is; show or hide it with Construction Panel."
   konstruktionspanel:
     label: "Construction Panel"
     source: {type: "dock", object_name: "AdvancedDigitizingTools"}
-    description: "Show or hide the Advanced Digitizing panel."
+    description: "Show or hide the Advanced Digitizing panel. The construction aids stay on or off."
   spurverfolgung:
     label: "Tracing"
     source: {type: "qgis_action", object_name: "EnableTracingAction"}
@@ -2306,3 +2340,431 @@ commands:
       method: "showProjectPropertiesDialog"
       args: ["mTemporalOptions"]
     description: "Set the time range of the project."
+  erweiterungen_verwalten:
+    label: "Manage and Install Plugins"
+    source: {type: "qgis_action", object_name: "mActionManagePlugins"}
+    description: "Find, install, update, enable or disable plugins, also from a ZIP file."
+  ueber_qgis:
+    label: "About QGIS"
+    source: {type: "qgis_action", object_name: "mActionAbout"}
+    description: "Show the version, contributors and license of QGIS."
+  qgis_version_pruefen:
+    label: "Check QGIS Version"
+    source: {type: "qgis_action", object_name: "mActionCheckQgisVersion"}
+    description: "Check whether a newer version of QGIS is available."
+  problem_melden:
+    label: "Report an Issue"
+    source: {type: "qgis_action", object_name: "mActionReportaBug"}
+    description: "Open the page for reporting bugs in QGIS in the browser."
+  qgis_homepage:
+    label: "QGIS Home Page"
+    source: {type: "qgis_action", object_name: "mActionQgisHomePage"}
+    description: "Open the QGIS website in the browser."
+  pyqgis_api:
+    label: "PyQGIS API Documentation"
+    source: {type: "qgis_action", object_name: "mActionHelpPyQgisAPI"}
+    description: "Open the documentation of the QGIS Python API in the browser."
+  cpp_api:
+    label: "C++ API Documentation"
+    source: {type: "qgis_action", object_name: "mActionHelpAPI"}
+    description: "Open the documentation of the QGIS C++ API in the browser."
+  qgis_mitmachen:
+    label: "Get Involved"
+    source: {type: "qgis_action", object_name: "mActionGetInvolved"}
+    description: "Show in the browser how to contribute to QGIS."
+  qgis_spenden:
+    label: "Donate to QGIS"
+    source: {type: "qgis_action", object_name: "mActionDonate"}
+    description: "Open the QGIS donation page in the browser."
+  kommerzielle_unterstuetzung:
+    label: "Commercial Support"
+    source: {type: "qgis_action", object_name: "mActionNeedSupport"}
+    description: "Show providers of commercial support for QGIS in the browser."
+  qgis_foerdermitglieder:
+    label: "QGIS Sustaining Members"
+    source: {type: "qgis_action", object_name: "mActionSponsors"}
+    description: "Show the sustaining members of QGIS in the browser."
+  hilfe_erweiterungen:
+    label: "Plugin Help"
+    source: {type: "qgis_menu", object_name: "mMenuPluginHelp"}
+    description: "Open the help pages of the installed plugins."
+  panels:
+    label: "Panels"
+    source: {type: "qgis_menu", object_name: "mPanelMenu"}
+    description: "Show or hide QGIS panels."
+  werkzeugleisten:
+    label: "Toolbars"
+    source: {type: "qgis_menu", object_name: "mToolbarMenu"}
+    description: "Show or hide QGIS toolbars (the ribbon hides most of them)."
+  vollbild:
+    label: "Full Screen"
+    source: {type: "qgis_action", object_name: "mActionToggleFullScreen"}
+    description: "Show the QGIS window full screen or switch back."
+  nur_karte:
+    label: "Map Only"
+    source: {type: "qgis_action", object_name: "mActionToggleMapOnly"}
+    description: "Hide panels and toolbars so that only the map remains, or show everything again."
+  panels_umschalten:
+    label: "Toggle Panels"
+    source: {type: "qgis_action", object_name: "mActionTogglePanelsVisibility"}
+    description: "Hide all open panels at once and show them again."
+  optionen_allgemein:
+    label: "Options: General"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "mOptionsPageGeneral"]
+    icon: "/mActionOptions.svg"
+    description: "Set the language, interface, project files and project handling."
+  optionen_system:
+    label: "Options: System"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "mOptionsPageSystem"]
+    icon: "/mActionOptions.svg"
+    description: "Set paths for SVG symbols and plugins, environment variables and settings files."
+  optionen_kbs:
+    label: "Options: CRS Handling"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "mOptionsPageCRS"]
+    icon: "/mActionOptions.svg"
+    description: "Choose the CRS for new projects and for layers without a CRS."
+  optionen_transformationen:
+    label: "Options: Coordinate Transforms"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "mOptionsPageTransformations"]
+    icon: "/mActionOptions.svg"
+    description: "Set default transformations between coordinate reference systems."
+  optionen_datenquellen:
+    label: "Options: Data Sources"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "mOptionsPageDataSources"]
+    icon: "/mActionOptions.svg"
+    description: "Configure the attribute table, the browser and how data sources are opened."
+  optionen_gdal:
+    label: "Options: GDAL"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "mOptionsPageGDAL"]
+    icon: "/mActionOptions.svg"
+    description: "Configure GDAL drivers and options for raster and vector formats."
+  optionen_darstellung:
+    label: "Options: Rendering"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "rendering"]
+    icon: "/mActionOptions.svg"
+    description: "Configure map rendering: quality, parallel rendering, refresh."
+  optionen_vektordarstellung:
+    label: "Options: Vector Rendering"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "vector"]
+    icon: "/mActionOptions.svg"
+    description: "Configure simplification and rendering of vector layers."
+  optionen_rasterdarstellung:
+    label: "Options: Raster Rendering"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "raster"]
+    icon: "/mActionOptions.svg"
+    description: "Set defaults for bands, contrast enhancement and resampling of raster layers."
+  optionen_karte_legende:
+    label: "Options: Canvas & Legend"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "mOptionsPageMapCanvas"]
+    icon: "/mActionOptions.svg"
+    description: "Configure the behavior of the map canvas and the layer tree."
+  optionen_hoehe:
+    label: "Options: Elevation"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "elevation"]
+    icon: "/mActionOptions.svg"
+    description: "Set default colors and settings for elevation profiles."
+  optionen_farben:
+    label: "Options: Colors"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "mOptionsPageColors"]
+    icon: "/mActionOptions.svg"
+    description: "Edit the standard colors and color palettes of QGIS."
+  optionen_schriften:
+    label: "Options: Fonts"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "fonts"]
+    icon: "/mActionOptions.svg"
+    description: "Configure font replacements and automatic font downloads."
+  optionen_layouts:
+    label: "Options: Layouts"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "mOptionsPageComposer"]
+    icon: "/mActionOptions.svg"
+    description: "Set defaults for print layouts: font, grid, guides, template paths."
+  optionen_3d:
+    label: "Options: 3D"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "3d"]
+    icon: "/mActionOptions.svg"
+    description: "Configure defaults for 3D map views."
+  optionen_variablen:
+    label: "Options: Variables"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "mOptionsPageVariables"]
+    icon: "/mActionOptions.svg"
+    description: "Set global variables for expressions."
+  optionen_authentifizierung:
+    label: "Options: Authentication"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "mOptionsPageAuth"]
+    icon: "/mActionOptions.svg"
+    description: "Manage credentials and certificates."
+  optionen_netzwerk:
+    label: "Options: Network"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "mOptionsPageNetwork"]
+    icon: "/mActionOptions.svg"
+    description: "Configure proxy, timeouts and cache for network access."
+  optionen_gps:
+    label: "Options: GPS"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "gps"]
+    icon: "/mActionOptions.svg"
+    description: "Configure the GPS receiver and position logging."
+  optionen_gpsbabel:
+    label: "Options: GPSBabel"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "gpsbabel"]
+    icon: "/mActionOptions.svg"
+    description: "Set the GPSBabel path and GPS devices for data exchange."
+  optionen_beschleunigung:
+    label: "Options: Acceleration"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "mOptionsPageAcceleration"]
+    icon: "/mActionOptions.svg"
+    description: "Enable or disable computations on the graphics card (OpenCL), if available."
+  optionen_ide:
+    label: "Options: IDE"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "ide"]
+    icon: "/mActionOptions.svg"
+    description: "Settings for developing with Python in QGIS."
+  optionen_code_editor:
+    label: "Options: Code Editor"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "code_editor"]
+    icon: "/mActionOptions.svg"
+    description: "Configure font and colors of the code editors in QGIS."
+  optionen_python_konsole:
+    label: "Options: Python Console"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "consoleOptions"]
+    icon: "/mActionOptions.svg"
+    description: "Settings of the Python console and its editor."
+  optionen_erweitert:
+    label: "Options: Advanced"
+    source:
+      type: "iface_method"
+      method: "showOptionsDialog"
+      args: [null, "advanced"]
+    icon: "/mActionOptions.svg"
+    description: "Edit all QGIS settings as a list (for experts)."
+  dekorationen:
+    label: "Decorations"
+    source: {type: "qgis_menu", object_name: "mMenuDecorations"}
+    description: "Map decorations: grid, scale bar, north arrow, title, copyright, image, layout extents."
+  dekoration_gitter:
+    label: "Decoration: Grid"
+    source: {type: "qgis_action", object_name: "mActionDecorationGrid"}
+    description: "Draw a coordinate grid over the map."
+  dekoration_massstabsleiste:
+    label: "Decoration: Scale Bar"
+    source: {type: "qgis_action", object_name: "mActionDecorationScaleBar"}
+    description: "Show a scale bar in the map."
+  dekoration_nordpfeil:
+    label: "Decoration: North Arrow"
+    source: {type: "qgis_action", object_name: "mActionDecorationNorthArrow"}
+    description: "Show a north arrow in the map."
+  dekoration_titel:
+    label: "Decoration: Title Label"
+    source: {type: "qgis_action", object_name: "mActionDecorationTitle"}
+    description: "Show a title label in the map."
+  dekoration_copyright:
+    label: "Decoration: Copyright Label"
+    source: {type: "qgis_action", object_name: "mActionDecorationCopyright"}
+    description: "Show a copyright label in the map."
+  dekoration_bild:
+    label: "Decoration: Image"
+    source: {type: "qgis_action", object_name: "mActionDecorationImage"}
+    description: "Show an image (e.g. a logo) in the map."
+  dekoration_layoutausdehnungen:
+    label: "Decoration: Layout Extents"
+    source: {type: "qgis_action", object_name: "mActionDecorationLayoutExtent"}
+    description: "Show the extents of the maps from print layouts in the map."
+  layersichtbarkeit:
+    label: "Layer Visibility"
+    source: {type: "qgis_menu", object_name: "mMenuLayerVisibility"}
+    description: "Show or hide layers in one go."
+  alle_layer_einblenden:
+    label: "Show All Layers"
+    source: {type: "qgis_action", object_name: "mActionShowAllLayers"}
+    description: "Turn on all layers in the layer tree."
+  alle_layer_ausblenden:
+    label: "Hide All Layers"
+    source: {type: "qgis_action", object_name: "mActionHideAllLayers"}
+    description: "Turn off all layers in the layer tree."
+  gewaehlte_layer_einblenden:
+    label: "Show Selected Layers"
+    source: {type: "qgis_action", object_name: "mActionShowSelectedLayers"}
+    description: "Turn on the layers selected in the layer tree."
+  gewaehlte_layer_ausblenden:
+    label: "Hide Selected Layers"
+    source: {type: "qgis_action", object_name: "mActionHideSelectedLayers"}
+    description: "Turn off the layers selected in the layer tree."
+  nicht_gewaehlte_layer_ausblenden:
+    label: "Hide Deselected Layers"
+    source: {type: "qgis_action", object_name: "mActionHideDeselectedLayers"}
+    description: "Turn off all layers that are not selected in the layer tree."
+  gewaehlte_layer_umschalten:
+    label: "Toggle Selected Layers"
+    source: {type: "qgis_action", object_name: "mActionToggleSelectedLayers"}
+    description: "Turn the selected layers on or off together (like the first of them)."
+  gewaehlte_layer_einzeln_umschalten:
+    label: "Toggle Selected Layers Independently"
+    source: {type: "qgis_action", object_name: "mActionToggleSelectedLayersIndependently"}
+    description: "Turn each selected layer on or off on its own."
+  kartenansichten_3d_verwalten:
+    label: "Manage 3D Map Views"
+    source: {type: "qgis_action", object_name: "mActionManage3DMapViews"}
+    description: "Open, rename, duplicate or remove the 3D map views of the project."
+  neue_3d_globusansicht:
+    label: "New 3D Globe View"
+    source: {type: "qgis_action", object_name: "mActionNew3DMapCanvasGlobe"}
+    description: "Open a 3D view of the earth as a globe."
+  hoehenprofil:
+    label: "Elevation Profile"
+    source: {type: "qgis_action", object_name: "mActionElevationProfile"}
+    description: "Open a window for elevation profiles along a line."
+  hoehenfilter:
+    label: "Elevation Filter"
+    source: {type: "qgis_action", object_name: "mActionElevationController"}
+    description: "Filter layers in the map by an elevation range."
+  lesezeichen_anzeigen:
+    label: "Show Spatial Bookmarks"
+    source: {type: "qgis_action", object_name: "mActionShowBookmarks"}
+    description: "Show the spatial bookmarks in the browser panel."
+  punktsymbole_drehen:
+    label: "Rotate Point Symbols"
+    source: {type: "qgis_action", object_name: "mActionRotatePointSymbols"}
+    description: "Rotate point symbols with data-defined rotation in the map."
+  punktsymbole_versetzen:
+    label: "Offset Point Symbols"
+    source: {type: "qgis_action", object_name: "mActionOffsetPointSymbol"}
+    description: "Move point symbols with data-defined offset in the map."
+  formular_annotation:
+    label: "Form Annotation"
+    source: {type: "qgis_action", object_name: "mActionFormAnnotation"}
+    description: "Place an annotation with a form (.ui) in the map (older annotation type)."
+  html_annotation:
+    label: "HTML Annotation"
+    source: {type: "qgis_action", object_name: "mActionHtmlAnnotation"}
+    description: "Place an annotation with HTML content in the map (older annotation type)."
+  netzrechner:
+    label: "Mesh Calculator"
+    source: {type: "qgis_action", object_name: "mActionShowMeshCalculator"}
+    description: "Compute new datasets of a mesh layer from expressions."
+  abfrageverlauf:
+    label: "Query History"
+    source: {type: "qgis_action", object_name: "mActionQueryHistory"}
+    description: "Show and rerun earlier SQL queries to databases."
+  qgis_menues:
+    label: "QGIS Menus"
+    source: {type: "custom", id: "ribbon.qgis_menues"}
+    description: "All menus of the QGIS menu bar in one dropdown, also when the menu bar is hidden."
+  menue_projekt:
+    label: "Project Menu"
+    source: {type: "qgis_menu", object_name: "mProjectMenu"}
+    description: "The Project menu of QGIS as a dropdown."
+  menue_bearbeiten:
+    label: "Edit Menu"
+    source: {type: "qgis_menu", object_name: "mEditMenu"}
+    description: "The Edit menu of QGIS as a dropdown."
+  menue_ansicht:
+    label: "View Menu"
+    source: {type: "qgis_menu", object_name: "mViewMenu"}
+    description: "The View menu of QGIS as a dropdown."
+  menue_layer:
+    label: "Layer Menu"
+    source: {type: "qgis_menu", object_name: "mLayerMenu"}
+    description: "The Layer menu of QGIS as a dropdown."
+  menue_einstellungen:
+    label: "Settings Menu"
+    source: {type: "qgis_menu", object_name: "mSettingsMenu"}
+    description: "The Settings menu of QGIS as a dropdown."
+  menue_erweiterungen:
+    label: "Plugins Menu"
+    source: {type: "qgis_menu", object_name: "mPluginMenu"}
+    description: "The Plugins menu of QGIS as a dropdown."
+  menue_vektor:
+    label: "Vector Menu"
+    source: {type: "qgis_menu", object_name: "mVectorMenu"}
+    description: "The Vector menu of QGIS as a dropdown."
+  menue_raster:
+    label: "Raster Menu"
+    source: {type: "qgis_menu", object_name: "mRasterMenu"}
+    description: "The Raster menu of QGIS as a dropdown."
+  menue_datenbank:
+    label: "Database Menu"
+    source: {type: "qgis_menu", object_name: "mDatabaseMenu"}
+    description: "The Database menu of QGIS as a dropdown."
+  menue_web:
+    label: "Web Menu"
+    source: {type: "qgis_menu", object_name: "mWebMenu"}
+    description: "The Web menu of QGIS as a dropdown."
+  menue_netz:
+    label: "Mesh Menu"
+    source: {type: "qgis_menu", object_name: "mMeshMenu"}
+    description: "The Mesh menu of QGIS as a dropdown."
+  menue_hilfe:
+    label: "Help Menu"
+    source: {type: "qgis_menu", object_name: "mHelpMenu"}
+    description: "The Help menu of QGIS as a dropdown."

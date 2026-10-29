@@ -77,4 +77,4 @@ def test_leftover_after_crash_counts_as_originally_visible(main_window, settings
 
 
 def test_close_event_type():
-    assert QCloseEvent().type() == QEvent.Close
+    assert QCloseEvent().type() == QEvent.Type.Close

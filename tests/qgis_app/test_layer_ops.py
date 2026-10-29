@@ -34,8 +34,8 @@ def test_opacity_and_blend_mode(layers, kind):
     assert layer_ops.opacity(layer) == pytest.approx(0.4)
     layer_ops.set_opacity(layer, 7)                     # wird begrenzt
     assert layer_ops.opacity(layer) == 1.0
-    layer_ops.set_blend_mode(layer, QPainter.CompositionMode_Multiply)
-    assert layer_ops.blend_mode(layer) == QPainter.CompositionMode_Multiply
+    layer_ops.set_blend_mode(layer, QPainter.CompositionMode.CompositionMode_Multiply)
+    assert layer_ops.blend_mode(layer) == QPainter.CompositionMode.CompositionMode_Multiply
 
 
 def test_labels_enable_creates_simple_labeling(layers):

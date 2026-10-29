@@ -73,7 +73,7 @@ def gpkg(tmp_path):
         opts.driverName = "GPKG"
         opts.layerName = table
         if table == "linien":
-            opts.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer
+            opts.actionOnExistingFile = QgsVectorFileWriter.ActionOnExistingFile.CreateOrOverwriteLayer
         w = QgsVectorFileWriter.create(path, fields, QgsWkbTypes.Point,
                                        QgsCoordinateReferenceSystem("EPSG:25832"),
                                        QgsCoordinateTransformContext(), opts)
@@ -288,7 +288,7 @@ def test_identifiable_and_source_path(gpkg, layers):
     states = dict((l.name(), on) for l, on in layer_ops.identifiable_layers())
     assert states == {"Punkte": True, "Linien": True}
     layer_ops.set_identifiable(other, False)
-    assert not other.flags() & QgsMapLayer.Identifiable
+    assert not other.flags() & QgsMapLayer.LayerFlag.Identifiable
     assert layer_ops.source_path(layer) == path + "|layername=punkte"
     assert layer_ops.source_path(layers["vector"]).startswith("Point?")
     assert layer_ops.source_path(None) == ""
@@ -523,7 +523,7 @@ def test_identifiable_layers_gallery(ribbon, fake_iface, gpkg, settings):
     acts = gallery_actions(w, "Abfragbare Layer")
     assert acts["Punkte"].isChecked() and acts["Linien"].isChecked()
     acts["Linien"].trigger()
-    assert not other.flags() & QgsMapLayer.Identifiable
+    assert not other.flags() & QgsMapLayer.LayerFlag.Identifiable
     acts = gallery_actions(w, "Abfragbare Layer")
     assert not acts["Linien"].isChecked()
     acts["Alle abfragbaren Layer abfragen"].trigger()
@@ -669,7 +669,7 @@ def test_domain_dialog_creates_and_assigns(gpkg, fake_iface, monkeypatch):
     monkeypatch.setattr(domain_dialog.QMessageBox, "warning",
                         lambda *args: warnings.append(args[2]))
     dlg = domain_dialog.DomainDialog(layer, domains.store_for(layer), fake_iface.mainWindow())
-    save = dlg.buttons.button(QDialogButtonBox.Save)
+    save = dlg.buttons.button(QDialogButtonBox.StandardButton.Save)
     assert dlg.list.count() == 0 and not save.isEnabled()
     dlg.new_domain("coded")
     assert dlg.list.currentItem().text() == "Neue Domäne"

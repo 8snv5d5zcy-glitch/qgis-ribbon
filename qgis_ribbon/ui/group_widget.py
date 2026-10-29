@@ -9,16 +9,14 @@ Adaptive Breite: Jede Gruppe kennt mehrere Fassungen
 (``variants``), von eingeklappt (ein Button, der die Gruppe als Popup
 öffnet) über verkleinert (weniger Galerie-Kacheln, groß → mittel,
 mittel → klein, Galerie als Dropdown) und die definierte Fassung bis
-aufgeklappt (mehr Galerie-Kacheln, Einträge von Split-Buttons und Menüs
-direkt in der Gruppe). Aufgeklappt ersetzt die Einträge das Dropdown: ein
-Split zeigt dann nur noch seinen Hauptbefehl als Button (mit dessen eigener
-Beschriftung), ein Menü-Button entfällt. Das geht nur, wenn sich alle
-Einträge als Buttons zeigen lassen (keine Untermenüs, Galerien, QGIS-Menüs).
+erweitert (mehr Galerie-Kacheln). Dropdowns von Split-Buttons und Menüs
+bleiben auch bei viel Platz Dropdowns: Ihre Einträge zusätzlich neben dem
+Button zu zeigen, führte zu Dopplungen.
 Die Seite wählt je Gruppe eine Fassung
 (``core.adaptive``) und setzt sie mit ``apply``. Die Elemente werden dabei
 nicht neu gebaut, sondern umgestellt; zusätzliche Widgets (kompakter
-Split-Button, Galerie als Dropdown, Einträge im aufgeklappten Zustand)
-entstehen erst, wenn sie gebraucht werden. KeyTip-Ziele zeigen danach auf
+Split-Button, Galerie als Dropdown) entstehen erst, wenn sie gebraucht
+werden. KeyTip-Ziele zeigen danach auf
 das jeweils sichtbare Widget, die Kürzel bleiben gleich.
 """
 
@@ -26,15 +24,13 @@ from qgis.PyQt.QtCore import QPoint, QSize, Qt
 from qgis.PyQt.QtWidgets import (QFrame, QGridLayout, QHBoxLayout, QLabel, QSizePolicy,
                                  QToolButton, QVBoxLayout, QWidget)
 
-from ..core import extensions as ext
-from ..core.model import Command, CommandRef, Menu, Row, Split
+from ..core.model import CommandRef, Menu, Row, Split
 from . import icons, theme
 from .controls import buttons
 from .controls.gallery import RibbonGallery, gallery_button
 from ..core.i18n import tr
 
 COLLAPSED = "collapsed"
-OPEN = "open"
 DROPDOWN = "dropdown"
 SIZES = ("large", "medium", "small")
 LAUNCHER_SIZE = 16
@@ -64,7 +60,7 @@ def launcher_button(command, ctx, parent):
     if act.icon().isNull():
         act.setIconText("↘")  # ↘ ohne Icon-Set
     btn.setDefaultAction(act)
-    btn.setToolButtonStyle(Qt.ToolButtonIconOnly)
+    btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
     btn.setIconSize(QSize(11, 11))
     btn.setFixedSize(LAUNCHER_SIZE, LAUNCHER_SIZE)
     btn.setObjectName("ribbon_launcher_" + command.id)
@@ -84,8 +80,6 @@ class ElementView(object):
         self.mode = None
         self._compact = None      # kompakter Split-Button
         self._dropdown = None     # Galerie als Dropdown-Button
-        self._inline = None       # Einträge im aufgeklappten Zustand
-        self._main = None         # Hauptbefehl eines aufgeklappten Splits
         if isinstance(self.widget, RibbonGallery):
             self.kind = "gallery"
         elif isinstance(self.widget, buttons.LargeSplitButton):
@@ -114,29 +108,8 @@ class ElementView(object):
             return []
         return list(SIZES[SIZES.index(self.size) + 1:])
 
-    def inline_items(self):
-        """Befehle, die aufgeklappt direkt in der Gruppe erscheinen (leer: nicht aufklappbar)."""
-        el = self.element
-        if self.size != "large" or self.kind not in ("button", "split"):
-            return []
-        if not isinstance(el, (Split, Menu)) or (isinstance(el, Menu) and el.gallery is not None):
-            return []
-        items = list(el.items)
-        if any(ext.is_runtime(it.id) for it in items if isinstance(it, Command)):
-            return []   # Dropdown eines Plugin-Buttons (meist „Optionen“): bleibt Dropdown
-        if not items or not all(isinstance(it, Command) and it.gallery is None and it.kind != "control"
-                                and self.ctx.resolver.resolve(it).menu is None for it in items):
-            return []
-        if self.kind == "split":
-            items = [it for it in items if it.id != el.command.id]
-        return items
-
-    def has_main(self):
-        """Aufgeklappt mit eigenem Button für den Hauptbefehl (großer Split mit verfügbarem Befehl)."""
-        return self.kind == "split"
-
     def is_column(self, mode):
-        return mode in ("large", OPEN, DROPDOWN) or isinstance(mode, int)
+        return mode in ("large", DROPDOWN) or isinstance(mode, int)
 
     def width(self, mode):
         w = self.widget
@@ -147,8 +120,6 @@ class ElementView(object):
         if self.kind == "split":
             if mode == "large":
                 return w.large_width()
-            if mode == OPEN:
-                return buttons.button_width(w.bottom, "large", self.element.command.label, False)
             return buttons.button_width(w.bottom, mode, self.label(), True)
         if self.kind == "button":
             return buttons.button_width(w, mode, w.property("ribbon_text"),
@@ -156,10 +127,6 @@ class ElementView(object):
         if self._fixed_width is None:
             self._fixed_width = w.sizeHint().width()
         return self._fixed_width
-
-    def inline_widths(self):
-        ref = self.widget.bottom if self.kind == "split" else self.widget
-        return [buttons.button_width(ref, "medium", item.label, False) for item in self.inline_items()]
 
     def label(self):
         if isinstance(self.element, Split):
@@ -172,7 +139,7 @@ class ElementView(object):
 
     # Umstellen
     def apply(self, mode):
-        """Darstellung einstellen; gibt die Platzierung zurück: [(Widget, 'col'|'stack'|'break')]."""
+        """Darstellung einstellen; gibt die Platzierung zurück: [(Widget, 'col'|'stack')]."""
         self.mode = mode
         w = self.widget
         if self.kind == "fixed":
@@ -189,31 +156,6 @@ class ElementView(object):
             w.set_visible(mode)
             return [(w, "col")]
         out = []
-        if self._main is not None and mode != OPEN:
-            self._main.hide()
-        if mode == OPEN:
-            inline = self._inline_buttons()
-            if self._compact is not None:
-                self._compact.hide()
-            w.hide()
-            if self.has_main():
-                main = self._main_button()
-                # Tastatur: weiterhin Menü mit Hauptbefehl und allen Einträgen
-                self._retarget(w.target, main, lambda: buttons.keyboard_menu(main, w.action, w.menu))
-                out.append((main, "col"))
-            else:
-                # Menü-Button entfällt; sein Kürzel öffnet das Menü am ersten Eintrag
-                def keyboard():
-                    owner = next((b for b in inline if b.isEnabled()), inline[0])
-                    return buttons.keyboard_menu(owner, None, w.menu())
-                self._retarget(self._target, inline[0], keyboard)
-            out.append((None, "break"))
-            out.extend((b, "stack") for b in inline)
-            out.append((None, "break"))
-            return out
-        if self._inline:
-            for b in self._inline:
-                b.hide()
         if self.kind == "split":
             if mode == "large":
                 if self._compact is not None:
@@ -231,12 +173,6 @@ class ElementView(object):
             buttons.apply_size(w, mode, w.property("ribbon_text"), bool(w.property("ribbon_menu")))
             out.append((w, "col" if mode == "large" else "stack"))
         return out
-
-    def _main_button(self):
-        if self._main is None:
-            self._main = buttons.command_button(self.element.command, "large", self.ctx, self.parent)
-            self._main.setObjectName("ribbon_open_" + self.element.command.id)
-        return self._main
 
     def _retarget(self, target, widget, activate):
         if target is not None:
@@ -258,15 +194,6 @@ class ElementView(object):
             else:
                 self._dropdown = gallery_button(el.command, "large", self.ctx, self.parent)
         return self._dropdown
-
-    def _inline_buttons(self):
-        if self._inline is None:
-            self._inline = []
-            for item in self.inline_items():
-                btn = buttons.command_button(item, "medium", self.ctx, self.parent)
-                btn.setObjectName("ribbon_inline_" + item.id)
-                self._inline.append(btn)
-        return self._inline
 
     def first_icon(self):
         w = self.widget
@@ -294,8 +221,6 @@ def _place(placements):
         if how == "col":
             flush()
             cols.append(("col", [widget]))
-        elif how == "break":
-            flush()
         else:
             stack.append(widget)
             if len(stack) == theme.ROWS:
@@ -308,7 +233,7 @@ class GroupPopup(QFrame):
     """Eingeklappte Gruppe: ihr Inhalt als Popup unter dem Button."""
 
     def __init__(self, group):
-        QFrame.__init__(self, group, Qt.Popup)
+        QFrame.__init__(self, group, Qt.WindowType.Popup)
         self.setObjectName("ribbon_group_popup")
         lay = QVBoxLayout(self)
         lay.setContentsMargins(6, 6, 6, 2)
@@ -321,7 +246,7 @@ class GroupWidget(QWidget):
         self.group = group
         self.ctx = ctx
         self.setObjectName("ribbon_group_" + group.id)
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
         outer = QHBoxLayout(self)
         outer.setContentsMargins(theme.GROUP_PADDING, 0, theme.GROUP_PADDING, 0)
         outer.setSpacing(0)
@@ -346,7 +271,7 @@ class GroupWidget(QWidget):
         foot.setSpacing(0)
         label = QLabel(group.label, footer)
         label.setObjectName("ribbon_group_label")
-        label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
         font = label.font()
         if font.pointSizeF() > 0:
             font.setPointSizeF(font.pointSizeF() * 0.92)
@@ -359,7 +284,7 @@ class GroupWidget(QWidget):
             foot.addSpacing(LAUNCHER_SIZE)
             foot.addWidget(label, 1)
             self.launcher = launcher_button(group.launcher, ctx, footer)
-            foot.addWidget(self.launcher, 0, Qt.AlignRight | Qt.AlignVCenter)
+            foot.addWidget(self.launcher, 0, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         else:
             foot.addWidget(label, 1)
         footer.setFixedHeight(theme.GROUP_LABEL_HEIGHT)
@@ -417,12 +342,6 @@ class GroupWidget(QWidget):
                 break
             cur = nxt
             up.append(list(cur))
-        # 2. Split-Buttons und Menüs aufklappen, von links
-        for i, v in enumerate(views):
-            if v.inline_items():
-                cur = list(cur)
-                cur[i] = OPEN
-                up.append(cur)
 
         ideal_w = self.width_for(ideal)
         result = [(ideal, ideal_w)]
@@ -461,16 +380,6 @@ class GroupWidget(QWidget):
                 del stack[:]
 
         for v, mode in zip(self.views, modes):
-            if mode == OPEN:
-                flush()
-                if v.has_main():
-                    cols.append(v.width(OPEN))
-                for iw in v.inline_widths():
-                    stack.append(iw)
-                    if len(stack) == theme.ROWS:
-                        flush()
-                flush()
-                continue
             w = v.width(mode)
             if v.is_column(mode):
                 flush()
@@ -538,10 +447,11 @@ class GroupWidget(QWidget):
             self.grid.takeAt(0)
         for c, (kind, widgets) in enumerate(_place(placements)):
             if kind == "col":
-                self.grid.addWidget(widgets[0], 0, c, theme.ROWS, 1, Qt.AlignTop | Qt.AlignLeft)
+                self.grid.addWidget(widgets[0], 0, c, theme.ROWS, 1, Qt.AlignmentFlag.AlignTop
+                                    | Qt.AlignmentFlag.AlignLeft)
             else:
                 for r, w in enumerate(widgets):
-                    self.grid.addWidget(w, r, c, Qt.AlignTop | Qt.AlignLeft)
+                    self.grid.addWidget(w, r, c, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
             for w in widgets:
                 w.show()
         for r in range(theme.ROWS):

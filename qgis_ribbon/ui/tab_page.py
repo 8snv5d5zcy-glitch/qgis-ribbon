@@ -45,7 +45,7 @@ class PageInner(QWidget):
         pixels = divider_pixels(ratio)
         pen = QPen(theme.color("gdiv"))
         pen.setWidthF(pixels / ratio)
-        pen.setCapStyle(Qt.FlatCap)
+        pen.setCapStyle(Qt.PenCapStyle.FlatCap)
         painter.setPen(pen)
         # Fast über die volle Höhe der Gruppe (Befehle und Beschriftung)
         top = theme.PAGE_TOP + 1
@@ -63,10 +63,10 @@ class TabPage(QScrollArea):
         QScrollArea.__init__(self, parent)
         self.tab = tab
         self.setObjectName("ribbon_page_" + tab.id)
-        self.setFrameShape(QFrame.NoFrame)
+        self.setFrameShape(QFrame.Shape.NoFrame)
         self.setWidgetResizable(True)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         inner = PageInner(self)
         lay = QHBoxLayout(inner)
@@ -77,7 +77,7 @@ class TabPage(QScrollArea):
         for group in tab.groups:
             gw = GroupWidget(group, ctx, inner)
             self.groups.append(gw)
-            lay.addWidget(gw, 0, Qt.AlignTop)
+            lay.addWidget(gw, 0, Qt.AlignmentFlag.AlignTop)
         lay.addStretch(1)
         ctx.end_tab()
         inner.groups = self.groups

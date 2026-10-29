@@ -22,9 +22,9 @@ def snapshot(mw):
         "stylesheet": mw.styleSheet(),
         "app_stylesheet": QgsApplication.instance().styleSheet(),
         "palette": [QgsApplication.instance().palette().color(group, role).name()
-                    for group in (QPalette.Active, QPalette.Disabled)
-                    for role in (QPalette.Window, QPalette.WindowText, QPalette.Base, QPalette.Text,
-                                 QPalette.Button, QPalette.Highlight, QPalette.HighlightedText)],
+                    for group in (QPalette.ColorGroup.Active, QPalette.ColorGroup.Disabled)
+                    for role in (QPalette.ColorRole.Window, QPalette.ColorRole.WindowText, QPalette.ColorRole.Base, QPalette.ColorRole.Text,
+                                 QPalette.ColorRole.Button, QPalette.ColorRole.Highlight, QPalette.ColorRole.HighlightedText)],
     }
 
 

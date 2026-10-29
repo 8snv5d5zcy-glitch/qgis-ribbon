@@ -25,13 +25,14 @@ DIRECT_TEXT = tr("The layer “%s” is not in edit mode. The change is written 
 
 
 def exec_dialog(dlg):
-    return dlg.exec_()
+    return dlg.exec()
 
 
 def confirm_direct(parent, layer):
     answer = QMessageBox.question(parent, tr("Change Data Source"), DIRECT_TEXT % layer.name(),
-                                  QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-    return answer == QMessageBox.Yes
+                                  QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                  QMessageBox.StandardButton.No)
+    return answer == QMessageBox.StandardButton.Yes
 
 
 class _Base(QDialog):
@@ -52,7 +53,8 @@ class _Base(QDialog):
                       else tr("The layer is not in edit mode: changes are written to the data source."), self)
         mode.setWordWrap(True)
         self.lay.addWidget(mode)
-        self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+                                        self)
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
         self.lay.addWidget(self.buttons)
@@ -63,7 +65,7 @@ class _Base(QDialog):
     def check(self):
         problems = self.problems()
         self.hint.setText(problems[0] if problems else "")
-        self.buttons.button(QDialogButtonBox.Ok).setEnabled(not problems)
+        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(not problems)
         return not problems
 
 
@@ -122,11 +124,11 @@ class DeleteFieldsDialog(_Base):
     def __init__(self, layer, parent=None):
         _Base.__init__(self, layer, tr("Delete Field"), "ribbon_delete_field_dialog", parent)
         self.list = QListWidget(self)
-        self.list.setSelectionMode(QAbstractItemView.NoSelection)
+        self.list.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         for name in field_ops.own_fields(layer):
             item = QListWidgetItem(name, self.list)
-            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Unchecked)
+            item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Unchecked)
         self.form.addRow(QLabel(tr("Fields to delete:"), self))
         self.form.addRow(self.list)
         self.list.itemChanged.connect(self.check)
@@ -134,7 +136,7 @@ class DeleteFieldsDialog(_Base):
 
     def chosen(self):
         return [self.list.item(i).text() for i in range(self.list.count())
-                if self.list.item(i).checkState() == Qt.Checked]
+                if self.list.item(i).checkState() == Qt.CheckState.Checked]
 
     def problems(self):
         if self.list.count() == 0:
@@ -173,13 +175,14 @@ def _layer(iface):
     layer = iface.activeLayer()
     if not isinstance(layer, QgsVectorLayer) or not layer.isValid():
         iface.messageBar().pushMessage(LOG_TAG, tr("Please select a vector layer or a table."),
-                                       level=Qgis.Warning, duration=4)
+                                       level=Qgis.MessageLevel.Warning, duration=4)
         return None
     return layer
 
 
 def _report(iface, ok, message):
-    iface.messageBar().pushMessage(LOG_TAG, message, level=Qgis.Success if ok else Qgis.Warning, duration=4)
+    iface.messageBar().pushMessage(LOG_TAG, message, level=Qgis.MessageLevel.Success
+                                   if ok else Qgis.MessageLevel.Warning, duration=4)
     return ok
 
 
@@ -189,7 +192,7 @@ def _open(iface, make, apply):
         return None
     dlg = make(layer, iface.mainWindow())
     try:
-        if exec_dialog(dlg) != QDialog.Accepted or not dlg.check():
+        if exec_dialog(dlg) != QDialog.DialogCode.Accepted or not dlg.check():
             return False
         if not layer.isEditable() and not confirm_direct(iface.mainWindow(), layer):
             return False

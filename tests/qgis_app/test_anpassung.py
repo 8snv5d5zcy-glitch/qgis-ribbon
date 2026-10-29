@@ -262,10 +262,76 @@ def test_save_load_delete_arrangements(plugin, settings, no_dialogs, monkeypatch
     settle()
     answers["confirm"] = False
     assert not arrangement_menu.reset(plugin.widget)
-    assert calls[-1] == ("confirm", arrangement_menu.UNSAVED)
+    assert calls[-1] == ("confirm", arrangement_menu.UNSAVED_CHANGES % "Bearbeitung")
     answers["confirm"] = True
     assert arrangement_menu.delete(plugin.widget, "Bearbeitung")
     assert arrs.names() == []
+
+
+def test_save_into_current_and_save_as_new(plugin, settings, no_dialogs, monkeypatch):
+    """„Speichern“ schreibt in die aktuelle Anordnung, „Speichern unter“ legt eine neue an;
+    ein vorhandener Name wird nur nach Rückfrage überschrieben."""
+    calls, answers = no_dialogs
+    arrs = plugin.arrangements
+    asked = []
+    names = ["Bearbeitung"]
+    monkeypatch.setattr(arrangement_menu, "ask_name", lambda parent, title, label, text="": asked.append(text)
+                        or names.pop(0))
+
+    def entries():
+        menu = QMenu()
+        sub = arrangement_menu.add_submenu(menu, plugin.widget)
+        out = {a.text(): a for a in sub.actions() if not a.isSeparator()}
+        menu.deleteLater()
+        return out
+
+    def hide(tab_id):
+        arr = arrs.current()
+        arr.tab(tab_id).visible = False
+        arrs.set_current(arr)
+        settle()
+
+    # ohne aktuelle Anordnung: „Anordnung speichern …“ fragt nach dem Namen
+    assert arrs.current_name() is None and "Anordnung speichern …" in entries()
+    hide("projekt")
+    assert arrangement_menu.save(plugin.widget) == "Bearbeitung"
+    assert asked == [""] and arrs.current_name() == "Bearbeitung" and not arrs.is_modified()
+    save = entries()["Anordnung „Bearbeitung“ speichern"]
+    assert not save.isEnabled()
+    # Änderung: Speichern schreibt ohne Rückfrage in „Bearbeitung“
+    plugin.widget.add_to_quick_access(plugin.ribbon.commands["speichern"])
+    assert arrs.is_modified() and entries()["Anordnung „Bearbeitung“ speichern"].isEnabled()
+    entries()["Anordnung „Bearbeitung“ speichern"].trigger()
+    settle()
+    assert not arrs.is_modified() and not calls and len(asked) == 1
+    assert json.loads(settings.value(KEY_SAVED))["Bearbeitung"]["quick_access"] == ["neu", "speichern"]
+    # Speichern unter: neuer Name, Vorschlag „Bearbeitung (2)“
+    names.append("Variante")
+    assert arrangement_menu.save_as(plugin.widget) == "Variante"
+    assert asked[-1] == "Bearbeitung (2)" and arrs.current_name() == "Variante"
+    assert arrs.names() == ["Bearbeitung", "Variante"]
+    # Speichern unter vorhandenem Namen: Rückfrage, Nein lässt alles stehen
+    plugin.widget.add_to_quick_access(plugin.ribbon.commands["zoomen"])
+    settle()
+    names.append("Bearbeitung")
+    answers["confirm"] = False
+    assert arrangement_menu.save_as(plugin.widget) is None
+    assert calls[-1][1] == "„Bearbeitung“ gibt es schon. Überschreiben?"
+    assert arrs.current_name() == "Variante" and arrs.is_modified()
+    names.append("Bearbeitung")
+    answers["confirm"] = True
+    assert arrangement_menu.save_as(plugin.widget) == "Bearbeitung"
+    assert arrs.current_name() == "Bearbeitung" and not arrs.is_modified()
+    # Laden macht die geladene zur aktuellen, Standard und Löschen heben sie auf
+    assert arrangement_menu.load(plugin.widget, "Variante")
+    settle()
+    assert arrs.current_name() == "Variante"
+    assert arrangement_menu.reset(plugin.widget)
+    settle()
+    assert arrs.current_name() is None
+    assert arrangement_menu.load(plugin.widget, "Variante")
+    assert arrangement_menu.delete(plugin.widget, "Variante")
+    assert arrs.current_name() is None
 
 
 def test_arrangements_menu_entries(plugin, no_dialogs, monkeypatch):
@@ -316,7 +382,7 @@ def test_export_and_import_share_arrangement(plugin, tmp_path, no_dialogs, monke
     # Ein anderer Nutzer (eigene Einstellungen) importiert die Datei
     from qgis.core import QgsSettings
     from qgis.PyQt.QtCore import QSettings
-    other = QgsSettings(str(tmp_path / "andere.ini"), QSettings.IniFormat)
+    other = QgsSettings(str(tmp_path / "andere.ini"), QSettings.Format.IniFormat)
     plugin.unload()
     settle()
     colleague = RibbonPlugin(fake_iface, config_path=config, settings=other)
@@ -421,7 +487,7 @@ def test_gallery_customize_command_and_dialog(shipped):
 def test_gallery_customize_command_opens_dialog(shipped, monkeypatch):
     from qgis_ribbon.ui import customize_dialog
     opened = []
-    monkeypatch.setattr(customize_dialog.GalleryDialog, "exec_", lambda self: opened.append(
+    monkeypatch.setattr(customize_dialog.GalleryDialog, "exec", lambda self: opened.append(
         (self.gallery_id, self.windowTitle())))
     plugin = shipped
     plugin.resolver.trigger(plugin.ribbon.commands["analyse_galerie_anpassen"])
@@ -447,3 +513,61 @@ def test_every_command_builds_in_a_custom_group(shipped, layers, fake_iface):
     assert len(targets) >= len(plugin.base.commands)
     fake_iface.set_active_layer(None)
     settle()
+
+
+def test_dropdown_gallery_customized_from_context_menu(shipped, monkeypatch):
+    """Grundkarten per Rechtsklick anpassen; eigene Einträge als Kacheln über dem QGIS-Inhalt."""
+    from qgis.PyQt.QtWidgets import QToolButton
+    plugin = shipped
+    w = plugin.widget
+    w.select_tab("karte")
+    settle()
+    btn = next(b for b in w.findChildren(QToolButton) if b.objectName() == "ribbon_gallery_btn_grundkarten_galerie")
+    assert w.gallery_at(btn).id == "grundkarten_galerie"
+    menu = w.context_menu(btn)
+    act = next(a for a in menu.actions() if a.objectName() == "ribbon_customize_gallery")
+    assert act.text() == "Galerie „Grundkarte“ anpassen …"
+    menu.deleteLater()
+    # Kontextmenü auf einer Kachel der Werkzeugkiste findet die Galerie
+    w.select_tab("bearbeiten")
+    settle()
+    gallery = next(g for g in w.findChildren(RibbonGallery) if g.objectName() == "ribbon_gallery_editor_galerie")
+    assert w.gallery_at(gallery.grid.tiles[0]).id == "editor_galerie"
+    assert w.gallery_at(btn.parentWidget()) is None
+
+    opened = []
+    monkeypatch.setattr(GalleryDialog, "exec", lambda self: opened.append(self.gallery_id))
+    w.open_gallery_dialog("grundkarten_galerie")
+    assert opened == ["grundkarten_galerie"]
+    monkeypatch.undo()
+
+    dlg = GalleryDialog(plugin.arrangements, "grundkarten_galerie")
+    try:
+        assert not dlg.needs_items
+        dlg.picker.select("command", "puffer")
+        dlg.list.setCurrentRow(-1)
+        assert dlg.add() == "puffer"
+        assert dlg.save()
+    finally:
+        dlg.deleteLater()
+    settle()
+    assert plugin.arrangements.gallery_items("grundkarten_galerie")[-1] == "puffer"
+    # Laufzeit-Galerie (Lesezeichen) ist jetzt auch anpassbar, leer erlaubt
+    assert "lesezeichen_galerie" in cz.galleries(plugin.arrangements.base)
+    dlg = GalleryDialog(plugin.arrangements, "grundkarten_galerie")
+    try:
+        dlg.list.clear()
+        assert dlg.save()
+    finally:
+        dlg.deleteLater()
+    settle()
+    assert plugin.arrangements.gallery_items("grundkarten_galerie") == []
+    w = plugin.widget   # nach dem Speichern neu aufgebaut
+    w.select_tab("karte")
+    settle()
+    btn = next(b for b in w.findChildren(QToolButton) if b.objectName() == "ribbon_gallery_btn_grundkarten_galerie")
+    btn.menu().aboutToShow.emit()
+    settle()
+    from qgis_ribbon.ui.controls.gallery import GalleryGrid
+    assert not btn.menu().findChildren(GalleryGrid)   # keine festen Kacheln, QGIS-Inhalt bleibt
+    assert btn.menu().actions()

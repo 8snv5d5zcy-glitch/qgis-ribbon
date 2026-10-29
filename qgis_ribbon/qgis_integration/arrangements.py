@@ -8,7 +8,9 @@ Einstellungen des Nutzers (``UserSettings``):
   Dialogen speichern;
 - gespeicherte Anordnungen: unter einem Namen speichern, laden, löschen,
   als Datei exportieren und importieren. Eine Anordnung umfasst Tabs,
-  Gruppen, Galerien, Schnellzugriffsleiste und eigene Kürzel.
+  Gruppen, Galerien, Schnellzugriffsleiste und eigene Kürzel. Die zuletzt
+  geladene oder gespeicherte ist die aktuelle (``current_name``); „Speichern“
+  schreibt in sie zurück.
 
 Nach jeder Änderung sendet ``changed``; das Plugin baut den Ribbon dann neu
 auf. Ohne Plugin (Ribbon allein, Tests) hört niemand zu, gespeichert wird
@@ -67,7 +69,7 @@ class Arrangements(QObject):
             return self.base
         arr = self.current()
         for text in self.warnings:
-            QgsMessageLog.logMessage(tr("Arrangement: %s") % text, LOG_TAG, Qgis.Warning)
+            QgsMessageLog.logMessage(tr("Arrangement: %s") % text, LOG_TAG, Qgis.MessageLevel.Warning)
         return cz.apply(self.base, arr)
 
     def set_current(self, arr):
@@ -162,21 +164,43 @@ class Arrangements(QObject):
         saved = self.user.saved()
         saved[name] = self.bundle(name)
         self.user.set_saved(saved)
+        self.user.set_current_name(name)
         return name
 
+    def save(self):
+        """Stand in die aktuelle Anordnung schreiben. -> Name, None ohne aktuelle Anordnung."""
+        name = self.current_name()
+        return self.save_as(name) if name else None
+
+    def current_name(self):
+        """Gespeicherte Anordnung, in der gerade gearbeitet wird (zuletzt geladen oder gespeichert), sonst None."""
+        name = self.user.current_name()
+        return name if name in self.user.saved() else None
+
+    def is_modified(self):
+        """Die aktuelle Anordnung wurde seit dem Laden oder Speichern geändert."""
+        name = self.current_name()
+        return name is not None and not cz.same_bundle(self.user.saved()[name], self.bundle())
+
     def load(self, name):
-        return self.apply_bundle(self.user.saved()[name])
+        warnings = self.apply_bundle(self.user.saved()[name])
+        self.user.set_current_name(name)
+        return warnings
 
     def delete(self, name):
         saved = self.user.saved()
         saved.pop(name, None)
         self.user.set_saved(saved)
+        if self.user.current_name() == name:
+            self.user.set_current_name(None)
 
     def active_name(self):
-        """Name der gespeicherten Anordnung, die der aktuellen entspricht, sonst None."""
+        """Name der gespeicherten Anordnung, die dem Stand entspricht, sonst None (die aktuelle zuerst)."""
         current = self.bundle()
-        for name in self.names():
-            if cz.same_bundle(self.user.saved()[name], current):
+        saved = self.user.saved()
+        first = self.current_name()
+        for name in ([first] if first else []) + self.names():
+            if cz.same_bundle(saved[name], current):
                 return name
         return None
 
@@ -189,7 +213,9 @@ class Arrangements(QObject):
 
     def reset(self):
         """Standardanordnung: Tabs, Gruppen, Galerien, Schnellzugriff und Kürzel wie geliefert."""
-        return self.apply_bundle(cz.make_bundle(None))
+        warnings = self.apply_bundle(cz.make_bundle(None))
+        self.user.set_current_name(None)
+        return warnings
 
     # Dateien
     def export(self, path, name=None):

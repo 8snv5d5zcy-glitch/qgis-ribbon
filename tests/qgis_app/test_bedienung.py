@@ -81,8 +81,8 @@ def setup(fake_iface, settings):
 
 def alt(widget):
     """Alt drücken und loslassen, ohne andere Taste."""
-    QTest.keyPress(widget, Qt.Key_Alt, Qt.AltModifier)
-    QTest.keyRelease(widget, Qt.Key_Alt, Qt.NoModifier)
+    QTest.keyPress(widget, Qt.Key.Key_Alt, Qt.KeyboardModifier.AltModifier)
+    QTest.keyRelease(widget, Qt.Key.Key_Alt, Qt.KeyboardModifier.NoModifier)
 
 
 def codes(keys):
@@ -103,7 +103,7 @@ def test_alt_alone_shows_level0(setup):
     assert c["Karte"] == "K" and c["Suchen"] == "Q" and "1" in c.values()
     settle()
     assert "K" in visible_labels(w) and "Q" in visible_labels(w)
-    QTest.keyClick(mw, Qt.Key_Escape)
+    QTest.keyClick(mw, Qt.Key.Key_Escape)
     assert not keys.active
     settle()
     assert visible_labels(w) == []
@@ -111,17 +111,17 @@ def test_alt_alone_shows_level0(setup):
 
 def test_alt_with_letter_stays_with_qgis(setup):
     _w, keys, mw = setup
-    QTest.keyPress(mw, Qt.Key_Alt, Qt.AltModifier)
-    QTest.keyClick(mw, Qt.Key_P, Qt.AltModifier)
-    QTest.keyRelease(mw, Qt.Key_Alt, Qt.NoModifier)
+    QTest.keyPress(mw, Qt.Key.Key_Alt, Qt.KeyboardModifier.AltModifier)
+    QTest.keyClick(mw, Qt.Key.Key_P, Qt.KeyboardModifier.AltModifier)
+    QTest.keyRelease(mw, Qt.Key.Key_Alt, Qt.KeyboardModifier.NoModifier)
     assert not keys.active
     # Auch wenn der Buchstabe als Tastenkürzel verbraucht wird (Menü-Mnemonik)
     fired = []
     sc = QShortcut(QKeySequence("Alt+M"), mw)
     sc.activated.connect(lambda: fired.append(1))
-    QTest.keyPress(mw, Qt.Key_Alt, Qt.AltModifier)
-    QTest.keyClick(mw, Qt.Key_M, Qt.AltModifier)
-    QTest.keyRelease(mw, Qt.Key_Alt, Qt.NoModifier)
+    QTest.keyPress(mw, Qt.Key.Key_Alt, Qt.KeyboardModifier.AltModifier)
+    QTest.keyClick(mw, Qt.Key.Key_M, Qt.KeyboardModifier.AltModifier)
+    QTest.keyRelease(mw, Qt.Key.Key_Alt, Qt.KeyboardModifier.NoModifier)
     assert fired and not keys.active
     sc.setParent(None)
 
@@ -137,11 +137,11 @@ def test_alt_with_arrows_of_another_plugin_wins(setup):
         act.triggered.connect(lambda _c=False, n=name: fired.append(n))
         mw.addAction(act)
         acts.append(act)
-    QTest.keyPress(mw, Qt.Key_Alt, Qt.AltModifier)
-    QTest.keyClick(mw, Qt.Key_Up, Qt.AltModifier)
-    QTest.keyClick(mw, Qt.Key_Down, Qt.AltModifier)
-    QTest.keyClick(mw, Qt.Key_Down, Qt.AltModifier)       # Alt bleibt gedrückt
-    QTest.keyRelease(mw, Qt.Key_Alt, Qt.NoModifier)
+    QTest.keyPress(mw, Qt.Key.Key_Alt, Qt.KeyboardModifier.AltModifier)
+    QTest.keyClick(mw, Qt.Key.Key_Up, Qt.KeyboardModifier.AltModifier)
+    QTest.keyClick(mw, Qt.Key.Key_Down, Qt.KeyboardModifier.AltModifier)
+    QTest.keyClick(mw, Qt.Key.Key_Down, Qt.KeyboardModifier.AltModifier)       # Alt bleibt gedrückt
+    QTest.keyRelease(mw, Qt.Key.Key_Alt, Qt.KeyboardModifier.NoModifier)
     assert fired == ["hoch", "runter", "runter"]
     assert not keys.active
     # Danach startet Alt allein die KeyTips wie gewohnt
@@ -158,12 +158,12 @@ def test_tab_then_element(setup, fake_iface):
     zoom = mw.findChild(QAction, "mActionZoomIn")
     w.select_tab("karte")
     alt(mw)
-    QTest.keyClick(mw, Qt.Key_A)                        # Ansicht
+    QTest.keyClick(mw, Qt.Key.Key_A)                        # Ansicht
     settle()
     assert w.current_tab() == "ansicht" and keys.level == 1
-    QTest.keyClick(mw, Qt.Key_Escape)                   # zurück auf Ebene 0
+    QTest.keyClick(mw, Qt.Key.Key_Escape)                   # zurück auf Ebene 0
     assert keys.active and keys.level == 0
-    QTest.keyClick(mw, Qt.Key_K)                        # Karte
+    QTest.keyClick(mw, Qt.Key.Key_K)                        # Karte
     settle()
     assert keys.level == 1
     c = codes(keys)
@@ -192,9 +192,9 @@ def test_shortcuts_do_not_fire_in_keytip_mode(setup):
     sc = QShortcut(QKeySequence("X"), mw)
     sc.activated.connect(lambda: fired.append(1))
     alt(mw)
-    QTest.keyClick(mw, Qt.Key_X)
+    QTest.keyClick(mw, Qt.Key.Key_X)
     assert keys.active and fired == []
-    QTest.keyClick(mw, Qt.Key_Escape)
+    QTest.keyClick(mw, Qt.Key.Key_Escape)
     sc.setParent(None)
 
 
@@ -203,10 +203,10 @@ def test_quick_access_digit_and_search_key(setup, fake_iface):
     triggered = []
     mw.findChild(QAction, "mActionNewProject").triggered.connect(lambda: triggered.append(1))
     alt(mw)
-    QTest.keyClick(mw, Qt.Key_1)
+    QTest.keyClick(mw, Qt.Key.Key_1)
     assert triggered and not keys.active
     alt(mw)
-    QTest.keyClick(mw, Qt.Key_Q)
+    QTest.keyClick(mw, Qt.Key.Key_Q)
     settle()
     assert QApplication.focusWidget() is w.search
 
@@ -286,9 +286,9 @@ def test_minimized_state_survives_restart(fake_iface, settings):
 
 def test_ctrl_f1_toggles(setup):
     w, _keys, mw = setup
-    QTest.keyClick(mw, Qt.Key_F1, Qt.ControlModifier)
+    QTest.keyClick(mw, Qt.Key.Key_F1, Qt.KeyboardModifier.ControlModifier)
     assert w.minimized
-    QTest.keyClick(mw, Qt.Key_F1, Qt.ControlModifier)
+    QTest.keyClick(mw, Qt.Key.Key_F1, Qt.KeyboardModifier.ControlModifier)
     assert not w.minimized
 
 
@@ -296,14 +296,14 @@ def test_keytips_open_tab_in_minimized_ribbon(setup):
     w, keys, mw = setup
     w.set_minimized(True)
     alt(mw)
-    QTest.keyClick(mw, Qt.Key_A)
+    QTest.keyClick(mw, Qt.Key.Key_A)
     settle()
     assert w.popup.isVisible() and keys.level == 1
     labels = [l for l in w.popup.findChildren(QLabel, "ribbon_keytip") if l.isVisible()]
     assert labels                                       # Kürzel im aufgeklappten Ribbon
-    QTest.keyClick(mw, Qt.Key_Escape)
+    QTest.keyClick(mw, Qt.Key.Key_Escape)
     assert keys.level == 0 and not w.popup.isVisible()
-    QTest.keyClick(mw, Qt.Key_Escape)
+    QTest.keyClick(mw, Qt.Key.Key_Escape)
 
 
 # -- Suche --------------------------------------------------------------------------
@@ -360,16 +360,16 @@ def test_gallery_grid_keyboard(setup, fake_iface):
                                                     "ribbon_tile_speichern"]
     grid.setFocus()                                     # Fokus-Proxy: erste Kachel
     assert grid.tiles[0].hasFocus()
-    QTest.keyClick(grid.tiles[0], Qt.Key_Right)
+    QTest.keyClick(grid.tiles[0], Qt.Key.Key_Right)
     assert grid.tiles[1].hasFocus()
-    QTest.keyClick(grid.tiles[1], Qt.Key_Down)          # Rand (keine Kachel darunter): bleibt
+    QTest.keyClick(grid.tiles[1], Qt.Key.Key_Down)          # Rand (keine Kachel darunter): bleibt
     assert grid.tiles[1].hasFocus()
-    QTest.keyClick(grid.tiles[1], Qt.Key_Left)
-    QTest.keyClick(grid.tiles[0], Qt.Key_Down)
+    QTest.keyClick(grid.tiles[1], Qt.Key.Key_Left)
+    QTest.keyClick(grid.tiles[0], Qt.Key.Key_Down)
     assert grid.tiles[2].hasFocus()
-    QTest.keyClick(grid.tiles[2], Qt.Key_Up)
-    QTest.keyClick(grid.tiles[0], Qt.Key_Right)
-    QTest.keyClick(grid.tiles[1], Qt.Key_Return)
+    QTest.keyClick(grid.tiles[2], Qt.Key.Key_Up)
+    QTest.keyClick(grid.tiles[0], Qt.Key.Key_Right)
+    QTest.keyClick(grid.tiles[1], Qt.Key.Key_Return)
     assert mw.findChild(QAction, "mActionZoomIn").isChecked()
     top.deleteLater()
 
@@ -404,12 +404,12 @@ def test_keytip_dialog_lists_and_saves_overrides(setup, settings):
     # Wirkt sofort im Ribbon
     alt(mw)
     assert codes(keys)["Karte"] == "M"
-    QTest.keyClick(mw, Qt.Key_M)
+    QTest.keyClick(mw, Qt.Key.Key_M)
     settle()
     assert keys.level == 1 and codes(keys)["Speichern"] == "XY"
-    QTest.keyClick(mw, Qt.Key_X)
+    QTest.keyClick(mw, Qt.Key.Key_X)
     assert keys.active
-    QTest.keyClick(mw, Qt.Key_Y)
+    QTest.keyClick(mw, Qt.Key.Key_Y)
     assert not keys.active                               # Speichern ausgelöst
     # Zurücksetzen
     dlg = w.keytip_dialog()

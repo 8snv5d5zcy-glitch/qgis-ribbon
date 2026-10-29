@@ -26,6 +26,9 @@ Save your arrangement first with **Arrangements › Export …** if you might wa
 **The ribbon is gone and the QGIS toolbars are back.**
 The classic QGIS interface is active. Choose **View › Ribbon Interface**.
 
+**The QGIS menu bar is missing.**
+It is hidden. Choose **Hide QGIS Menu Bar** in the ▾ menu again. Until then the menus are available via the **☰** button at the left of the header, see [Appearance](appearance.md).
+
 **A command is grayed out.**
 It needs a matching active layer (for example a vector layer, or a layer in edit mode), a selection, or a plugin that is not loaded. The tooltip shows the reason for missing commands.
 

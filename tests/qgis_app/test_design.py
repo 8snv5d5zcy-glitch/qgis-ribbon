@@ -46,7 +46,7 @@ def design_menu(w):
     return menu, {a.text(): a for a in sub.actions() if not a.isSeparator()}
 
 
-def pixel(icon, mode=QIcon.Normal):
+def pixel(icon, mode=QIcon.Mode.Normal):
     img = icon.pixmap(QSize(32, 32), mode).toImage()
     seen = set()
     for x in range(32):
@@ -89,7 +89,7 @@ def test_icons_follow_theme_and_switch_off(plugin):
     dark = pixel(act.icon())
     assert theme.current()["text"].lower()[:7] in dark and dark != light
     faint = QColor(theme.current()["faint"][:7])
-    for name in pixel(act.icon(), QIcon.Disabled):   # gesperrt: nur „faint“ (± Kantenglättung)
+    for name in pixel(act.icon(), QIcon.Mode.Disabled):   # gesperrt: nur „faint“ (± Kantenglättung)
         c = QColor(name)
         assert max(abs(c.red() - faint.red()), abs(c.green() - faint.green()),
                    abs(c.blue() - faint.blue())) <= 3, name
@@ -243,7 +243,7 @@ def test_auto_mode_follows_qgis_palette(plugin):
     try:
         pal = app.palette()
         from qgis.PyQt.QtGui import QPalette
-        pal.setColor(QPalette.Window, QColor("#202124"))
+        pal.setColor(QPalette.ColorRole.Window, QColor("#202124"))
         app.setPalette(pal)
         settle()
         assert theme.current()["mode"] == "dunkel"
@@ -269,49 +269,43 @@ def visible_commands(group):
     return out
 
 
-def test_open_groups_show_no_command_twice(plugin, fake_iface):
+def test_wide_groups_show_no_command_twice(plugin, fake_iface):
+    """Viel Platz: Dropdowns bleiben Dropdowns, nichts steht doppelt."""
     from qgis_ribbon.ui.controls.buttons import LargeSplitButton
-    from qgis_ribbon.ui.group_widget import OPEN
 
     w = plugin.widget
     fake_iface.mainWindow().resize(3000, 900)
-    opened = 0
+    splits = 0
     for i, tab in enumerate(w.tab_ids()):
         page = w.ensure_built(i)
         page.available_width = lambda: 5000
         page.relayout(force=True)
         settle()
         for g in page.groups:
-            modes = g.mode_names()
             ids = visible_commands(g)
             assert len(ids) == len(set(ids)), (tab, g.group.id, ids)
-            for v, mode in zip(g.views, modes):
-                if mode != OPEN:
-                    continue
-                opened += 1
-                # Aufgeklappt: kein Dropdown mehr, die Einträge stehen daneben
-                assert not v.widget.isVisibleTo(g)
-                if v.has_main():
-                    assert isinstance(v.widget, LargeSplitButton)
-                    assert v._main.isVisibleTo(g) and v._main.menu() is None
-                    assert v._main.text().replace("\n", " ") == v.element.command.label
+            for v, mode in zip(g.views, g.mode_names()):
+                if v.kind in ("split", "button"):
+                    assert mode == v.ideal(), (tab, g.group.id, mode)
+                if isinstance(v.widget, LargeSplitButton):
+                    splits += 1
+                    assert v.widget.isVisibleTo(g)
+        assert not [b for b in page.findChildren(QToolButton)
+                    if b.objectName().startswith(("ribbon_inline_", "ribbon_open_"))]
         del page.available_width
         page.relayout(force=True)
-    assert opened > 0
+    assert splits > 0
 
 
-def test_neuer_layer_open_shows_main_once(plugin):
+def test_neuer_layer_stays_dropdown_when_wide(plugin):
     w = plugin.widget
     w.select_tab("einfuegen")
     settle()
     page = w.page("einfuegen")
     group = next(g for g in page.groups if g.group.id == "neue_layer")
+    # Breiteste Fassung = definierte Fassung: kein Aufklappen
+    assert len(group.variants()) - 1 == group.ideal_index()
     group.apply(len(group.variants()) - 1)
-    settle()
-    ids = visible_commands(group)
-    assert ids[0] == "neuer_geopackage_layer" and "neuer_shapefile_layer" in ids
-    assert len(ids) == len(set(ids))
-    group.apply(group.ideal_index())
     settle()
     split = group.views[0].widget
     menu = split.menu if hasattr(split, "bottom") else split.menu()
@@ -333,7 +327,6 @@ def test_split_with_single_qgis_menu_uses_it_directly(plugin, fake_iface):
                 if res.menu is not None:
                     menu = v.widget.menu if hasattr(v.widget, "bottom") else v.widget.menu()
                     assert menu is res.menu
-                    assert not v.inline_items()   # nicht aufklappbar
 
 
 def test_whole_theme_styles_menu_buttons_of_other_toolbars(plugin, fake_iface):
@@ -344,7 +337,7 @@ def test_whole_theme_styles_menu_buttons_of_other_toolbars(plugin, fake_iface):
     btn = QToolButton(tb)
     btn.setText("Plugin")
     btn.setMenu(QMenu(btn))
-    btn.setPopupMode(QToolButton.MenuButtonPopup)
+    btn.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
     tb.addWidget(btn)
     tb.show()
     plugin.themes.set("mode", "dunkel")
@@ -373,14 +366,14 @@ def test_whole_theme_sets_palette_for_layer_tree_and_restores(plugin):
     plugin.themes.set("whole", True)
     settle()
     pal = app.palette()
-    assert pal.color(QPalette.Text).name() == theme.current()["text"].lower()[:7]
-    assert pal.color(QPalette.Base).name() == theme.current()["surf"].lower()[:7]
-    assert pal.color(QPalette.Text).lightness() > 180   # helle Schrift im dunklen Modus
+    assert pal.color(QPalette.ColorRole.Text).name() == theme.current()["text"].lower()[:7]
+    assert pal.color(QPalette.ColorRole.Base).name() == theme.current()["surf"].lower()[:7]
+    assert pal.color(QPalette.ColorRole.Text).lightness() > 180   # helle Schrift im dunklen Modus
     # „Automatisch“ richtet sich weiter nach QGIS (hell), nicht nach der eigenen Palette
     plugin.themes.set("mode", "auto")
     settle()
     assert theme.current()["mode"] == "hell"
-    assert app.palette().color(QPalette.Window).name() == theme.current()["win"].lower()[:7]
+    assert app.palette().color(QPalette.ColorRole.Window).name() == theme.current()["win"].lower()[:7]
     plugin.themes.set("whole", False)
     settle()
     assert app.palette() == before

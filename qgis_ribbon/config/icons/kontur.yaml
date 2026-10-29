@@ -346,6 +346,13 @@ motive:
     a:
       - '<path d="M3.5 17.5l5-5.5 4 4 2.5-2.5 5.5 5"/>'
       - '<circle cx="15.5" cy="8.5" r="1.6"/>'
+  copyright:
+    f:
+      - '<circle cx="12" cy="12" r="9"/>'
+    k:
+      - '<circle cx="12" cy="12" r="9"/>'
+    a:
+      - '<path d="M15 9.6a3.5 3.5 0 1 0 0 4.8"/>'
   darstellungsart:
     f:
       - '<rect x="3" y="3" width="8" height="8" rx="1.8"/>'
@@ -407,6 +414,22 @@ motive:
       - '<rect x="3" y="3" width="18" height="18" rx="2"/>'
     a:
       - '<path d="M3 12h18M12 3v18"/>'
+  dekoration:
+    f:
+      - '<path d="M9 4l6 2.2V20l-6-2.2z" transform="translate(0.6 0.6) scale(0.78)"/>'
+    k:
+      - '<path d="M3 6.2l6-2.2 6 2.2 6-2.2v13.8l-6 2.2-6-2.2-6 2.2z" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M9 4v13.8M15 6.2V20" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M18.5 13.8l1.3 3.4 3.4 1.3-3.4 1.3-1.3 3.4-1.3-3.4-3.4-1.3 3.4-1.3z"/>'
+  dekoration_gitter:
+    f:
+      - '<path d="M9 4l6 2.2V20l-6-2.2z" transform="translate(0.6 0.6) scale(0.78)"/>'
+    k:
+      - '<path d="M3 6.2l6-2.2 6 2.2 6-2.2v13.8l-6 2.2-6-2.2-6 2.2z" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M9 4v13.8M15 6.2V20" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M14.5 16h8M14.5 20h8M16.5 14v8M20.5 14v8"/>'
   deuteranopie:
     f:
       - '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/>'
@@ -439,6 +462,12 @@ motive:
     a:
       - '<path d="M10.5 12v3h3v-3" transform="translate(0.6 0.6) scale(0.78)"/>'
       - '<path d="M19.8 13.2l2.4 2.4-5.6 5.6h-2.4v-2.4z"/>'
+  dokumentation:
+    k:
+      - '<path d="M6 2.8h8.2L19 7.6V19a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V4.8a2 2 0 0 1 1.5-2"/>'
+      - '<path d="M14 3v4.8h5"/>'
+    a:
+      - '<path d="M10 11.5l-2 2.5 2 2.5M14 11.5l2 2.5-2 2.5"/>'
   domaenen:
     k:
       - '<path d="M9 6.5h11M9 12h11M9 17.5h11"/>'
@@ -552,6 +581,13 @@ motive:
       - '<path d="M8 16.5v-4.6l4.6 4.6z"/>'
     a:
       - '<path d="M4 7.5h2.2M4 11h1.4M4 14.5h2.2M4 18h1.4"/>'
+  erweiterungen_verwalten:
+    f:
+      - '<path d="M4.5 7.5H8a2.5 2.5 0 0 1 5 0h3.5V11a2.5 2.5 0 0 1 0 5v3.5h-12z" transform="translate(0.6 0.6) scale(0.78)"/>'
+    k:
+      - '<path d="M4.5 7.5H8a2.5 2.5 0 0 1 5 0h3.5V11a2.5 2.5 0 0 1 0 5v3.5h-12z" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M18.5 14v8M15 18.5l3.5 3.5 3.5-3.5"/>'
   farben:
     f:
       - '<rect x="3" y="3" width="8" height="8" rx="1.8"/>'
@@ -573,6 +609,12 @@ motive:
       - '<path d="M12.00 3.20 L14.47 9.00 L20.75 9.56 L15.99 13.70 L17.41 19.84 L12.00 16.60 L6.59 19.84 L8.01 13.70 L3.25 9.56 L9.53 9.00z"/>'
     k:
       - '<path d="M12.00 3.20 L14.47 9.00 L20.75 9.56 L15.99 13.70 L17.41 19.84 L12.00 16.60 L6.59 19.84 L8.01 13.70 L3.25 9.56 L9.53 9.00z"/>'
+  fehler:
+    f:
+      - '<ellipse cx="12" cy="13.5" rx="5" ry="6.5"/>'
+    k:
+      - '<ellipse cx="12" cy="13.5" rx="5" ry="6.5"/>'
+      - '<path d="M12 7v13M7 11.5H3.5M20.5 11.5H17M7 16H3.5M20.5 16H17M9.2 7.6L7.5 5M14.8 7.6l1.7-2.6"/>'
   feld_hinzufuegen:
     f:
       - '<rect x="9.5" y="4" width="5.7" height="16" transform="translate(0.6 0.6) scale(0.78)"/>'
@@ -638,6 +680,13 @@ motive:
     a:
       - '<rect x="12" y="6.5" width="4.5" height="3" rx="0.8"/>'
       - '<rect x="12" y="11.5" width="4.5" height="3" rx="0.8"/>'
+  fuellfarbe:
+    f:
+      - '<rect x="3" y="5" width="13" height="13" rx="2"/>'
+    k:
+      - '<rect x="3" y="5" width="13" height="13" rx="2"/>'
+    a:
+      - '<path d="M19 11.5s-2.6 3-2.6 4.8a2.6 2.6 0 0 0 5.2 0c0-1.8-2.6-4.8-2.6-4.8z"/>'
   galerie_anpassen:
     f:
       - '<rect x="3" y="3" width="7.5" height="7.5" rx="1.4" transform="translate(0.6 0.6) scale(0.78)"/>'
@@ -693,6 +742,14 @@ motive:
     a:
       - '<path d="M18.5 22.5s-3.6-3.4-3.6-6a3.6 3.6 0 0 1 7.2 0c0 2.6-3.6 6-3.6 6z"/>'
       - '<circle cx="18.5" cy="16.5" r="1.1"/>'
+  globus_neu:
+    f:
+      - '<circle cx="12" cy="12" r="9" transform="translate(0.6 0.6) scale(0.78)"/>'
+    k:
+      - '<circle cx="12" cy="12" r="9" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M3 12h18M12 3c-2.6 2.6-2.6 15.4 0 18M12 3c2.6 2.6 2.6 15.4 0 18" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M18.5 14.5v8M14.5 18.5h8"/>'
   gpx:
     k:
       - '<path d="M4 19c3-6 6 0 9-6s6-5 7-8"/>'
@@ -773,6 +830,20 @@ motive:
       - '<path d="M3.5 20.5h17"/>'
     a:
       - '<path d="M6.5 20.5v-5M10 20.5V8M13.5 20.5V5M17 20.5v-7"/>'
+  hoehenfilter:
+    f:
+      - '<path d="M3 17l4.5-6 3.5 3 4-7 6 10V20.5H3z" transform="translate(0.6 0.6) scale(0.78)"/>'
+    k:
+      - '<path d="M3 20.5h18" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M3 17l4.5-6 3.5 3 4-7 6 10" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M14.5 15h8l-3 3.5v3.5l-2-1v-2.5z"/>'
+  hoehenprofil:
+    f:
+      - '<path d="M3 17l4.5-6 3.5 3 4-7 6 10V20.5H3z"/>'
+    k:
+      - '<path d="M3 20.5h18"/>'
+      - '<path d="M3 17l4.5-6 3.5 3 4-7 6 10"/>'
   info:
     f:
       - '<circle cx="12" cy="12" r="9"/>'
@@ -980,6 +1051,27 @@ motive:
     a:
       - '<path d="M7.5 20.8v-6.3h9v6.3" transform="translate(0.6 0.6) scale(0.78)"/>'
       - '<path d="M14.5 18.5l4-2.2 4 2.2-4 2.2z"/>'
+  layer_umschalten:
+    f:
+      - '<path d="M12 3.5l9 4.5-9 4.5-9-4.5z" transform="translate(0.6 0.6) scale(0.78)"/>'
+    k:
+      - '<path d="M12 3.5l9 4.5-9 4.5-9-4.5z" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M3 12.5l9 4.5 9-4.5" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M3 16.8l9 4.5 9-4.5" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M15.4 19.6a3.4 3.4 0 1 0 1.2-4"/>'
+      - '<path d="M15.2 13.6v2.6h2.6"/>'
+  layer_verbergen:
+    f:
+      - '<path d="M12 3.5l9 4.5-9 4.5-9-4.5z" transform="translate(0.6 0.6) scale(0.78)"/>'
+    k:
+      - '<path d="M12 3.5l9 4.5-9 4.5-9-4.5z" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M3 12.5l9 4.5 9-4.5" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M3 16.8l9 4.5 9-4.5" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M14.3 18.5s1.7-3 4.2-3 4.2 3 4.2 3-1.7 3-4.2 3-4.2-3-4.2-3z"/>'
+      - '<circle cx="18.5" cy="18.5" r="1.1"/>'
+      - '<path d="M14.8 22.2l7.4-7.4"/>'
   layer_verwerfen:
     k:
       - '<path d="M6 2.8h8.2L19 7.6V19a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V4.8a2 2 0 0 1 1.5-2" transform="translate(0.6 0.6) scale(0.78)"/>'
@@ -987,6 +1079,16 @@ motive:
     a:
       - '<path d="M9.5 11.5l5 5M14.5 11.5l-5 5" transform="translate(0.6 0.6) scale(0.78)"/>'
       - '<path d="M14.5 18.5l4-2.2 4 2.2-4 2.2z"/>'
+  layer_zeigen:
+    f:
+      - '<path d="M12 3.5l9 4.5-9 4.5-9-4.5z" transform="translate(0.6 0.6) scale(0.78)"/>'
+    k:
+      - '<path d="M12 3.5l9 4.5-9 4.5-9-4.5z" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M3 12.5l9 4.5 9-4.5" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M3 16.8l9 4.5 9-4.5" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M14.3 18.5s1.7-3 4.2-3 4.2 3 4.2 3-1.7 3-4.2 3-4.2-3-4.2-3z"/>'
+      - '<circle cx="18.5" cy="18.5" r="1.1"/>'
   layer_zusammen:
     f:
       - '<path d="M12 13l8 4-8 4-8-4z"/>'
@@ -1033,6 +1135,14 @@ motive:
     a:
       - '<path d="M7.5 16.8h6" transform="translate(0.6 0.6) scale(0.78)"/>'
       - '<path d="M18.5 14.5v8M14.5 18.5h8"/>'
+  layoutausdehnung:
+    f:
+      - '<path d="M9 4l6 2.2V20l-6-2.2z" transform="translate(0.6 0.6) scale(0.78)"/>'
+    k:
+      - '<path d="M3 6.2l6-2.2 6 2.2 6-2.2v13.8l-6 2.2-6-2.2-6 2.2z" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M9 4v13.8M15 6.2V20" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<rect x="14.5" y="14.5" width="8" height="8" rx="1" stroke-dasharray="2.4 2.2"/>'
   layoutverwaltung:
     f:
       - '<rect x="9.5" y="5.5" width="8" height="6" rx="0.8"/>'
@@ -1083,6 +1193,12 @@ motive:
       - '<path d="M3.5 13.5c4-6.5 13-6.5 17 0"/>'
     a:
       - '<path d="M3.5 19.5c4-6.5 13-6.5 17 0" stroke-dasharray="2.4 2.2"/>'
+  linienbreite:
+    k:
+      - '<path d="M4 6h16"/>'
+    a:
+      - '<path d="M4 11.5h16" stroke-width="2.6"/>'
+      - '<path d="M4 18h16" stroke-width="4"/>'
   loeschen:
     f:
       - '<path d="M6 6.5h12l-1 13a1.5 1.5 0 0 1-1.5 1.4h-7A1.5 1.5 0 0 1 7 19.5z"/>'
@@ -1116,6 +1232,17 @@ motive:
       - '<path d="M3 15.5h18M3 12.5v6M21 12.5v6"/>'
     a:
       - '<path d="M7 15.5V9.5M12 15.5v-9M17 15.5V9.5"/>'
+  massstabsleiste:
+    f:
+      - '<rect x="3" y="12" width="6" height="4"/>'
+      - '<rect x="15" y="12" width="6" height="4"/>'
+    k:
+      - '<rect x="3" y="12" width="18" height="4"/>'
+    a:
+      - '<path d="M3 8.5v3M12 8.5v3M21 8.5v3"/>'
+  menue:
+    k:
+      - '<path d="M4 6.5h16M4 12h16M4 17.5h16"/>'
   messen:
     f:
       - '<rect x="2.5" y="7.5" width="19" height="9" rx="1.8"/>'
@@ -1250,6 +1377,13 @@ motive:
       - '<path d="M4 19.5L9.5 5h1L16 19.5M6.2 14h7.6" stroke-dasharray="2.4 2.2"/>'
     a:
       - '<path d="M16.5 4.5l5 5M21.5 4.5l-5 5"/>'
+  nordpfeil:
+    f:
+      - '<path d="M12 8v9.7L7 21z"/>'
+    k:
+      - '<path d="M12 8l5 13-5-3.3-5 3.3z"/>'
+    a:
+      - '<path d="M10 6V2.5l4 3.5V2.5"/>'
   oberflaeche:
     f:
       - '<path d="M2.8 6a2 2 0 0 1 2-2h14.4a2 2 0 0 1 2 2v2.5H2.8z" transform="translate(0.6 0.6) scale(0.78)"/>'
@@ -1294,6 +1428,12 @@ motive:
     a:
       - '<path d="M17.2 20.8l-.9.9a2.1 2.1 0 0 1-3-3l1.8-1.8a2.1 2.1 0 0 1 3 0"/>'
       - '<path d="M19.8 16.2l.9-.9a2.1 2.1 0 0 1 3 3l-1.8 1.8a2.1 2.1 0 0 1-3 0"/>'
+  panels:
+    f:
+      - '<path d="M4.8 4h4.7v16H4.8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>'
+    k:
+      - '<rect x="2.8" y="4" width="18.4" height="16" rx="2"/>'
+      - '<path d="M9.5 4v16"/>'
   pdf:
     f:
       - '<path d="M5 4.5h9v4h5v3H5z"/>'
@@ -1440,6 +1580,11 @@ motive:
       - '<path d="M12.5 16.2H21"/>'
     a:
       - '<path d="M10.5 11.5l3 3"/>'
+  randfarbe:
+    k:
+      - '<rect x="8" y="9.5" width="6" height="6" rx="1"/>'
+    a:
+      - '<rect x="3.5" y="5" width="15" height="15" rx="2.2" stroke-width="2.6"/>'
   raster_anpassen:
     f:
       - '<rect x="9" y="9" width="6" height="6" transform="translate(0.6 0.6) scale(0.78)"/>'
@@ -1508,6 +1653,14 @@ motive:
       - '<path d="M4.5 9.5h10a5.5 5.5 0 0 1 0 11h-4"/>'
     a:
       - '<path d="M8.5 5.5l-4 4 4 4"/>'
+  schloss:
+    f:
+      - '<rect x="5" y="10.5" width="14" height="10" rx="2"/>'
+    k:
+      - '<rect x="5" y="10.5" width="14" height="10" rx="2"/>'
+      - '<path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>'
+    a:
+      - '<path d="M12 14.3v2.6"/>'
   schnittpunkte_einrasten:
     f:
       - '<circle cx="12" cy="12" r="3.2"/>'
@@ -1702,6 +1855,15 @@ motive:
     k:
       - '<circle cx="10.5" cy="10.5" r="6.5"/>'
       - '<path d="M15.3 15.3l5.2 5.2"/>'
+  symbol_bearbeiten:
+    f:
+      - '<circle cx="7.5" cy="7.5" r="4.5" transform="translate(0.6 0.6) scale(0.78)"/>'
+    k:
+      - '<circle cx="7.5" cy="7.5" r="4.5" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<rect x="3" y="13" width="8" height="8" rx="1.6" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M14 4.5l6 6" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M19.8 13.2l2.4 2.4-5.6 5.6h-2.4v-2.4z"/>'
   symbolisierung:
     f:
       - '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-1.9 0-1.2-1-1.6-1-2.6 0-1 .8-1.6 1.9-1.6H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/>'
@@ -1795,6 +1957,11 @@ motive:
       - '<path d="M4 19.5L9.5 5h1L16 19.5M6.2 14h7.6"/>'
     a:
       - '<path d="M15.5 14.5l5-5 1.6 1.6-5 5-2.3.7z"/>'
+  titel:
+    k:
+      - '<rect x="3" y="4" width="18" height="16" rx="2"/>'
+    a:
+      - '<path d="M7.5 8.5h9M12 8.5v8"/>'
   topologie:
     f:
       - '<path d="M3 18.5L9 4.5l5.5 8z"/>'
@@ -1988,6 +2155,11 @@ motive:
       - '<path d="M3 16.8l9 4.5 9-4.5" stroke-dasharray="2.4 2.2"/>'
     a:
       - '<path d="M9.5 7.5l2.5 1.2 2.5-1.2"/>'
+  vollbild:
+    k:
+      - '<path d="M3 8.5V3h5.5M15.5 3H21v5.5M21 15.5V21h-5.5M8.5 21H3v-5.5"/>'
+    a:
+      - '<rect x="8" y="8" width="8" height="8" rx="1.2"/>'
   volle_ausdehnung:
     f:
       - '<circle cx="12" cy="12" r="4.4"/>'
@@ -2003,6 +2175,14 @@ motive:
       - '<path d="M3.5 8.5v-5h5M15.5 3.5h5v5M20.5 15.5v5h-5M8.5 20.5h-5v-5"/>'
     a:
       - '<path d="M13.5 8l-4 4 4 4"/>'
+  webseite:
+    f:
+      - '<circle cx="12" cy="12" r="9" transform="translate(0.6 0.6) scale(0.78)"/>'
+    k:
+      - '<circle cx="12" cy="12" r="9" transform="translate(0.6 0.6) scale(0.78)"/>'
+      - '<path d="M3 12h18M12 3c-2.6 2.6-2.6 15.4 0 18M12 3c2.6 2.6 2.6 15.4 0 18" transform="translate(0.6 0.6) scale(0.78)"/>'
+    a:
+      - '<path d="M15 22l7-7M16.5 15H22v5.5"/>'
   werkzeugkasten:
     f:
       - '<path d="M3 10a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'
@@ -2012,6 +2192,14 @@ motive:
       - '<path d="M3 13.5h18"/>'
     a:
       - '<path d="M10.5 12v3h3v-3"/>'
+  werkzeugleisten:
+    f:
+      - '<rect x="2.5" y="4" width="19" height="6" rx="1.8"/>'
+    k:
+      - '<rect x="2.5" y="4" width="19" height="6" rx="1.8"/>'
+      - '<rect x="2.5" y="14" width="19" height="6" rx="1.8"/>'
+    a:
+      - '<path d="M6 7h.1M9 7h.1M12 7h.1M6 17h.1M9 17h.1"/>'
   wiederholen:
     k:
       - '<path d="M19.5 9.5h-10a5.5 5.5 0 0 0 0 11h4"/>'
@@ -2122,6 +2310,7 @@ befehle:
   abfrage_aktueller_layer: abfrage
   abfrage_oberster_layer: abfrage
   abfrage_sichtbare_layer: abfrage
+  abfrageverlauf: verlauf
   abschneiden_ausdehnen: abschneiden
   aendern: aendern
   aenderungen_speichern: alle_speichern
@@ -2133,6 +2322,8 @@ befehle:
   alle_in_uebersicht: uebersicht_alle
   alle_kinder_ausschalten: kinder_aus
   alle_kinder_einschalten: kinder_ein
+  alle_layer_ausblenden: layer_verbergen
+  alle_layer_einblenden: layer_zeigen
   alle_werkzeuge: stuetzpunkte
   analyse_galerie_anpassen: galerie_anpassen
   angepinnte_hervorheben: angepinnte_hervorheben
@@ -2180,7 +2371,16 @@ befehle:
   beschriftungsklasse_loeschen: beschriftungsklasse_loeschen
   beschriftungsklasse_neu: beschriftungsklasse_neu
   beziehungen_verwalten: beziehungen
+  cpp_api: dokumentation
   daten_hinzufuegen: daten_hinzufuegen
+  dekoration_bild: bild
+  dekoration_copyright: copyright
+  dekoration_gitter: dekoration_gitter
+  dekoration_layoutausdehnungen: layoutausdehnung
+  dekoration_massstabsleiste: massstabsleiste
+  dekoration_nordpfeil: nordpfeil
+  dekoration_titel: titel
+  dekorationen: dekoration
   diagrammoptionen: diagramm
   differenz: differenz
   digitalisieroptionen: optionen
@@ -2222,6 +2422,7 @@ befehle:
   erneut_waehlen: erneut_waehlen
   erstellen: erstellen
   erweiterte_digitalisierung: erweiterte_digitalisierung
+  erweiterungen_verwalten: erweiterungen_verwalten
   farbsehschwaeche_simulieren: farbsehen
   favoriten: favoriten
   feld_hinzufuegen: feld_hinzufuegen
@@ -2232,6 +2433,7 @@ befehle:
   filter: filter
   flimmer_intervall: takt
   flimmern: flimmern
+  formular_annotation: annotation
   freihand: auswahl_freihand
   galerie_groesse: galerie_groesse
   galerie_raeumlich_verknuepfen: raeumlich_verknuepfen
@@ -2239,6 +2441,10 @@ befehle:
   georeferenzieren: georeferenzieren
   geoverarbeitung: werkzeugkasten
   gewaehlte_gruppieren: gruppieren
+  gewaehlte_layer_ausblenden: layer_verbergen
+  gewaehlte_layer_einblenden: layer_zeigen
+  gewaehlte_layer_einzeln_umschalten: layer_umschalten
+  gewaehlte_layer_umschalten: layer_umschalten
   gpx_hinzufuegen: gpx
   grundkarte_basemap_de_farbig: grundkarte
   grundkarte_basemap_de_grau: grundkarte
@@ -2250,15 +2456,21 @@ befehle:
   gruppe_zoomen: gruppe_zoomen
   hana_hinzufuegen: datenbank_hinzufuegen
   herauszoomen: zoom_out
+  hilfe_erweiterungen: ui_hilfe
   hineinzoomen: zoom_in
   histogramm: histogramm
+  hoehenfilter: hoehenfilter
+  hoehenprofil: hoehenprofil
+  html_annotation: annotation
   in_uebersicht_anzeigen: uebersicht
   inhalt: inhalt
   karte_als_pdf: pdf
   karte_exportieren: karte_exportieren
+  kartenansichten_3d_verwalten: kartenansicht_3d
   kartendrehung: drehung
   kartenhinweise: kartenhinweise
   katalog: katalog
+  kommerzielle_unterstuetzung: webseite
   konstruktionspanel: konstruktionspanel
   kopieren: kopieren
   kopieren_und_verschieben: kopieren_verschieben
@@ -2283,10 +2495,12 @@ befehle:
   layerdatei_speichern: speichern_als
   layerdefinition_laden: layerdefinition
   layereigenschaften: layereigenschaften
+  layersichtbarkeit: layer_zeigen
   layout_als_bild: bild
   layout_exportieren: layout_exportieren
   layout_oeffnen: layoutverwaltung
   layoutverwaltung: layoutverwaltung
+  lesezeichen_anzeigen: lesezeichen
   lesezeichen_galerie: lesezeichen
   lesezeichen_verwalten: lesezeichen_verwalten
   linie_umkehren: linie_umkehren
@@ -2294,6 +2508,18 @@ befehle:
   loeschen: loeschen
   lupe: lupe
   masken: masken
+  menue_ansicht: menue
+  menue_bearbeiten: menue
+  menue_datenbank: menue
+  menue_einstellungen: menue
+  menue_erweiterungen: menue
+  menue_hilfe: menue
+  menue_layer: menue
+  menue_netz: menue
+  menue_projekt: menue
+  menue_raster: menue
+  menue_vektor: menue
+  menue_web: menue
   messen: messen
   messwerkzeuge: messwerkzeuge
   modell_designer: modell
@@ -2308,7 +2534,9 @@ befehle:
   netz_skalar: netz_skalar
   netz_vektor: netz_vektor
   netzlayer_hinzufuegen: netzlayer
+  netzrechner: rasterrechner
   neu_aus_vorlage: projekt_neu
+  neue_3d_globusansicht: globus_neu
   neue_3d_kartenansicht: kartenansicht_3d
   neue_kartenansicht: kartenansicht_neu
   neuer_annotationslayer: annotation
@@ -2324,7 +2552,9 @@ befehle:
   neues_lesezeichen: lesezeichen_neu
   neues_profil: profil_neu
   neues_projekt: projekt_neu
+  nicht_gewaehlte_layer_ausblenden: layer_verbergen
   nicht_platzierte_beschriftungen: nicht_platziert
+  nur_karte: grundkarte
   oberflaechenanpassung: oberflaeche
   objekt_mischmodus: objekt_mischmodus
   objektanzahl: objektanzahl
@@ -2333,13 +2563,41 @@ befehle:
   objekte_exportieren: objekte_exportieren
   oeffnen_aus: projekt_oeffnen
   optionen: optionen
+  optionen_3d: kartenansicht_3d
+  optionen_allgemein: optionen
+  optionen_authentifizierung: schloss
+  optionen_beschleunigung: aktionen
+  optionen_code_editor: ausdruck
+  optionen_darstellung: darstellungsart
+  optionen_datenquellen: datenbank
+  optionen_erweitert: einstellungen
+  optionen_farben: farben
+  optionen_gdal: optionen
+  optionen_gps: gpx
+  optionen_gpsbabel: gpx
+  optionen_hoehe: hoehenprofil
+  optionen_ide: python
+  optionen_karte_legende: legende
   optionen_kartenwerkzeuge: optionen
+  optionen_kbs: kbs
+  optionen_layouts: layoutverwaltung
+  optionen_netzwerk: server
+  optionen_python_konsole: konsole
+  optionen_rasterdarstellung: kontrast
+  optionen_schriften: schriftart
+  optionen_system: einstellungen
+  optionen_transformationen: transformationen
+  optionen_variablen: variablen
+  optionen_vektordarstellung: symbolisierung
   oracle_hinzufuegen: datenbank_hinzufuegen
   ordner_verbinden: ordner
+  panels: panels
+  panels_umschalten: panels
   pfad_kopieren: pfad_kopieren
   platzierung_galerie: platzierung
   polygon: auswahl_polygon
   postgresql_verbindung: datenbank_verbinden
+  problem_melden: fehler
   processing_galerie: werkzeugkasten
   processing_optionen: optionen
   profilordner_oeffnen: ordner
@@ -2366,14 +2624,23 @@ befehle:
   projektmodelle: modell
   puffer: puffer
   punkte_in_polygon_zaehlen: punkte_zaehlen
+  punktsymbole_drehen: drehung
+  punktsymbole_versetzen: verschieben
   punktwolke_fehler: punktfehler
   punktwolke_hinzufuegen: punktwolke
   punktwolke_punktgroesse: punktgroesse
   punktwolke_renderer_galerie: punktwolke
+  pyqgis_api: python
   python: python
   python_konsole: konsole
   qgis_beenden: beenden
+  qgis_foerdermitglieder: webseite
   qgis_hilfe: ui_hilfe
+  qgis_homepage: webseite
+  qgis_menues: menue
+  qgis_mitmachen: webseite
+  qgis_spenden: webseite
+  qgis_version_pruefen: aktualisieren
   quelle_und_filter: quelle_filter
   raeumliche_verknuepfung: raeumlich_verknuepfen
   raster_anpassen: raster_anpassen
@@ -2413,7 +2680,12 @@ befehle:
   streckung_auf_ausschnitt: streckung_ausschnitt
   sucheinstellungen: optionen
   suchen: suchen
+  symbol_bearbeiten: symbol_bearbeiten
+  symbol_breite: linienbreite
+  symbol_fuellfarbe: fuellfarbe
+  symbol_randfarbe: randfarbe
   symbolisierung: symbolisierung
+  symbolklasse: legende
   tabelle_bearbeitete: tabelle_bearbeitet
   tabelle_der_auswahl: tabelle_auswahl
   tabelle_sichtbare: tabelle_sichtbar
@@ -2425,6 +2697,7 @@ befehle:
   textdatei_mit_koordinaten: punkte_aus_tabelle
   textformat_galerie: textformat
   topologisch_bearbeiten: topologie
+  ueber_qgis: info
   umbenennen: umbenennen
   umformen: umformen
   umgebungen: optionen
@@ -2439,11 +2712,13 @@ befehle:
   verschneiden: verschneiden
   verwerfen_gewaehlte: layer_verwerfen
   virtuellen_layer_hinzufuegen: virtueller_layer
+  vollbild: vollbild
   volle_ausdehnung: volle_ausdehnung
   vorherige_ausdehnung: vorherige_ausdehnung
   vorschau_deuteranopie: deuteranopie
   wcs_server: server_karte
   werkzeuge: werkzeugkasten
+  werkzeugleisten: werkzeugleisten
   wfs_ogc_api: server_objekte
   wiederholen: wiederholen
   wischen: wischen
@@ -2479,6 +2754,7 @@ oberflaeche:
   hilfe: ui_hilfe
   launcher: ui_launcher
   mehr: ui_mehr
+  menue: menue
   minimieren: ui_chevron_up
   pin: ui_pin
   plus: ui_plus

@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.5.0 (unreleased)
+
+- Appearance tab of vector layers, new Symbol group: choose a class (category, class or rule, also by clicking it in the Layers panel) and change its fill color, outline color and width directly; with All … the width applies to every class. Edit Symbol opens the QGIS symbol editor for the class. Works with single symbol, categorized, graduated and rule-based symbology and inside point cluster and displacement; every change is one step on the style undo stack.
+- Hide QGIS Menu Bar (▾ menu and right-click menu) for more room: the menu bar gets no height, keyboard shortcuts and Alt+letter keep working, and a ☰ button at the left of the ribbon header opens all QGIS menus. The classic interface and deactivating the plugin always bring the menu bar back.
+- 82 further commands in the ribbon editor and the search: every page of the options dialog (**Options: …**), Manage and Install Plugins, the help commands (About, Check QGIS Version, Report an Issue, API documentation …), decorations (grid, scale bar, north arrow, title, copyright, image, layout extents), layer visibility, full screen, map only, panels and toolbars, elevation profile, 3D globe and more, and every menu of the QGIS menu bar as a dropdown (**Project Menu** … and **QGIS Menus** with all of them). Search Settings now opens the Locator page of the options.
+- Arrangements: new Save Arrangement saves changes into the current arrangement (the one loaded or saved last); Save Current Arrangement As … creates a new one and asks before overwriting an existing name.
+- The dropdowns of split buttons and menus can be customized too, for example Advanced Digitizing: in the ribbon editor drop a command (also of another plugin) onto the middle of a button with ▾, or use Customize Dropdown … in its properties. The change applies wherever the button appears; arrangement format 4 (older formats are still read).
+- Every gallery can be customized, also dropdown galleries such as Basemap or Bookmarks: right-click the gallery in the ribbon (Customize Gallery …) or use the new button in the ribbon editor. Galleries accept any button, including commands of other plugins and Toolbox tools; a plugin command stays as a placeholder while its plugin is not loaded.
+- Buttons with a dropdown keep their dropdown when the window is wide; their entries are no longer shown again as small buttons next to them (that caused duplicates).
+- View tab: Simulate Color Blindness is a single button with the QGIS preview menu; the separate Deuteranopia Preview is still available in the ribbon editor.
+- Edit tab, Construction: one Advanced Digitizing button with Construction Panel in its dropdown instead of two buttons side by side. Advanced Digitizing only switches the construction aids on or off and no longer opens the panel (also not when changing tools); Construction Panel only shows or hides the panel.
+
+## 1.4.1 (2026-10-27)
+
+- Qt6 preparation for QGIS 4: all Qt and QGIS enums are fully qualified, `exec()` replaces `exec_()`, mouse and drag positions go through one helper. One code base for QGIS 3.44 (Qt5) and QGIS 4 (Qt6), `supportsQt6=True` in the metadata. Not yet tested on QGIS 4. No change in behavior.
+
 ## 1.4.0 (2026-10-27)
 
 - New Fields group in the Data tab of vector layers and tables: Add Field (name, type, length, precision, alias, comment), Delete Fields, Rename Field and the Field Calculator. In edit mode changes go into the edit buffer, otherwise they are written to the data source after confirmation; buttons follow what the data source supports.

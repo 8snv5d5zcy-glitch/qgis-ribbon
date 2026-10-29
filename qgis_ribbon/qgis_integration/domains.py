@@ -20,7 +20,7 @@ import json
 from qgis.core import (QgsAbstractDatabaseProviderConnection, QgsCodedFieldDomain, QgsCodedValue,
                        QgsEditorWidgetSetup, QgsGlobFieldDomain, QgsProject, QgsProviderRegistry,
                        QgsRangeFieldDomain, QgsVectorLayer)
-from qgis.PyQt.QtCore import QMetaType, QVariant
+from qgis.PyQt.QtCore import QMetaType
 
 from ..core.domains import Domain, range_config, value_map_config
 from ..core.i18n import tr
@@ -29,8 +29,8 @@ PROJECT_SCOPE = "qgis_ribbon"
 PROJECT_KEY = "domaenen"
 LAYER_PROPERTY = "qgis_ribbon/domaenen"
 
-_INTEGER_TYPES = (QVariant.Int, QVariant.UInt, QVariant.LongLong, QVariant.ULongLong)
-_META_TYPES = {"string": QMetaType.QString, "integer": QMetaType.Int, "real": QMetaType.Double}
+_INTEGER_TYPES = (QMetaType.Type.Int, QMetaType.Type.UInt, QMetaType.Type.LongLong, QMetaType.Type.ULongLong)
+_META_TYPES = {"string": QMetaType.Type.QString, "integer": QMetaType.Type.Int, "real": QMetaType.Type.Double}
 
 
 class DomainError(Exception):
@@ -40,11 +40,11 @@ class DomainError(Exception):
 def field_type(qgs_field):
     """Feldtyp im Sinne von ``core.domains`` oder None (Datum, Geometrie ...)."""
     t = qgs_field.type()
-    if t == QVariant.String:
+    if t == QMetaType.Type.QString:
         return "string"
     if t in _INTEGER_TYPES:
         return "integer"
-    if t == QVariant.Double:
+    if t == QMetaType.Type.Double:
         return "real"
     return None
 
@@ -73,7 +73,7 @@ def _value(value, ftype):
 
 def from_qgis(dom):
     """``QgsFieldDomain`` -> ``core.domains.Domain``."""
-    ftype = {QVariant.String: "string", QVariant.Double: "real"}.get(dom.fieldType())
+    ftype = {QMetaType.Type.QString: "string", QMetaType.Type.Double: "real"}.get(dom.fieldType())
     if ftype is None:
         ftype = "integer" if dom.fieldType() in _INTEGER_TYPES else "string"
     out = Domain(dom.name(), field_type=ftype, description=dom.description() or "")
@@ -326,9 +326,9 @@ def _refuse_busy(usage):
         raise DomainError(tr("Still in use, not deleted: %s") % "; ".join(busy))
 
 
-_NEEDED = (QgsAbstractDatabaseProviderConnection.ListFieldDomains
-           | QgsAbstractDatabaseProviderConnection.AddFieldDomain
-           | QgsAbstractDatabaseProviderConnection.SetFieldDomain)
+_NEEDED = (QgsAbstractDatabaseProviderConnection.Capability.ListFieldDomains
+           | QgsAbstractDatabaseProviderConnection.Capability.AddFieldDomain
+           | QgsAbstractDatabaseProviderConnection.Capability.SetFieldDomain)
 
 
 def store_for(layer):

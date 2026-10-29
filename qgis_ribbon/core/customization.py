@@ -30,7 +30,7 @@ angepasster Anordnung (am Ende). Unbekannte IDs (z. B. nach einer Änderung der
 Definition oder aus einer fremden Datei) werden übergangen und als Hinweis
 gemeldet, nie als Fehler.
 
-Format 3 (JSON, Schlüssel wie in der Ribbon-Definition)::
+Format 4 (JSON, Schlüssel wie in der Ribbon-Definition)::
 
     {"tabs": [
         {"tab": "karte"},
@@ -45,6 +45,7 @@ Format 3 (JSON, Schlüssel wie in der Ribbon-Definition)::
             {"group": "karte/navigieren"}]},
         {"id": "eigener_tab_1", "label": "Mein Tab", "groups": [...]}],
      "galleries": {"editor_galerie": ["verschieben", "drehen"]},
+     "menus": {"split:erkunden": ["abfrage_oberster_layer", "puffer"]},
      "removed": ["teilen", "karte/zwischenablage"]}
 
 Eine Gruppe der Definition mit ``items`` ist die persönliche Fassung, ohne
@@ -52,10 +53,13 @@ Eine Gruppe der Definition mit ``items`` ist die persönliche Fassung, ohne
 (``command`` mit ``size``) oder ganze Einheiten der Definition (``element``:
 Split, Menü, Galerie-Menü, Zeile) mit stabilem Schlüssel (``element_key``);
 Splits und Menüs tragen eine Größe, Zeilen nicht. Format 1 (ohne
-persönliche Fassungen) und Format 2 (ohne ``removed``) werden unverändert
-gelesen. Gelöschte Einträge, die die Definition nicht (mehr) kennt (z. B. die
-Gruppe eines gerade nicht geladenen Plugins), bleiben stehen, damit sie
-gelöscht bleiben, wenn es wieder da ist.
+persönliche Fassungen), Format 2 (ohne ``removed``) und Format 3 (ohne
+``menus``) werden unverändert gelesen. ``menus`` legt den Inhalt des
+Dropdowns eines Splits oder Menüs der Definition fest (Schlüssel wie
+``element_key``), überall, wo das Element steht. Gelöschte Einträge,
+die die Definition nicht (mehr) kennt (z. B. die Gruppe eines gerade nicht
+geladenen Plugins), bleiben stehen, damit sie gelöscht bleiben, wenn es
+wieder da ist.
 
 Eine Datei zum Teilen (``make_bundle``/``read_bundle``) enthält zusätzlich die
 Schnellzugriffsleiste und die eigenen Kürzel.
@@ -71,8 +75,8 @@ from .model import (SIZES, Command, CommandRef, Group, Menu, Ribbon, Row, Split,
 from .i18n import tr
 
 FORMAT = "qgis_ribbon_anordnung"
-VERSION = 3
-READ_VERSIONS = (1, 2, 3)
+VERSION = 4
+READ_VERSIONS = (1, 2, 3, 4)
 CUSTOM_TAB_PREFIX = "eigener_tab_"
 CUSTOM_GROUP_PREFIX = "eigene_gruppe_"
 NEW_TAB_LABEL = tr("New Tab")
@@ -139,6 +143,8 @@ class TabEntry:
 class Arrangement:
     tabs: List[TabEntry] = field(default_factory=list)
     galleries: Dict[str, List[str]] = field(default_factory=dict)
+    # Dropdowns von Splits und Menüs der Definition: Elementschlüssel -> Befehls-IDs
+    menus: Dict[str, List[str]] = field(default_factory=dict)
     # Gelöschte Tabs (ID) und Gruppen (Verweis "tab/gruppe") der Definition
     removed: Set[str] = field(default_factory=set)
 
@@ -187,8 +193,138 @@ def gallery_item_allowed(command):
 
 
 def galleries(base):
-    """Befehle mit festen Galerie-Einträgen, die sich anpassen lassen."""
-    return {cid: c for cid, c in base.commands.items() if c.gallery is not None and c.gallery.items}
+    """Galerien, deren feste Einträge sich anpassen lassen.
+
+    Das sind Galerien mit festen Einträgen und alle Dropdown-Galerien: Bei
+    denen, die ihren Inhalt zur Laufzeit von QGIS holen (Lesezeichen,
+    Darstellungsarten …), stehen eigene Einträge als Raster über dem
+    QGIS-Inhalt.
+    """
+    return {cid: c for cid, c in base.commands.items()
+            if c.gallery is not None and (c.gallery.items or c.gallery.display == "dropdown")}
+
+
+def gallery_of(element):
+    """ID der anpassbaren Galerie eines Elements (Galerie-Button, Menü mit Galerie) oder None."""
+    if isinstance(element, CommandRef) and element.command.gallery is not None:
+        return element.command.id
+    if isinstance(element, Menu) and element.gallery is not None and element.gallery.gallery is not None:
+        return element.gallery.id
+    return None
+
+
+def standard_gallery_ids(base, gallery_id):
+    return [c.id for c in galleries(base)[gallery_id].gallery.items]
+
+
+def gallery_ids(arr, base, gallery_id):
+    """Einträge einer Galerie: Anpassung oder Standard der Definition."""
+    ids = arr.galleries.get(gallery_id)
+    return list(ids) if ids is not None else standard_gallery_ids(base, gallery_id)
+
+
+def set_gallery_ids(arr, base, gallery_id, ids):
+    """Einträge einer Galerie setzen; gleich dem Standard (oder ``None``) = keine Anpassung."""
+    if ids is None or list(ids) == standard_gallery_ids(base, gallery_id):
+        arr.galleries.pop(gallery_id, None)
+    else:
+        arr.galleries[gallery_id] = list(ids)
+
+
+def gallery_needs_items(base, gallery_id):
+    """Galerien im Ribbon brauchen mindestens einen Eintrag (Dropdowns dürfen leer sein)."""
+    return galleries(base)[gallery_id].gallery.display == "ribbon"
+
+
+def menus(base):
+    """Splits und Menüs der Definition, deren Dropdown sich anpassen lässt: Schlüssel -> Element.
+
+    Nicht dabei: Menüs mit Galerie (angepasst wird die Galerie), Menüs mit
+    Untermenüs und Splits/Menüs von Plugins (Tab Erweiterungen, Inhalt
+    bestimmt das Plugin).
+    """
+    cached = _MENUS_CACHE.get(id(base))
+    if cached is not None and cached[0] is base:
+        return cached[1]
+    from .extensions import is_runtime
+    out = {}
+    for key, e in element_index(base)[0].items():
+        if isinstance(e, Split):
+            if is_runtime(e.command.id):
+                continue
+        elif not isinstance(e, Menu) or e.gallery is not None:
+            continue
+        if not e.items or not all(isinstance(i, Command) and not is_runtime(i.id) for i in e.items):
+            continue
+        out[key] = e
+    if len(_MENUS_CACHE) > 8:
+        _MENUS_CACHE.clear()
+    _MENUS_CACHE[id(base)] = (base, out)
+    return out
+
+
+_MENUS_CACHE = {}
+
+
+def standard_menu_ids(base, key):
+    return [c.id for c in menus(base)[key].items]
+
+
+def menu_ids(arr, base, key):
+    """Einträge eines Dropdowns: Anpassung oder Standard der Definition."""
+    ids = arr.menus.get(key)
+    return list(ids) if ids is not None else standard_menu_ids(base, key)
+
+
+def menu_item_allowed(base, key, command):
+    """Buttons wie in Galerien, dazu alles, was der Standard des Dropdowns schon enthält."""
+    return gallery_item_allowed(command) or command.id in standard_menu_ids(base, key)
+
+
+def set_menu_ids(arr, base, key, ids):
+    """Einträge eines Dropdowns setzen; gleich dem Standard (oder ``None``) = keine Anpassung."""
+    if ids is None or list(ids) == standard_menu_ids(base, key):
+        arr.menus.pop(key, None)
+    else:
+        arr.menus[key] = list(ids)
+
+
+def dropdown_of(base, item):
+    """Anpassbares Dropdown eines Eintrags: ("gallery", ID), ("menu", Schlüssel) oder None."""
+    element = item_element(base, item)
+    gid = gallery_of(element)
+    if gid is not None:
+        return ("gallery", gid) if gid in galleries(base) else None
+    if item.element is not None and item.element in menus(base):
+        return ("menu", item.element)
+    return None
+
+
+def dropdown_ids(arr, base, target):
+    kind, key = target
+    return gallery_ids(arr, base, key) if kind == "gallery" else menu_ids(arr, base, key)
+
+
+def dropdown_allowed(base, target, command):
+    kind, key = target
+    return gallery_item_allowed(command) if kind == "gallery" else menu_item_allowed(base, key, command)
+
+
+def effective_element(base, arr, element, key=None):
+    """Element mit den Anpassungen der Anordnung (Galerien; Dropdown, wenn ``key`` sein Schlüssel ist)."""
+    if element is None:
+        return element
+    if key is not None and key in arr.menus:
+        element = _with_menu(base, element, arr.menus[key])
+    commands = _gallery_commands(base, arr) if arr.galleries else None
+    return _subst(element, commands) if commands else element
+
+
+def _with_menu(base, element, ids):
+    items = tuple(base.commands[c] for c in ids if c in base.commands)
+    if not items or not isinstance(element, (Split, Menu)):
+        return element
+    return dataclasses.replace(element, items=items)
 
 
 # Elemente der Definition
@@ -391,6 +527,12 @@ class _Reader(object):
             if "element" in raw:
                 key = raw["element"]
                 element = element_of(self.base, key) if isinstance(key, str) else None
+                main = key[len("split:"):] if element is None and isinstance(key, str) \
+                    and key.startswith("split:") else None
+                if main in self.base.commands:
+                    # Split ist in der Definition zum einzelnen Befehl geworden
+                    out.append(ItemEntry(main, size if size in SIZES else "large"))
+                    continue
                 if element is None:
                     self.warn(tr("Element %r in %s no longer exists") % (key, where))
                     continue
@@ -502,6 +644,26 @@ class _Reader(object):
             out[gid] = items
         return out
 
+    def menus(self, raw):
+        out = {}
+        known = menus(self.base)
+        for key, ids in (raw.items() if isinstance(raw, dict) else ()):
+            if key not in known or not isinstance(ids, list):
+                self.warn(tr("Dropdown %r no longer exists") % (key,))
+                continue
+            items = []
+            for cid in ids:
+                cmd = self.base.commands.get(cid)
+                if cmd is None or not menu_item_allowed(self.base, key, cmd):
+                    self.warn(tr("Dropdown item %r no longer exists") % (cid,))
+                elif cid not in items:
+                    items.append(cid)
+            if not items:
+                self.warn(tr("Dropdown %r without items, default applies") % key)
+                continue
+            out[key] = items
+        return out
+
     def read(self, data):
         if not data:
             return standard(self.base)
@@ -530,7 +692,7 @@ class _Reader(object):
                 last = max([i for i, t in enumerate(tabs) if not t.contextual] or [-1])
                 tabs.insert(last + 1, entry)
         arr = Arrangement(tabs=_ordered(tabs), galleries=self.galleries(data.get("galleries")),
-                          removed=set(self.removed))
+                          menus=self.menus(data.get("menus")), removed=set(self.removed))
         prune_removed(arr)
         return arr
 
@@ -607,6 +769,11 @@ def to_dict(arr, base):
             if gid in known and list(ids) != [c.id for c in known[gid].gallery.items]}
     if gals:
         data["galleries"] = gals
+    known_menus = menus(base)
+    drops = {key: list(ids) for key, ids in sorted(arr.menus.items())
+             if key in known_menus and list(ids) != standard_menu_ids(base, key)}
+    if drops:
+        data["menus"] = drops
     removed = effective_removed(arr)
     if removed:
         data["removed"] = sorted(removed)
@@ -638,10 +805,25 @@ def _subst(item, m):
     return item
 
 
-def _elements(base, items):
+def _gallery_commands(base, arr):
+    """Galerie-Befehle mit den Einträgen der Anordnung: ID -> Command."""
+    known = galleries(base)
+    replaced = {}
+    for gid, ids in arr.galleries.items():
+        cmd = known.get(gid)
+        items = tuple(base.commands[c] for c in ids if c in base.commands)
+        if cmd is None or (not items and cmd.gallery.display == "ribbon"):
+            continue
+        replaced[gid] = dataclasses.replace(cmd, gallery=dataclasses.replace(cmd.gallery, items=items))
+    return replaced
+
+
+def _elements(base, items, menus_=None):
     out = []
     for item in items:
         element = item_element(base, item)
+        if element is not None and menus_ and item.element in menus_:
+            element = _with_menu(base, element, menus_[item.element])
         if element is not None:
             out.append(element)
     return tuple(out)
@@ -659,14 +841,7 @@ def apply(base, arr):
     if problems(arr):
         return base
     commands = dict(base.commands)
-    known = galleries(base)
-    replaced = {}
-    for gid, ids in arr.galleries.items():
-        cmd = known.get(gid)
-        items = tuple(commands[c] for c in ids if c in commands)
-        if cmd is None or (not items and cmd.gallery.display == "ribbon"):
-            continue
-        replaced[gid] = dataclasses.replace(cmd, gallery=dataclasses.replace(cmd.gallery, items=items))
+    replaced = _gallery_commands(base, arr)
     commands.update(replaced)
     std_groups = standard_groups(base)
     tabs = []
@@ -682,11 +857,16 @@ def apply(base, arr):
                     continue
                 group = std_groups[g.ref][1]
                 if g.items is not None:
-                    group = dataclasses.replace(group, elements=_elements(base, g.items))
+                    group = dataclasses.replace(group, elements=_elements(base, g.items, arr.menus))
+                elif arr.menus:
+                    keys = element_index(base)[1].get(g.ref, ())
+                    group = dataclasses.replace(group, elements=tuple(
+                        _with_menu(base, e, arr.menus[k]) if k in arr.menus else e
+                        for e, k in zip(group.elements, keys)))
                 if g.label != group.label:
                     group = dataclasses.replace(group, label=g.label)
             else:
-                group = Group(id=g.id, label=g.label, elements=_elements(base, g.items))
+                group = Group(id=g.id, label=g.label, elements=_elements(base, g.items, arr.menus))
             if g.ref is not None and g.items is not None and not group.elements:
                 continue   # geleerte persönliche Fassung
             if group.id in seen:

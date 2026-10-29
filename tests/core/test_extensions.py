@@ -157,6 +157,26 @@ def test_arrangement_keeps_runtime_commands_while_missing():
     assert cz.apply(later, arr2).commands["verarbeitung:script:mein_werkzeug"].label == "mein_werkzeug"
 
 
+def test_plugin_commands_in_galleries_survive_missing_plugin():
+    """Plugin-Befehle in einer Galerie bleiben als Platzhalter erhalten."""
+    gal = {"label": "Grundkarte", "kind": "control", "source": {"type": "custom", "id": "ribbon.grundkarten"},
+           "gallery": {"display": "dropdown", "items": ["a"]}}
+    with_gallery = lambda: definition(commands={  # noqa: E731
+        "a": {"label": "Alpha", "source": {"type": "qgis_action", "object_name": "mA"}}, "grund": gal})
+    start = FOUND[2]
+    base = ext.extend(with_gallery(), FOUND)
+    arr = cz.standard(base)
+    cz.set_gallery_ids(arr, base, "grund", ["a", ext.plugin_id(start.key)])
+    data = cz.to_dict(arr, base)
+    assert ext.referenced_ids(data) == {ext.plugin_id(start.key)}
+    later = ext.extend(with_gallery(), (), (), referenced=ext.referenced_ids(data))
+    arr2, warnings = cz.from_dict(data, later)
+    assert warnings == []
+    items = cz.apply(later, arr2).commands["grund"].gallery.items
+    assert [c.id for c in items] == ["a", ext.plugin_id(start.key)]
+    assert items[1] == ext.placeholder(ext.plugin_id(start.key))
+
+
 def test_dynamic_groups_follow_plugins_in_arrangement():
     base = ext.extend(definition(), FOUND)
     arr = cz.standard(base)

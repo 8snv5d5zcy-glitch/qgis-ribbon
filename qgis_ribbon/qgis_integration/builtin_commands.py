@@ -11,13 +11,13 @@ QGIS-Aktion gespiegelt wird.
 
 from qgis.core import (Qgis, QgsExpressionContext, QgsExpressionContextUtils, QgsSettings, QgsStyle,
                        QgsTextFormat)
-from qgis.gui import QgsExpressionBuilderDialog
-from qgis.PyQt.QtCore import QObject, QSize, pyqtSignal
+from qgis.gui import QgsExpressionBuilderDialog, QgsSymbolSelectorDialog, QgsSymbolWidgetContext
+from qgis.PyQt.QtCore import QObject, QSize, QTimer, pyqtSignal
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import (QAction, QActionGroup, QApplication, QDialog, QDockWidget, QFileDialog,
-                                 QInputDialog, QMessageBox)
+                                 QInputDialog, QMenu, QMessageBox)
 
-from . import compare, context_state, custom_commands, kontext_ops, layer_ops, raster_ops
+from . import compare, context_state, custom_commands, kontext_ops, layer_ops, menu_bar, raster_ops, symbol_ops
 from .custom_commands import GalleryEntry
 from .map_tools import SelectByLineTool
 from ..core import layer_pages
@@ -71,14 +71,14 @@ def _args(command):
     return list(command.source.get("args") or [])
 
 
-def _push(env, text, level=Qgis.Info):
+def _push(env, text, level=Qgis.MessageLevel.Info):
     env.iface.messageBar().pushMessage(LOG_TAG, text, level=level, duration=4)
 
 
 def _vector_or_warn(env, layer):
     if layer_ops.is_vector(layer):
         return True
-    _push(env, tr("Please select a vector layer as the active layer."), Qgis.Warning)
+    _push(env, tr("Please select a vector layer as the active layer."), Qgis.MessageLevel.Warning)
     return False
 
 
@@ -192,6 +192,18 @@ def processing_optionen(env, command):
     return run
 
 
+def qgis_menues(env, command):
+    """Alle Menüs der QGIS-Menüleiste als ein Dropdown, auch bei ausgeblendeter Menüleiste.
+
+    Liefert ein eigenes Menü (kein Callable): der Ribbon hängt es wie ein
+    QGIS-Menü ein. Gefüllt wird es bei jedem Öffnen.
+    """
+    menu = env.keep(QMenu(command.label))
+    menu.setObjectName("ribbon_qgis_menues")
+    menu.aboutToShow.connect(lambda: menu_bar.fill_menu(menu, env.iface.mainWindow()))
+    return menu
+
+
 def grundkarte(env, command):
     """Mitgelieferte Grundkarte einfügen. ``args``: [URL, zmin, zmax, Namensnennung]."""
     args = _args(command) + [None] * 4
@@ -202,7 +214,7 @@ def grundkarte(env, command):
     def run():
         layer = layer_ops.add_basemap(command.label, url, zmin or 0, zmax or 19, attribution)
         if layer is None:
-            _push(env, tr("Basemap “%s” could not be loaded.") % command.label, Qgis.Warning)
+            _push(env, tr("Basemap “%s” could not be loaded.") % command.label, Qgis.MessageLevel.Warning)
 
     return run
 
@@ -229,7 +241,7 @@ def grundkarten_galerie(env, command):
         for name, url, zmin, zmax in layer_ops.xyz_connections():
             def add(name=name, url=url, zmin=zmin, zmax=zmax):
                 if layer_ops.add_basemap(name, url, zmin, zmax) is None:
-                    _push(env, tr("Basemap “%s” could not be loaded.") % name, Qgis.Warning)
+                    _push(env, tr("Basemap “%s” could not be loaded.") % name, Qgis.MessageLevel.Warning)
             out.append(GalleryEntry(name, add, tooltip=url, section=tr("XYZ connections in QGIS")))
         return out
 
@@ -323,6 +335,64 @@ def label_class_state(env):
     return env.shared("beschriftungsklasse", LabelClassState)
 
 
+class SymbolClassState(QObject):
+    """Gewählte Symbolklasse je Layer (gemeinsam für Klasse, Farben, Breite und Symbol).
+
+    Ein Klick auf eine Klasse in der Layerliste wählt sie auch hier. Gilt nur
+    in dieser Sitzung; ohne Auswahl „Alle …“ bzw. das Einzelsymbol.
+    """
+
+    changed = pyqtSignal()
+
+    def __init__(self, env):
+        QObject.__init__(self)
+        self._env = env
+        self._keys = {}
+        if env.hub is not None:
+            context_state.watch_tree_selection(env.iface, env.hub, self._on_tree)
+
+    def selected(self, layer):
+        return symbol_ops.valid_key(layer, self._keys.get(layer.id()))
+
+    def select(self, layer, key):
+        self._keys[layer.id()] = key
+        self.changed.emit()
+
+    def _on_tree(self, *_args):
+        layer, key = symbol_ops.tree_class(self._env.iface)
+        if key is not None and symbol_ops.valid_key(layer, key) == key:
+            self.select(layer, key)
+
+
+def symbol_class_state(env):
+    return env.shared("symbolklasse", lambda: SymbolClassState(env))
+
+
+def symbol_bearbeiten(env, command):
+    """Symboleditor von QGIS für die gewählte Klasse; bei „Alle …“ das Panel Layer-Styling."""
+    state = symbol_class_state(env)
+
+    def read(layer):
+        return symbol_ops.has_classes(layer), False
+
+    def run(layer, _checked):
+        if not _vector_or_warn(env, layer) or not symbol_ops.has_classes(layer):
+            return
+        key = state.selected(layer)
+        sym = symbol_ops.symbol(layer, key)
+        if sym is None:
+            _show_styling_dock(env)
+            return
+        dlg = QgsSymbolSelectorDialog(sym, QgsStyle.defaultStyle(), layer, env.iface.mainWindow())
+        context = QgsSymbolWidgetContext()
+        context.setMapCanvas(env.iface.mapCanvas())
+        dlg.setContext(context)
+        if dlg.exec():
+            symbol_ops.replace(layer, key, sym, tr("Edit Symbol"))
+
+    return env.keep(StateAction(env, command.label, read, run, checkable=False))
+
+
 GALLERY_COMPACT_KEY = "qgis_ribbon/galerie_kompakt"
 
 
@@ -372,7 +442,7 @@ def layerpfad_kopieren(env, command):
     def run():
         layer = env.iface.activeLayer()
         if layer is None:
-            _push(env, tr("Please select an active layer."), Qgis.Warning)
+            _push(env, tr("Please select an active layer."), Qgis.MessageLevel.Warning)
             return
         path = layer_ops.source_path(layer)
         QApplication.clipboard().setText(path)
@@ -388,7 +458,7 @@ def _expression_dialog(env, layer, expression, title):
                                      context)
     dlg.setWindowTitle(title)
     try:
-        if dlg.exec_() == QDialog.Accepted:
+        if dlg.exec() == QDialog.DialogCode.Accepted:
             return dlg.expressionText()
         return None
     finally:
@@ -448,11 +518,11 @@ def beschriftung_regel_loeschen(env, command):
         key = state.selected(layer)
         names = {k: n for k, n, _active in layer_ops.label_classes(layer)}
         if key not in names or len(names) < 2:
-            _push(env, tr("A layer keeps at least one label class."), Qgis.Warning)
+            _push(env, tr("A layer keeps at least one label class."), Qgis.MessageLevel.Warning)
             return
         answer = QMessageBox.question(env.iface.mainWindow(), tr("Delete Label Class"),
                                       tr("Delete the label class “%s”?") % names[key])
-        if answer != QMessageBox.Yes:
+        if answer != QMessageBox.StandardButton.Yes:
             return
         new_key = layer_ops.remove_label_class(layer, key)
         if new_key is not None:
@@ -475,7 +545,7 @@ def layer_aenderungen_verwerfen(env, command):
             return
         answer = QMessageBox.question(env.iface.mainWindow(), tr("Discard Edits"),
                                       tr("Discard the unsaved edits of layer “%s”?") % layer.name())
-        if answer == QMessageBox.Yes:
+        if answer == QMessageBox.StandardButton.Yes:
             layer_ops.discard_edits(layer)
 
     return env.keep(StateAction(env, command.label, read, run, checkable=False))
@@ -489,7 +559,7 @@ def beschriftung_regel_filter(env, command):
         state = label_class_state(env)
         key = state.selected(layer)
         if key is None:
-            _push(env, tr("The active layer has no labels."), Qgis.Warning)
+            _push(env, tr("The active layer has no labels."), Qgis.MessageLevel.Warning)
             return
         expression = _expression_dialog(env, layer, layer_ops.label_class_filter(layer, key),
                                         tr("Label class filter"))
@@ -530,6 +600,58 @@ class ToolAction(StateAction):
         if self._canvas.mapTool() is self.tool:
             self._canvas.unsetMapTool(self.tool)
         self.tool.close()
+
+
+class CadAction(StateAction):
+    """Konstruktionshilfen ein/aus, ohne das Panel „Erweiterte Digitalisierung“ zu öffnen.
+
+    Spiegelt ``cadDockWidget.enableAction``. QGIS blendet beim Einschalten
+    das Panel ein, auch beim Wechsel zu einem Werkzeug, wenn die Hilfen schon
+    an waren. Ein Einblenden, auf das im selben Durchlauf das Einschalten
+    folgt, nimmt diese Aktion zurück; ein- und ausgeblendet wird das Panel
+    nur über „Konstruktionspanel“ (oder das Panel selbst).
+    """
+
+    def __init__(self, env, text):
+        self._cad = env.iface.cadDockWidget()
+        self._qgis = self._cad.enableAction()
+        self._just_shown = False
+        self._reset = QTimer()
+        self._reset.setSingleShot(True)
+        self._reset.setInterval(0)
+        self._reset.timeout.connect(self._clear_shown)
+        StateAction.__init__(self, env, text, self._read_cad, self._run_cad)
+        self._reset.setParent(self)
+        if env.hub is not None:
+            env.hub.connect(self._qgis, "changed", self.refresh)
+            env.hub.connect(self._cad, "visibilityChanged", self._on_visible)
+            env.hub.connect(self._cad, "cadEnabledChanged", self._on_cad)
+
+    def _read_cad(self, _layer):
+        return self._qgis.isEnabled(), self._qgis.isChecked()
+
+    def _run_cad(self, _layer, _checked):
+        visible = self._cad.isVisible()
+        self._qgis.trigger()
+        if not visible and self._cad.isVisible():
+            self._cad.hide()
+
+    def _on_visible(self, visible):
+        self._just_shown = bool(visible)
+        if visible:
+            self._reset.start()
+
+    def _clear_shown(self):
+        self._just_shown = False
+
+    def _on_cad(self, enabled):
+        if enabled and self._just_shown:
+            self._just_shown = False
+            self._cad.hide()
+
+
+def konstruktionshilfen(env, command):
+    return env.keep(CadAction(env, command.label))
 
 
 def auswahl_linie(env, command):
@@ -587,7 +709,7 @@ def platzierung_galerie(env, command):
 def _raster_or_warn(env, layer):
     if raster_ops.is_raster(layer):
         return True
-    _push(env, tr("Please select a raster layer as the active layer."), Qgis.Warning)
+    _push(env, tr("Please select a raster layer as the active layer."), Qgis.MessageLevel.Warning)
     return False
 
 
@@ -707,7 +829,7 @@ def aggregation_galerie(env, command):
             def apply(name=name):
                 target = env.iface.activeLayer()
                 if not kontext_ops.can_aggregate(target):
-                    _push(env, tr("Aggregation is only available for point layers."), Qgis.Warning)
+                    _push(env, tr("Aggregation is only available for point layers."), Qgis.MessageLevel.Warning)
                     return
                 kontext_ops.set_aggregation(target, name, saved)
                 if name != "none":
@@ -812,7 +934,7 @@ def gruppe_zoomen(env, command):
         canvas = env.iface.mapCanvas()
         extent = kontext_ops.group_extent(group, canvas.mapSettings().destinationCrs())
         if extent.isNull():
-            _push(env, tr("The group contains no layers with an extent."), Qgis.Warning)
+            _push(env, tr("The group contains no layers with an extent."), Qgis.MessageLevel.Warning)
             return
         canvas.zoomToFeatureExtent(extent)
         canvas.refresh()
@@ -827,7 +949,7 @@ def layer_eigenschaften(env, command):
     def run():
         layer = env.iface.activeLayer()
         if layer is None:
-            _push(env, tr("No active layer selected."), Qgis.Warning)
+            _push(env, tr("No active layer selected."), Qgis.MessageLevel.Warning)
             return
         env.iface.showLayerProperties(layer, layer_pages.pick(context_state.layer_kind(layer), pages))
     return run
@@ -838,18 +960,20 @@ def stil_speichern(env, command):
     def run():
         layer = env.iface.activeLayer()
         if layer is None:
-            _push(env, tr("No active layer selected."), Qgis.Warning)
+            _push(env, tr("No active layer selected."), Qgis.MessageLevel.Warning)
             return
         path, _filter = QFileDialog.getSaveFileName(env.iface.mainWindow(), tr("Save Style"), layer.name() + ".qml",
                                                     tr("QGIS layer style file (*.qml)"))
         if not path:
             return
         message, ok = layer.saveNamedStyle(path)
-        _push(env, tr("Style saved: %s") % path if ok else message, Qgis.Success if ok else Qgis.Warning)
+        _push(env, tr("Style saved: %s") % path if ok else message, Qgis.MessageLevel.Success
+              if ok else Qgis.MessageLevel.Warning)
     return run
 
 
 BUTTONS = {
+    "ribbon.konstruktionshilfen": konstruktionshilfen,
     "ribbon.layer_eigenschaften": layer_eigenschaften,
     "ribbon.stil_speichern": stil_speichern,
     "ribbon.abfragemodus": abfragemodus,
@@ -861,6 +985,7 @@ BUTTONS = {
     "ribbon.beschriftung_kleiner": beschriftung_kleiner,
     "ribbon.grundkarte": grundkarte,
     "ribbon.processing_optionen": processing_optionen,
+    "ribbon.qgis_menues": qgis_menues,
     "ribbon.galerie_groesse": galerie_groesse,
     "ribbon.layerpfad_kopieren": layerpfad_kopieren,
     "ribbon.beschriftung_ausdruck": beschriftung_ausdruck,
@@ -876,6 +1001,7 @@ BUTTONS = {
     "ribbon.gruppe_als_ebene": gruppe_als_ebene,
     "ribbon.gruppe_exklusiv": gruppe_exklusiv,
     "ribbon.gruppe_zoomen": gruppe_zoomen,
+    "ribbon.symbol_bearbeiten": symbol_bearbeiten,
 }
 
 GALLERIES = {

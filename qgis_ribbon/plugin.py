@@ -17,6 +17,11 @@ oder entladen, Skript dazugekommen), wird neu aufgebaut, aber nie, solange ein
 modaler Dialog offen ist (z. B. die Erweiterungsverwaltung, die aus dem Ribbon
 heraus geöffnet wurde): dann erst nach dessen Schließen.
 
+Menüleiste: Auf Wunsch blendet der Ribbon die QGIS-Menüleiste aus (Höhe 0,
+``MenuBarHider``); ihre Menüs bleiben über den Knopf „QGIS-Menüs“ im Kopf des
+Ribbons erreichbar. Abbau, klassische Oberfläche und ``unload`` stellen sie
+wieder her; die Einstellung bleibt für den nächsten Aufbau.
+
 Anleitung: eigene Aktion im QGIS-Menü Hilfe › Plugins (auch in der
 klassischen Oberfläche), beim Entladen entfernt; ein offenes Fenster der
 Anleitung schließt ``unload`` ebenfalls.
@@ -39,6 +44,7 @@ from .qgis_integration.context_state import ContextState
 from .qgis_integration.custom_commands import CommandEnv
 from .qgis_integration.extensions import ExtensionCatalog
 from .qgis_integration.layer_watch import LayerWatch
+from .qgis_integration.menu_bar import MenuBarHider
 from .qgis_integration.signals import SignalHub
 from .qgis_integration.toolbar_manager import ToolbarManager
 from .qgis_integration.user_settings import UserSettings
@@ -69,7 +75,7 @@ class _AfterModal(QObject):
         widget.installEventFilter(self)
 
     def eventFilter(self, obj, event):  # noqa: N802 (Qt)
-        if obj is self.widget and event.type() in (QEvent.Hide, QEvent.Close):
+        if obj is self.widget and event.type() in (QEvent.Type.Hide, QEvent.Type.Close):
             self.cancel()
             QTimer.singleShot(0, self.callback)
         return False
@@ -101,6 +107,7 @@ class RibbonPlugin:
         self.help_action = None
         self.resolver = None
         self.toolbars = None
+        self.menubar = None       # ausgeblendete QGIS-Menüleiste (MenuBarHider)
         self.toolbar = None
         self.widget = None
         self.ribbon = None        # wirksamer Ribbon (Definition mit Anordnung des Nutzers)
@@ -125,10 +132,10 @@ class RibbonPlugin:
         try:
             self.base = config_loader.load(self.config_path)
         except config_loader.ConfigError as exc:
-            QgsMessageLog.logMessage(str(exc), LOG_TAG, Qgis.Critical)
+            QgsMessageLog.logMessage(str(exc), LOG_TAG, Qgis.MessageLevel.Critical)
             self.iface.messageBar().pushMessage(
                 LOG_TAG, tr("Ribbon definition has errors, ribbon not loaded. Details in the log."),
-                level=Qgis.Critical, duration=10)
+                level=Qgis.MessageLevel.Critical, duration=10)
             return
         self.timings["definition"] = (time.perf_counter() - start) * 1000.0
         self.store = self.settings if self.settings is not None else QgsSettings()
@@ -224,7 +231,7 @@ class RibbonPlugin:
         if not self.user or not self.user.classic() or self.widget is None:
             return
         self._teardown()
-        self.iface.messageBar().pushMessage(LOG_TAG, CLASSIC_MESSAGE, level=Qgis.Info, duration=8)
+        self.iface.messageBar().pushMessage(LOG_TAG, CLASSIC_MESSAGE, level=Qgis.MessageLevel.Info, duration=8)
 
     # Aufbau und Abbau
     def _build(self):
@@ -272,7 +279,9 @@ class RibbonPlugin:
                                    logic=self.logic, user=self.user,
                                    arrangements=self.arrangements, theme_manager=self.themes)
         self.widget.whole_available = True
+        self.widget.menubar_available = True
         self.widget.classicRequested.connect(lambda: self.set_classic(True))
+        self.widget.menuBarToggled.connect(self._set_menubar_hidden)
         self.toolbar.addWidget(self.widget)
         self.keytips = KeyTipController(self.widget, mw)
         self.keytips.install()
@@ -280,6 +289,10 @@ class RibbonPlugin:
 
         self.toolbars.place_ribbon(self.toolbar)
         self.toolbars.hide(self.ribbon.hide_toolbars)
+        self.menubar = MenuBarHider(mw)
+        if self.user.menubar_hidden():
+            self.menubar.hide()
+            self.widget.set_menubar_hidden(True)
         if self.base.extensions.hide:
             self.toolbars.hide_bars(self.catalog.toolbars)
         self.catalog.changed.connect(self.request_rebuild)
@@ -289,6 +302,12 @@ class RibbonPlugin:
         self._lap(lap, "einsetzen")
         self.startup_ms = (time.perf_counter() - start) * 1000.0
         log.info_later(tr("Ribbon built in %.1f ms") % self.startup_ms)
+
+    def _set_menubar_hidden(self, on):
+        """QGIS-Menüleiste aus- oder einblenden (Menü ▾ und Rechtsklick im Ribbon)."""
+        self.user.set_menubar_hidden(on)
+        if self.menubar is not None:
+            self.menubar.set_hidden(on)
 
     def _install_radios(self):
         try:
@@ -391,6 +410,9 @@ class RibbonPlugin:
             self.layers.stop()
             self.layers = None
         self.hub.disconnect_all()
+        if self.menubar is not None:
+            self.menubar.restore()
+            self.menubar = None
         if self.toolbars is not None:
             self.toolbars.restore()
             self.toolbars.remove_ribbon()

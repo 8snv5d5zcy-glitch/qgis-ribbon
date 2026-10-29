@@ -15,7 +15,7 @@ from qgis.core import (Qgis, QgsApplication, QgsCategorizedSymbolRenderer, QgsCo
                        QgsHeatmapRenderer, QgsMapLayer, QgsPalLayerSettings, QgsProject,
                        QgsProviderRegistry, QgsRasterLayer, QgsRuleBasedLabeling,
                        QgsRuleBasedRenderer, QgsSettings, QgsSingleSymbolRenderer, QgsVectorLayer,
-                       QgsVectorLayerSimpleLabeling, QgsWkbTypes)
+                       QgsVectorLayerSimpleLabeling)
 from ..core.i18n import tr
 
 # Schriftgrößen für Vergrößern/Verkleinern und die Größenauswahl (Punkt)
@@ -460,17 +460,17 @@ def set_label_field(layer, key, field, is_expression):
 
 # (Platzierung, Beschriftung) je Geometrietyp, wie in den Layereigenschaften
 PLACEMENTS = {
-    QgsWkbTypes.PointGeometry: (
+    Qgis.GeometryType.Point: (
         ("OrderedPositionsAroundPoint", tr("Cartographic")),
         ("AroundPoint", tr("Around point")),
         ("OverPoint", tr("Offset from point")),
     ),
-    QgsWkbTypes.LineGeometry: (
+    Qgis.GeometryType.Line: (
         ("Line", tr("Parallel")),
         ("Curved", tr("Curved")),
         ("Horizontal", "Horizontal"),
     ),
-    QgsWkbTypes.PolygonGeometry: (
+    Qgis.GeometryType.Polygon: (
         ("AroundPoint", tr("Around centroid")),
         ("OverPoint", tr("Offset from centroid")),
         ("Horizontal", "Horizontal"),
@@ -528,13 +528,13 @@ def set_label_placement(layer, name):
 def identifiable_layers():
     """[(Layer, abfragbar)] in der Reihenfolge des Layerbaums."""
     root = QgsProject.instance().layerTreeRoot()
-    return [(layer, bool(layer.flags() & QgsMapLayer.Identifiable))
+    return [(layer, bool(layer.flags() & QgsMapLayer.LayerFlag.Identifiable))
             for layer in root.layerOrder() if layer is not None]
 
 
 def set_identifiable(layer, on):
     flags = layer.flags()
-    flags = (flags | QgsMapLayer.Identifiable) if on else (flags & ~QgsMapLayer.Identifiable)
+    flags = (flags | QgsMapLayer.LayerFlag.Identifiable) if on else (flags & ~QgsMapLayer.LayerFlag.Identifiable)
     layer.setFlags(flags)
     QgsProject.instance().setDirty(True)
 
@@ -562,7 +562,7 @@ RENDERERS = (
     ("categorizedSymbol", tr("Categorized"), None),
     ("graduatedSymbol", tr("Graduated"), None),
     ("RuleRenderer", tr("Rule-based"), None),
-    ("heatmapRenderer", tr("Heatmap"), QgsWkbTypes.PointGeometry),
+    ("heatmapRenderer", tr("Heatmap"), Qgis.GeometryType.Point),
 )
 
 

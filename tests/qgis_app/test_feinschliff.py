@@ -12,7 +12,7 @@ from qgis_ribbon.ui.controls.custom import OPACITY_SLIDER_MIN, OpacityControl
 from qgis_ribbon.ui.layer_tree_style import (ExclusiveRadioStyle, LayerTreeRadios,
                                              layer_tree_exclusive, own_style)
 
-EXCLUSIVE = Qt.UserRole + 1
+EXCLUSIVE = Qt.ItemDataRole.UserRole + 1
 
 
 def settle():
@@ -30,7 +30,7 @@ class Recorder(QProxyStyle):
         self.radios = []
 
     def drawPrimitive(self, element, option, painter, widget=None):  # noqa: N802 (Qt)
-        if element == QStyle.PE_IndicatorRadioButton:
+        if element == QStyle.PrimitiveElement.PE_IndicatorRadioButton:
             self.radios.append(QRect(option.rect))
         QProxyStyle.drawPrimitive(self, element, option, painter, widget)
 
@@ -43,7 +43,7 @@ def tree_with_groups():
         for i in range(2):
             child = QStandardItem("%s %d" % (name, i))
             child.setCheckable(True)
-            child.setCheckState(Qt.Checked if i == 0 else Qt.Unchecked)
+            child.setCheckState(Qt.CheckState.Checked if i == 0 else Qt.CheckState.Unchecked)
             parent.appendRow(child)
         model.appendRow(parent)
     view = QTreeView()
@@ -95,11 +95,11 @@ def test_radio_state_follows_check_state(qgis_app):
     style = ExclusiveRadioStyle(QStyleFactory.create("Fusion"), lambda _i: True)
     from qgis.PyQt.QtWidgets import QStyleOptionViewItem
     opt = QStyleOptionViewItem()
-    opt.state = QStyle.State_Enabled
-    opt.checkState = Qt.Checked
-    assert style.radio_option(opt, QRect(0, 0, 13, 13)).state & QStyle.State_On
-    opt.checkState = Qt.Unchecked
-    assert style.radio_option(opt, QRect(0, 0, 13, 13)).state & QStyle.State_Off
+    opt.state = QStyle.StateFlag.State_Enabled
+    opt.checkState = Qt.CheckState.Checked
+    assert style.radio_option(opt, QRect(0, 0, 13, 13)).state & QStyle.StateFlag.State_On
+    opt.checkState = Qt.CheckState.Unchecked
+    assert style.radio_option(opt, QRect(0, 0, 13, 13)).state & QStyle.StateFlag.State_Off
 
 
 def test_layer_tree_exclusive_reads_the_parent_group(fake_iface):
@@ -182,7 +182,7 @@ class MenuPlugin(object):
         if self.blocking:
             from qgis.PyQt.QtCore import QTimer
             QTimer.singleShot(0, self.close_menu)
-            self.menu.exec_(pos)
+            self.menu.exec(pos)
         else:
             self.menu.popup(pos)
             self.shown_at = self.menu.pos()

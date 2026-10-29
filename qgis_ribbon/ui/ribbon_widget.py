@@ -41,13 +41,15 @@ from qgis.PyQt.QtWidgets import (QActionGroup, QFrame, QHBoxLayout, QMenu, QShor
                                  QStackedWidget, QTabBar, QToolBar, QToolButton, QVBoxLayout,
                                  QWidget)
 
+from ..core import customization as cz
 from ..core import quick_access, theme_tokens
-from ..qgis_integration import log
+from ..qgis_integration import log, menu_bar
 from ..qgis_integration.arrangements import Arrangements
 from ..qgis_integration.user_settings import MemoryStore, UserSettings
 from . import guide, icons, theme
 from .controls.buttons import BuildContext
 from .quick_access import QuickAccessBar
+from .qt_compat import event_pos
 from .search_box import SearchBox
 from .tab_page import TabPage
 from ..core.i18n import tr
@@ -63,7 +65,10 @@ TEXT_ADD = tr("Add to Quick Access Toolbar")
 TEXT_REMOVE = tr("Remove from Quick Access Toolbar")
 TEXT_KEYTIPS = tr("Customize KeyTips …")
 TEXT_CUSTOMIZE = tr("Customize Ribbon …")
+TEXT_GALLERY = tr("Customize Gallery “%s” …")
 TEXT_CLASSIC = tr("Classic QGIS Interface")
+TEXT_HIDE_MENUBAR = tr("Hide QGIS Menu Bar")
+TEXT_QGIS_MENUS = tr("QGIS Menus")
 
 
 class RibbonTabBar(QTabBar):
@@ -87,10 +92,10 @@ class RibbonTabBar(QTabBar):
         self.setDrawBase(False)
         self.setExpanding(False)
         self.setDocumentMode(True)
-        self.setElideMode(Qt.ElideNone)
+        self.setElideMode(Qt.TextElideMode.ElideNone)
         self.setUsesScrollButtons(True)
         self.setMouseTracking(True)
-        self.setAttribute(Qt.WA_Hover, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self._hover = -1
         self._metrics = {}  # Schriftmaße (Tab, Kontextname); geleert bei Schrift-/Stilwechsel
         self._from = None   # Unterstrich vor dem Wechsel (QRectF)
@@ -98,7 +103,7 @@ class RibbonTabBar(QTabBar):
         self._anim = QVariantAnimation(self)
         self._anim.setStartValue(0.0)
         self._anim.setEndValue(1.0)
-        self._anim.setEasingCurve(QEasingCurve.OutCubic)
+        self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
         self._anim.valueChanged.connect(self._on_anim)
         self._last = -1
         self.currentChanged.connect(self._start_animation)
@@ -108,16 +113,16 @@ class RibbonTabBar(QTabBar):
         f = QFont(self.font())
         if f.pointSizeF() > 0:
             f.setPointSizeF(f.pointSizeF() * 1.08)
-        f.setWeight(QFont.DemiBold if bold else QFont.Normal)
+        f.setWeight(QFont.Weight.DemiBold if bold else QFont.Weight.Normal)
         return f
 
     def _label_font(self):
         f = QFont(self.font())
         if f.pointSizeF() > 0:
             f.setPointSizeF(f.pointSizeF() * 0.8)
-        f.setWeight(QFont.DemiBold)
-        f.setCapitalization(QFont.AllUppercase)
-        f.setLetterSpacing(QFont.PercentageSpacing, 106)
+        f.setWeight(QFont.Weight.DemiBold)
+        f.setCapitalization(QFont.Capitalization.AllUppercase)
+        f.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 106)
         return f
 
     def _fm(self, kind):
@@ -133,7 +138,7 @@ class RibbonTabBar(QTabBar):
         return fm
 
     def changeEvent(self, event):  # noqa: N802 (Qt)
-        if event.type() in (QEvent.FontChange, QEvent.StyleChange):
+        if event.type() in (QEvent.Type.FontChange, QEvent.Type.StyleChange):
             self._metrics = {}
         QTabBar.changeEvent(self, event)
 
@@ -197,13 +202,13 @@ class RibbonTabBar(QTabBar):
 
     def _on_anim(self, value):
         self._progress = float(value)
-        if self._anim.state() == QAbstractAnimation.Stopped or self._progress >= 1.0:
+        if self._anim.state() == QAbstractAnimation.State.Stopped or self._progress >= 1.0:
             self._from = None
         self.update()
 
     # Hover
     def mouseMoveEvent(self, event):  # noqa: N802 (Qt)
-        i = self.tabAt(event.pos())
+        i = self.tabAt(event_pos(event))
         if i != self._hover:
             self._hover = i
             self.update()
@@ -234,14 +239,14 @@ class RibbonTabBar(QTabBar):
 
     def paintEvent(self, _event):  # noqa: N802 (Qt)
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing, True)
-        p.setRenderHint(QPainter.TextAntialiasing, True)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        p.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
         current = self.currentIndex()
 
         # Kontext-Kapseln mit Namen
         for ctx, r in self._capsules():
             cap = r.adjusted(1, 5, -1, -7)
-            p.setPen(Qt.NoPen)
+            p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(theme.color("ctxS"))
             p.drawRoundedRect(cap, 8, 8)
         p.setFont(self._label_font())
@@ -252,7 +257,7 @@ class RibbonTabBar(QTabBar):
             r = self.tabRect(i)
             lr = QRectF(r.x() + self.PAD, r.y(), self._label_width(i), r.height() - 2)
             p.setPen(theme.color("ctxT"))
-            p.drawText(lr, Qt.AlignLeft | Qt.AlignVCenter, label)
+            p.drawText(lr, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, label)
 
         # Tabtexte und Hover
         for i in range(self.count()):
@@ -263,7 +268,7 @@ class RibbonTabBar(QTabBar):
             enabled = self.isTabEnabled(i)
             if i == self._hover and i != current and enabled:
                 hr = tr.adjusted(-6, 7, 6, -9)
-                p.setPen(Qt.NoPen)
+                p.setPen(Qt.PenStyle.NoPen)
                 p.setBrush(theme.color("hover") if not contextual else theme.color("surf"))
                 p.drawRoundedRect(hr, 6, 6)
             if not enabled:
@@ -278,7 +283,8 @@ class RibbonTabBar(QTabBar):
                 col = theme.color("muted")
             p.setPen(col)
             p.setFont(self._font(i == current))
-            p.drawText(tr.adjusted(0, 0, 0, -2), Qt.AlignHCenter | Qt.AlignVCenter, self.tabText(i))
+            p.drawText(tr.adjusted(0, 0, 0, -2), Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter,
+                       self.tabText(i))
 
         # Unterstrich
         if 0 <= current < self.count() and self.isTabVisible(current):
@@ -288,7 +294,7 @@ class RibbonTabBar(QTabBar):
                 f = self._from
                 target = QRectF(f.x() + (target.x() - f.x()) * t, target.y(),
                                 f.width() + (target.width() - f.width()) * t, target.height())
-            p.setPen(Qt.NoPen)
+            p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(theme.color("ctx") if current in self.contextual else theme.color("acc"))
             p.drawRoundedRect(target, 1.5, 1.5)
 
@@ -298,7 +304,7 @@ class RibbonTabBar(QTabBar):
             pen = QPen(theme.color("acc"))
             pen.setWidthF(1.5)
             p.setPen(pen)
-            p.setBrush(Qt.NoBrush)
+            p.setBrush(Qt.BrushStyle.NoBrush)
             p.drawRoundedRect(fr, 6, 6)
         p.end()
 
@@ -320,12 +326,12 @@ class SurfaceFrame(QFrame):
 
     def paintEvent(self, _event):  # noqa: N802 (Qt)
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing, True)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         r = self.surface_rect()
         radius = theme.SURFACE_RADIUS
         shadow = theme.color("shadow")
         if shadow.alpha() > 0:
-            p.setPen(Qt.NoPen)
+            p.setPen(Qt.PenStyle.NoPen)
             steps = 5
             for k in range(steps, 0, -1):
                 c = QColor(shadow)
@@ -350,7 +356,7 @@ class RibbonPopup(QFrame):
     """Aufgeklappte Seite bei minimiertem Ribbon (schließt bei Klick daneben)."""
 
     def __init__(self, ribbon_widget):
-        QFrame.__init__(self, ribbon_widget, Qt.Popup)
+        QFrame.__init__(self, ribbon_widget, Qt.WindowType.Popup)
         self.setObjectName("ribbon_popup")
         self._ribbon = ribbon_widget
         lay = QVBoxLayout(self)
@@ -363,12 +369,13 @@ class RibbonPopup(QFrame):
 
 class RibbonWidget(QWidget):
     classicRequested = pyqtSignal()
+    menuBarToggled = pyqtSignal(bool)
 
     def __init__(self, ribbon, resolver, hub, parent=None, logic=None, user=None, arrangements=None,
                  theme_manager=None):
         QWidget.__init__(self, parent)
         self.setObjectName("QgisRibbonWidget")
-        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.ribbon = ribbon
         self.logic = logic
         self.user = user if user is not None else UserSettings(MemoryStore())
@@ -376,6 +383,8 @@ class RibbonWidget(QWidget):
         self.themes = theme_manager if theme_manager is not None else theme.ThemeManager(self.user, self)
         self._own_themes = theme_manager is None
         self.whole_available = False   # „Kontur für ganz QGIS“ (nur mit Plugin)
+        self.menubar_available = False  # QGIS-Menüleiste ausblenden (nur mit Plugin)
+        self.menubar_hidden = False
         self.themes.changed.connect(self.apply_theme)
         self.setStyleSheet(theme.ribbon_qss(theme.current()))
         # Ohne Plugin: Anordnung auf Grundlage des gezeigten Ribbons (gespeichert, nicht neu aufgebaut)
@@ -391,7 +400,7 @@ class RibbonWidget(QWidget):
 
         self.header = QWidget(self)
         self.header.setObjectName("ribbon_header")
-        self.header.setAttribute(Qt.WA_StyledBackground, True)
+        self.header.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.header.setFixedHeight(theme.HEADER_HEIGHT)
         head = QHBoxLayout(self.header)
         head.setContentsMargins(8, 0, 10, 0)
@@ -415,20 +424,31 @@ class RibbonWidget(QWidget):
         self.guide_button.setObjectName("ribbon_help_button")
         self.guide_button.setFixedSize(28, 28)
         self.guide_button.clicked.connect(lambda: self.open_help("index"))
+        # Menüs der QGIS-Menüleiste, nur sichtbar, wenn die Menüleiste ausgeblendet ist
+        self.menus_button = QToolButton(self.header)
+        self.menus_button.setAutoRaise(True)
+        self.menus_button.setObjectName("ribbon_qgis_menus")
+        self.menus_button.setFixedSize(28, 28)
+        self.menus_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.menus_menu = QMenu(self.menus_button)
+        self.menus_menu.aboutToShow.connect(lambda: menu_bar.fill_menu(self.menus_menu, self.window()))
+        self.menus_button.setMenu(self.menus_menu)
+        self.menus_button.hide()
         sep = QFrame(self.header)
         sep.setObjectName("ribbon_header_sep")
         sep.setFixedSize(1, 20)
+        head.addWidget(self.menus_button, 0, Qt.AlignmentFlag.AlignVCenter)
         head.addWidget(self.quick)
         head.addSpacing(4)
-        head.addWidget(sep, 0, Qt.AlignVCenter)
+        head.addWidget(sep, 0, Qt.AlignmentFlag.AlignVCenter)
         head.addSpacing(6)
         # Die Tableiste bekommt den freien Platz (Tabs bleiben links, setExpanding(False)).
         # Mit einem Platzhalter daneben fiel sie auf ihre Mindestbreite zurück, sobald
         # Kontext-Tabs dazukamen, und zeigte Scrollpfeile trotz freiem Platz.
-        head.addWidget(self.tabbar, 1, Qt.AlignBottom)
-        head.addWidget(self.search, 0, Qt.AlignVCenter)
-        head.addWidget(self.pin, 0, Qt.AlignVCenter)
-        head.addWidget(self.guide_button, 0, Qt.AlignVCenter)
+        head.addWidget(self.tabbar, 1, Qt.AlignmentFlag.AlignBottom)
+        head.addWidget(self.search, 0, Qt.AlignmentFlag.AlignVCenter)
+        head.addWidget(self.pin, 0, Qt.AlignmentFlag.AlignVCenter)
+        head.addWidget(self.guide_button, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self.surface = SurfaceFrame(self)
         self.stack = QStackedWidget(self.surface)
@@ -454,7 +474,7 @@ class RibbonWidget(QWidget):
         self.tabbar.tabBarClicked.connect(self._on_tab_clicked)
         self.tabbar.tabBarDoubleClicked.connect(lambda _i: self.toggle_minimized())
         self.shortcut = QShortcut(QKeySequence(MINIMIZE_SHORTCUT), self)
-        self.shortcut.setContext(Qt.WindowShortcut)
+        self.shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
         self.shortcut.activated.connect(self.toggle_minimized)
         if ribbon.tabs:
             self._on_tab_changed(0)
@@ -633,6 +653,12 @@ class RibbonWidget(QWidget):
         else:
             self.guide_button.setIcon(icon)
         self.guide_button.setToolTip("<b>%s</b><br>%s" % (guide.TITLE, guide.TIP))
+        icon = icons.ui_icon("menue")
+        if icon.isNull():
+            self.menus_button.setText("☰")
+        else:
+            self.menus_button.setIcon(icon)
+        self.menus_button.setToolTip(tr("<b>%s</b><br>The menus of the hidden QGIS menu bar") % TEXT_QGIS_MENUS)
         self.quick.minimized = self.minimized
 
     def show_popup(self):
@@ -681,6 +707,16 @@ class RibbonWidget(QWidget):
             widget = widget.parentWidget()
         return None
 
+    def gallery_at(self, widget):
+        """Anpassbare Galerie unter dem Widget (Galerie-Button, Galerie im Ribbon, ihre Kacheln) oder None."""
+        known = cz.galleries(self.arrangements.base)
+        while widget is not None and widget is not self:
+            cmd = self.ctx.widget_commands.get(widget) or getattr(widget, "command", None)
+            if cmd is not None and getattr(cmd, "id", None) in known:
+                return cmd
+            widget = widget.parentWidget()
+        return None
+
     def context_menu(self, widget):
         """Kontextmenü für das Widget (ohne es anzuzeigen; für Tests getrennt)."""
         menu = QMenu(self)
@@ -690,6 +726,11 @@ class RibbonWidget(QWidget):
                 menu.addAction(TEXT_REMOVE, lambda: self.remove_from_quick_access(cmd))
             else:
                 menu.addAction(TEXT_ADD, lambda: self.add_to_quick_access(cmd))
+            menu.addSeparator()
+        gallery = self.gallery_at(widget)
+        if gallery is not None:
+            act = menu.addAction(TEXT_GALLERY % gallery.label, lambda: self.open_gallery_dialog(gallery.id))
+            act.setObjectName("ribbon_customize_gallery")
             menu.addSeparator()
         menu.addAction(TEXT_KEYTIPS, self.open_keytip_dialog)
         menu.addAction(TEXT_PIN if self.minimized else TEXT_MINIMIZE, self.toggle_minimized)
@@ -703,6 +744,14 @@ class RibbonWidget(QWidget):
         menu.addAction(TEXT_CUSTOMIZE, self.open_customize_dialog)
         arrangement_menu.add_submenu(menu, self)
         self.add_design_menu(menu)
+        if self.menubar_available:
+            act = menu.addAction(TEXT_HIDE_MENUBAR)
+            act.setObjectName("ribbon_hide_menubar")
+            act.setCheckable(True)
+            act.setChecked(self.menubar_hidden)
+            act.setToolTip(tr("More room for the map. The QGIS menus stay available via the button "
+                              "at the left of the Quick Access Toolbar and Alt+letter."))
+            act.triggered.connect(lambda on: self.request_menubar_hidden(bool(on)))
         if self.classic_available:
             act = menu.addAction(TEXT_CLASSIC, self.request_classic)
             act.setToolTip(tr("Hide the ribbon and show the QGIS toolbars. Back via View › Ribbon Interface."))
@@ -714,9 +763,19 @@ class RibbonWidget(QWidget):
         self.hide_popup()
         self.classicRequested.emit()
 
+    # QGIS-Menüleiste
+    def set_menubar_hidden(self, on):
+        """Zustand der Menüleiste übernehmen: Knopf „QGIS-Menüs“ zeigen oder verbergen."""
+        self.menubar_hidden = bool(on)
+        self.menus_button.setVisible(self.menubar_hidden)
+
+    def request_menubar_hidden(self, on):
+        self.set_menubar_hidden(on)
+        self.menuBarToggled.emit(bool(on))
+
     def show_context_menu(self, global_pos, widget):
         menu = self.context_menu(widget)
-        menu.exec_(global_pos)
+        menu.exec(global_pos)
         menu.deleteLater()
 
     # Anleitung
@@ -732,7 +791,7 @@ class RibbonWidget(QWidget):
     def open_keytip_dialog(self):
         self.hide_popup()
         dlg = self.keytip_dialog()
-        dlg.exec_()
+        dlg.exec()
         dlg.deleteLater()
 
     # Anpassen (grafischer Editor)
@@ -743,7 +802,17 @@ class RibbonWidget(QWidget):
     def open_customize_dialog(self):
         self.hide_popup()
         dlg = self.customize_dialog()
-        dlg.exec_()
+        dlg.exec()
+        dlg.deleteLater()
+
+    def gallery_dialog(self, gallery_id):
+        from .customize_dialog import GalleryDialog
+        return GalleryDialog(self.arrangements, gallery_id, self.window())
+
+    def open_gallery_dialog(self, gallery_id):
+        self.hide_popup()
+        dlg = self.gallery_dialog(gallery_id)
+        dlg.exec()
         dlg.deleteLater()
 
     # Befehlssuche

@@ -169,7 +169,7 @@ def test_rebuild_waits_for_modal_dialog(plugin, fake_iface, with_plugins):
 
     dlg = QDialog(mw)
     QTimer.singleShot(0, during)
-    dlg.exec_()
+    dlg.exec()
     settle()
     assert seen["widget"] is built                      # kein Abbau unter dem Dialog
     assert plugin.widget is not built                   # danach neu aufgebaut
@@ -282,9 +282,9 @@ def test_editor_palette_offers_plugins_and_toolbox(plugin):
         visible = lambda: {v for k, v in palette.visible_values()}  # noqa: E731
         assert "verarbeitung:native:buffer" not in visible()   # „Alle“: nur eigene Werkzeuge
         # Kacheln der QGIS-Werkzeuge entstehen erst mit dem Filter „Werkzeugkasten“
-        assert palette.list.count() < 400
+        own = palette.list.count()
         palette.filter.setCurrentIndex(filters.index("toolbox"))
-        assert "verarbeitung:native:buffer" in visible() and palette.list.count() > 400
+        assert "verarbeitung:native:buffer" in visible() and palette.list.count() > own + 200
         palette.filter.setCurrentIndex(filters.index("plugins"))
         assert reload_id() in visible() and not any(ext.is_toolbox(v) for v in visible())
         palette.select("command", reload_id())
@@ -336,7 +336,7 @@ def test_embedded_dropdown_buttons_become_split_buttons(fake_iface, settings):
     tools = []
     for text in ("Einzeln (1 Klick)", "Kreuzung (3 Klicks)"):
         btn = QToolButton(tb)
-        btn.setPopupMode(QToolButton.MenuButtonPopup)
+        btn.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
         tool = QAction(text, tb)
         tool.setCheckable(True)
         options = QAction("Optionen …", tb)
@@ -386,3 +386,20 @@ def test_embedded_dropdown_buttons_become_split_buttons(fake_iface, settings):
         p.unload()
         settle()
     assert not tb.isHidden()
+
+
+def test_plugin_names_skip_deleted_widgets(monkeypatch):
+    """Ein Plugin hält eine Combobox, die C++ schon gelöscht hat: kein RuntimeError beim Suchen."""
+    from qgis import utils
+    from qgis.PyQt import sip
+    from qgis.PyQt.QtWidgets import QComboBox
+
+    from qgis_ribbon.qgis_integration.extensions import _plugin_names
+    act = QAction("Öffnen", None)
+    combo = QComboBox()
+    sip.delete(combo)
+    obj = type("Plugin", (), {})()
+    obj.combo = combo
+    obj.widgets = [combo, act]
+    monkeypatch.setattr(utils, "plugins", {"demo_plugin": obj})
+    assert _plugin_names() == {id(act): "demo_plugin"}

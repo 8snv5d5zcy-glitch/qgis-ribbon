@@ -2,8 +2,7 @@
 
 Jede Gruppe eines Tabs hat mehrere Fassungen, von der schmalsten
 (eingeklappt: ein Button mit Menü) über die definierte Fassung bis zu
-aufgeklappten Fassungen (mehr Galerie-Kacheln, Einträge von Split-Buttons
-direkt in der Gruppe). ``choose`` wählt je Gruppe eine Fassung, sodass die
+erweiterten Fassungen (mehr Galerie-Kacheln). ``choose`` wählt je Gruppe eine Fassung, sodass die
 verfügbare Breite möglichst ausgenutzt und nie überschritten wird:
 
 1. Start mit der definierten Fassung jeder Gruppe.

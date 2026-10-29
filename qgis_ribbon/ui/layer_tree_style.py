@@ -48,7 +48,7 @@ class ExclusiveRadioStyle(QCommonStyle):
         opt = _view_item(option)
         if opt is None or not opt.index.isValid():
             return False
-        if not opt.features & QStyleOptionViewItem.HasCheckIndicator:
+        if not opt.features & QStyleOptionViewItem.ViewItemFeature.HasCheckIndicator:
             return False
         try:
             return bool(self.is_exclusive(opt.index))
@@ -61,41 +61,41 @@ class ExclusiveRadioStyle(QCommonStyle):
         radio.palette = option.palette
         radio.direction = option.direction
         radio.fontMetrics = option.fontMetrics
-        state = option.state & (QStyle.State_Enabled | QStyle.State_Active)
-        if option.checkState == Qt.Unchecked:
-            state |= QStyle.State_Off
+        state = option.state & (QStyle.StateFlag.State_Enabled | QStyle.StateFlag.State_Active)
+        if option.checkState == Qt.CheckState.Unchecked:
+            state |= QStyle.StateFlag.State_Off
         else:
-            state |= QStyle.State_On
+            state |= QStyle.StateFlag.State_On
         radio.state = state
         return radio
 
     def draw_radio(self, option, rect, painter, widget):
-        self.base.drawPrimitive(QStyle.PE_IndicatorRadioButton,
+        self.base.drawPrimitive(QStyle.PrimitiveElement.PE_IndicatorRadioButton,
                                 self.radio_option(option, rect), painter, widget)
 
     # Abweichungen
     def drawControl(self, element, option, painter, widget=None):  # noqa: N802 (Qt)
-        if element != QStyle.CE_ItemViewItem or not self._exclusive(option):
+        if element != QStyle.ControlElement.CE_ItemViewItem or not self._exclusive(option):
             self.base.drawControl(element, option, painter, widget)
             return
         self.base.drawControl(element, option, painter, widget)
         # Das Kontrollkästchen übermalen (Hintergrund und Auswahl wie der Eintrag), dann der Kreis.
         # Ein Ausschneiden vorher hilft nicht: Qt setzt beim Zeichnen des Eintrags eine eigene Maske.
-        check = self.base.subElementRect(QStyle.SE_ItemViewItemCheckIndicator, option, widget)
+        check = self.base.subElementRect(QStyle.SubElement.SE_ItemViewItemCheckIndicator, option, widget)
         painter.save()
         painter.setClipRect(check)
-        if option.backgroundBrush.style() != Qt.NoBrush:
+        if option.backgroundBrush.style() != Qt.BrushStyle.NoBrush:
             painter.fillRect(check, option.backgroundBrush)
-        elif option.features & QStyleOptionViewItem.Alternate:
+        elif option.features & QStyleOptionViewItem.ViewItemFeature.Alternate:
             painter.fillRect(check, option.palette.alternateBase())
         else:
             painter.fillRect(check, option.palette.base())
-        self.base.drawPrimitive(QStyle.PE_PanelItemViewItem, option, painter, widget)
+        self.base.drawPrimitive(QStyle.PrimitiveElement.PE_PanelItemViewItem, option, painter, widget)
         painter.restore()
         self.draw_radio(option, check, painter, widget)
 
     def drawPrimitive(self, element, option, painter, widget=None):  # noqa: N802 (Qt)
-        if element == QStyle.PE_IndicatorItemViewItemCheck and self._exclusive(option):
+        if element == QStyle.PrimitiveElement.PE_IndicatorItemViewItemCheck and self._exclusive(option):
             self.draw_radio(option, option.rect, painter, widget)
             return
         self.base.drawPrimitive(element, option, painter, widget)
@@ -167,7 +167,7 @@ def own_style(view):
         return style
     # Mit Stylesheet liefert style() Qts Hülle; der eigene Stil ist ein Kind der Ansicht
     # (QGIS hängt seinen Stil an die Layerliste, dieser Stil hängt sich dahinter)
-    own = [c for c in view.findChildren(QStyle, options=Qt.FindDirectChildrenOnly)
+    own = [c for c in view.findChildren(QStyle, options=Qt.FindChildOption.FindDirectChildrenOnly)
            if c.metaObject().className() != "QStyleSheetStyle"]
     radios = [c for c in own if isinstance(c, ExclusiveRadioStyle)]
     if radios:

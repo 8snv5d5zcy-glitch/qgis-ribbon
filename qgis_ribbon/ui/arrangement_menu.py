@@ -2,10 +2,11 @@
 
 Eine Anordnung umfasst Tabs, Gruppen, Galerien, Schnellzugriffsleiste und
 eigene Kürzel (``qgis_integration.arrangements``). Im Menü stehen die
-gespeicherten Anordnungen (die aktuelle abgehakt), Speichern unter,
-Exportieren und Importieren als Datei (zum Weitergeben), Löschen und die
-Standardanordnung. Laden verwirft eine nicht gespeicherte Anpassung erst nach
-Rückfrage.
+gespeicherten Anordnungen (die aktuelle abgehakt), Speichern (in die aktuelle
+Anordnung), Speichern unter (neue Anordnung, bei vorhandenem Namen nach
+Rückfrage), Exportieren und Importieren als Datei (zum Weitergeben), Löschen
+und die Standardanordnung. Laden verwirft eine nicht gespeicherte Anpassung
+erst nach Rückfrage.
 
 Rückfragen und Meldungen laufen über die Funktionen ``ask_*``, ``confirm``
 und ``inform``, damit Tests sie ersetzen können (modale Dialoge blockieren).
@@ -20,6 +21,8 @@ from ..core.i18n import tr
 
 TITLE = tr("Arrangements")
 TEXT_SAVE = tr("Save Current Arrangement As …")
+TEXT_SAVE_CURRENT = tr("Save Arrangement “%s”")
+TEXT_SAVE_NEW = tr("Save Arrangement …")
 TEXT_EXPORT = tr("Export …")
 TEXT_IMPORT = tr("Import …")
 TEXT_DELETE = tr("Delete")
@@ -28,12 +31,13 @@ TEXT_NONE = tr("No arrangement saved yet")
 FILE_FILTER = tr("Ribbon arrangement (*.json)")
 DEFAULT_FILE = tr("Ribbon-arrangement.json")
 UNSAVED = tr("The current customization is not saved under a name and will be lost. Continue anyway?")
+UNSAVED_CHANGES = tr("The changes to arrangement “%s” are not saved and will be lost. Continue anyway?")
 MAX_WARNINGS = 8
 
 
 # Rückfragen (in Tests ersetzbar)
 def ask_name(parent, title, label, text=""):
-    name, ok = QInputDialog.getText(parent, title, label, QLineEdit.Normal, text)
+    name, ok = QInputDialog.getText(parent, title, label, QLineEdit.EchoMode.Normal, text)
     return name.strip() if ok and name.strip() else None
 
 
@@ -49,9 +53,9 @@ def ask_open_path(parent):
 
 
 def confirm(parent, title, text):
-    answer = QMessageBox.question(parent, title, text, QMessageBox.Yes | QMessageBox.No,
-                                  QMessageBox.No)
-    return answer == QMessageBox.Yes
+    answer = QMessageBox.question(parent, title, text, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                  QMessageBox.StandardButton.No)
+    return answer == QMessageBox.StandardButton.Yes
 
 
 def inform(parent, title, text, warning=False):
@@ -77,7 +81,7 @@ def add_submenu(menu, rw):
     sub.setObjectName("ribbon_arrangements_menu")
     sub.setToolTipsVisible(True)
     names = arr.names()
-    active = arr.active_name()
+    active = arr.active_name() or arr.current_name()
     for name in names:
         act = sub.addAction(name, lambda _c=False, n=name: load(rw, n))
         act.setCheckable(True)
@@ -86,7 +90,16 @@ def add_submenu(menu, rw):
     if not names:
         sub.addAction(TEXT_NONE).setEnabled(False)
     sub.addSeparator()
-    sub.addAction(TEXT_SAVE, lambda: save_as(rw))
+    current = arr.current_name()
+    if current:
+        act = sub.addAction(TEXT_SAVE_CURRENT % current, lambda: save(rw))
+        act.setEnabled(arr.is_modified())
+        act.setToolTip(tr("Save the changes to the current arrangement"))
+    else:
+        sub.addAction(TEXT_SAVE_NEW, lambda: save(rw)).setToolTip(
+            tr("Save the current state as a new arrangement"))
+    sub.addAction(TEXT_SAVE, lambda: save_as(rw)).setToolTip(
+        tr("Save the current state as a new arrangement"))
     sub.addAction(TEXT_EXPORT, lambda: export(rw)).setToolTip(
         tr("Save the current arrangement as a file, e.g. to share it"))
     sub.addAction(TEXT_IMPORT, lambda: import_file(rw)).setToolTip(
@@ -105,7 +118,11 @@ def add_submenu(menu, rw):
 
 # Aktionen
 def _may_discard(rw, title):
-    return not rw.arrangements.is_unsaved() or confirm(rw.window(), title, UNSAVED)
+    arr = rw.arrangements
+    if not arr.is_unsaved():
+        return True
+    current = arr.current_name()
+    return confirm(rw.window(), title, UNSAVED_CHANGES % current if current else UNSAVED)
 
 
 def load(rw, name):
@@ -124,9 +141,18 @@ def reset(rw):
     return True
 
 
+def save(rw):
+    """In die aktuelle Anordnung speichern; ohne aktuelle wie „Speichern unter“."""
+    name = rw.arrangements.save()
+    return name if name else save_as(rw)
+
+
 def save_as(rw):
+    """Als neue Anordnung speichern; ein vorhandener Name wird nur nach Rückfrage überschrieben."""
     arr = rw.arrangements
-    name = ask_name(rw.window(), tr("Save Arrangement"), tr("Name of the arrangement:"), arr.active_name() or "")
+    current = arr.current_name()
+    name = ask_name(rw.window(), tr("Save Arrangement"), tr("Name of the arrangement:"),
+                    arr.unique_name(current) if current else "")
     if not name:
         return None
     if name in arr.names() and not confirm(rw.window(), tr("Save Arrangement"),

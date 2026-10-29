@@ -259,6 +259,43 @@ def test_unknown_ids_are_skipped_with_warnings(base):
     assert [i.command for i in arr.tab("eigener_tab_1").groups[0].items] == ["zoomen"]
 
 
+def test_split_that_became_a_command_keeps_its_main_command(base):
+    """Wird ein Split der Definition zum einzelnen Befehl, bleibt sein Hauptbefehl stehen."""
+    data = {"tabs": [{"id": "eigener_tab_1", "label": "Mein Tab", "groups": [
+        {"id": "eigene_gruppe_1", "label": "G", "items": [
+            {"element": "split:zoomen", "size": "medium"}, {"element": "split:weg"}]}]}]}
+    arr, warnings = cz.from_dict(data, base)
+    items = arr.tab("eigener_tab_1").groups[0].items
+    assert [(i.command, i.size, i.element) for i in items] == [("zoomen", "medium", None)]
+    assert len(warnings) == 1   # nur der unbekannte Split
+
+
+def test_dropdown_galleries_are_customizable(base):
+    """Auch Dropdown-Galerien ohne feste Einträge (Inhalt aus QGIS) sind anpassbar."""
+    data = copy.deepcopy(DEFINITION)
+    data["commands"]["lesezeichen"] = {"label": "Lesezeichen", "kind": "control",
+                                       "source": {"type": "custom", "id": "ribbon.lesezeichen_galerie"},
+                                       "gallery": {"display": "dropdown"}}
+    data["tabs"][0]["groups"][0]["items"].append({"command": "lesezeichen"})
+    b = config_loader.parse(data)
+    assert set(cz.galleries(b)) == {"werkzeuge", "lesezeichen"}
+    assert not cz.gallery_needs_items(b, "lesezeichen") and cz.gallery_needs_items(b, "werkzeuge")
+    ref = b.tab("karte").groups[0].elements[1]
+    assert cz.gallery_of(ref) == "lesezeichen"
+    assert cz.gallery_of(b.tab("bearbeiten").groups[1].elements[0]) == "werkzeuge"
+    assert cz.gallery_of(b.tab("karte").groups[0].elements[0]) is None
+    arr = cz.standard(b)
+    cz.set_gallery_ids(arr, b, "lesezeichen", ["zoomen", "neu"])
+    assert cz.gallery_ids(arr, b, "lesezeichen") == ["zoomen", "neu"]
+    assert cz.to_dict(arr, b) == {"galleries": {"lesezeichen": ["zoomen", "neu"]}}
+    eff = cz.apply(b, arr)
+    assert [c.id for c in eff.tab("karte").groups[0].elements[1].command.gallery.items] == ["zoomen", "neu"]
+    shown = cz.effective_element(b, arr, ref)
+    assert [c.id for c in shown.command.gallery.items] == ["zoomen", "neu"]
+    cz.set_gallery_ids(arr, b, "lesezeichen", [])
+    assert cz.is_standard(arr, b)
+
+
 def test_new_definition_tabs_and_groups_appear(base):
     arr = cz.standard(base)
     arr.tab("karte").groups.reverse()

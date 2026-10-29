@@ -19,15 +19,15 @@ _CAPS = (("add", "AddAttributes"), ("delete", "DeleteAttributes"), ("rename", "R
 
 # Feldtyp -> QMetaType (gleiche Zahlen wie QVariant.Type, mit dem nativeTypes() noch arbeitet)
 VARIANT = {
-    "string": QMetaType.QString,
-    "integer": QMetaType.Int,
-    "integer64": QMetaType.LongLong,
-    "real": QMetaType.Double,
-    "date": QMetaType.QDate,
-    "datetime": QMetaType.QDateTime,
-    "time": QMetaType.QTime,
-    "boolean": QMetaType.Bool,
-    "binary": QMetaType.QByteArray,
+    "string": QMetaType.Type.QString,
+    "integer": QMetaType.Type.Int,
+    "integer64": QMetaType.Type.LongLong,
+    "real": QMetaType.Type.Double,
+    "date": QMetaType.Type.QDate,
+    "datetime": QMetaType.Type.QDateTime,
+    "time": QMetaType.Type.QTime,
+    "boolean": QMetaType.Type.Bool,
+    "binary": QMetaType.Type.QByteArray,
 }
 
 
@@ -90,7 +90,7 @@ def own_fields(layer):
     out = []
     fields = layer.fields()
     for i in range(fields.count()):
-        if fields.fieldOrigin(i) in (QgsFields.OriginProvider, QgsFields.OriginEdit):
+        if fields.fieldOrigin(i) in (QgsFields.FieldOrigin.OriginProvider, QgsFields.FieldOrigin.OriginEdit):
             out.append(fields.at(i).name())
     return out
 
@@ -168,7 +168,7 @@ def rename_trap(layer, old, new):
     ausführt). Ohne Bearbeitung wird direkt geschrieben, da gibt es das nicht."""
     fields = layer.fields()
     idx = fields.indexOf(old)
-    if not layer.isEditable() or idx < 0 or fields.fieldOrigin(idx) != QgsFields.OriginProvider:
+    if not layer.isEditable() or idx < 0 or fields.fieldOrigin(idx) != QgsFields.FieldOrigin.OriginProvider:
         return ""
     stored = layer.dataProvider().fields().at(fields.fieldOriginIndex(idx)).name()
     if old != stored and stored.lower() == (new or "").strip().lower():

@@ -78,7 +78,7 @@ def test_buttons_mirror_and_trigger_qgis_actions(fake_iface):
 
     split = w.findChild(QWidget, "ribbon_split_verschieben")
     # Großer Split wie in Pro: oben Hauptbefehl, unten Beschriftung mit Pfeil (Menü)
-    assert split.bottom.popupMode() == QToolButton.InstantPopup
+    assert split.bottom.popupMode() == QToolButton.ToolButtonPopupMode.InstantPopup
     assert split.bottom.text().startswith("Verschieben")
     assert split.top.defaultAction().isChecked()       # Verschieben ist aktiv
     zoom_btn = w.findChild(QToolButton, "ribbon_btn_zoomen")  # in der Zeile
@@ -111,7 +111,7 @@ def test_unavailable_commands_are_disabled_with_reason(fake_iface):
     assert not btn.isEnabled() and "mActionGibtEsNicht" in btn.toolTip()
     # Split mit fehlendem Hauptbefehl: Klick öffnet das Menü, Menüeinträge bleiben nutzbar
     split = button(w, "ribbon_split_suchen")
-    assert split.isEnabled() and split.popupMode() == QToolButton.InstantPopup
+    assert split.isEnabled() and split.popupMode() == QToolButton.ToolButtonPopupMode.InstantPopup
     hub.disconnect_all()
 
 

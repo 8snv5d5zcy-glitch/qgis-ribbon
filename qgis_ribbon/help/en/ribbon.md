@@ -25,7 +25,7 @@ When you start editing a layer, the ribbon switches to the **Edit** tab. It does
 
 In **Editing**, **Edit**, **Save** and **Discard** act on the active layer only; editing stays on after saving or discarding. **Save All** and **Discard All** act on every layer being edited. QGIS asks before discarding.
 
-**Construction › Advanced Digitizing** turns the construction aids on or off (distance, angle, coordinates while digitizing). It is available while a tool that supports it is active, for example **Create** or **Modify**. While it is on, QGIS opens its panel whenever you pick such a tool; **Construction Panel** shows or hides the panel. The small icons in **Snapping** switch tracing, self-snapping and snapping to intersections.
+**Construction › Advanced Digitizing** turns the construction aids on or off (distance, angle, coordinates while digitizing). It is available while a tool that supports it is active, for example **Create** or **Modify**. The panel does not open with it; **Construction Panel** in the button's dropdown shows or hides the panel without switching the aids on or off. The small icons in **Snapping** switch tracing, self-snapping and snapping to intersections.
 
 ## Contextual tabs
 
@@ -45,6 +45,8 @@ Some tabs only appear when they fit the active layer in the Layers panel. They s
 - **Compare:** **Swipe** is a map tool: drag across the map with the mouse button pressed; behind the edge the layer is hidden and reveals the layers below. The direction of the drag decides whether the edge is vertical or horizontal; when you release the button the whole layer is shown again. **Flicker** hides and shows the layer at the set interval (milliseconds) until you switch it off or select another layer. Neither changes the layer list or the project.
 
 The groups for the layer type follow, for example **Aggregation** for point layers (point cluster, point displacement, heatmap; **None** restores the previous symbology), the **Renderer**, **Point Size** and **Max. Error** of a point cloud, or the displayed datasets (**Scalar**, **Vectors**) and the **Mesh Frame** of a mesh.
+
+For vector layers the **Symbol** group follows **Drawing**: choose a category, class or rule under **Class** (or click the class in the Layers panel), then change **Fill Color**, **Outline Color** and **Width** directly. Width is the size for points, the line width for lines and the outline width for polygons. With **All categories** (or **All classes**, **All rules**) the width applies to every class; the colors are gray then, because each class has its own. **Edit Symbol** opens the QGIS symbol editor for the chosen class. Every change can be undone as in the Layer Styling panel. If a value is set by an expression, the field stays gray; the tooltip says why.
 
 **Group:** opacity, blending mode and visibility range apply to the whole group. QGIS only has them when the group is *rendered as a group*; the first change switches that on (button **Render as Group**; switching it off removes the group's settings). **Exclusive** keeps only one layer of the group visible; the Layers panel then shows circles instead of check boxes. **Zoom to Group** shows all of its layers.
 
@@ -77,7 +79,7 @@ The small icons at the left of the header are the **Quick Access Toolbar**. Its 
 - **Order:** in the editor, see [Customizing the ribbon](customize.md).
 - **Restore Defaults** in the ▾ menu restores the shipped commands.
 
-The ▾ menu also contains the settings of the ribbon: KeyTips, minimizing, the editor, arrangements, appearance, the classic QGIS interface and this guide. The same entries are in the right-click menu of the ribbon:
+The ▾ menu also contains the settings of the ribbon: KeyTips, minimizing, the editor, arrangements, appearance, hiding the QGIS menu bar, the classic QGIS interface and this guide. The same entries are in the right-click menu of the ribbon:
 
 ![Right-click menu of the ribbon](../images/en/context_menu.png)
 
