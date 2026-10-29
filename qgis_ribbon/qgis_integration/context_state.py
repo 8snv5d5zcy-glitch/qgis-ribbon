@@ -17,7 +17,7 @@ Signalverbindungen:
 import time
 
 from qgis.core import (QgsLayerTreeGroup, QgsMeshLayer, QgsPointCloudLayer, QgsRasterLayer,
-                       QgsVectorLayer, QgsVectorTileLayer)
+                       QgsRuleBasedLabeling, QgsVectorLayer, QgsVectorTileLayer)
 from qgis.PyQt import sip
 from qgis.PyQt.QtCore import QTimer
 
@@ -73,7 +73,8 @@ def snapshot(layer, group=None):
     if kind in ("vector", "table"):
         return Snapshot(layer_kind=kind, editable=layer.isEditable(),
                         has_selection=layer.selectedFeatureCount() > 0,
-                        field_caps=field_caps(layer))
+                        field_caps=field_caps(layer),
+                        label_classes=isinstance(layer.labeling(), QgsRuleBasedLabeling))
     return Snapshot(layer_kind=kind)
 
 
@@ -121,6 +122,10 @@ class ContextState(object):
             self.layer_hub.connect(layer, "editingStarted", self._on_editing_started)
             self.layer_hub.connect(layer, "editingStopped", self.schedule)
             self.layer_hub.connect(layer, "selectionChanged", self.schedule)
+            # Der Beschriftungsmodus (einfach/Klassen) hat kein eigenes Signal; Änderungen
+            # darüber melden styleChanged bzw. repaintRequested.
+            self.layer_hub.connect(layer, "styleChanged", self.schedule)
+            self.layer_hub.connect(layer, "repaintRequested", self.schedule)
 
     def _on_layer_changed(self, layer):
         if layer is not self.layer:

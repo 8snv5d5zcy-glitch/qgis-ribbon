@@ -40,10 +40,10 @@ def test_opacity_and_blend_mode(layers, kind):
 
 def test_labels_enable_creates_simple_labeling(layers):
     v = layers["vector"]
-    assert not layer_ops.labels_enabled(v) and layer_ops.label_settings(v) == []
+    assert not layer_ops.labels_enabled(v) and layer_ops.label_class_settings(v, "") is None
     layer_ops.set_labels_enabled(v, True)
     assert layer_ops.labels_enabled(v)
-    assert layer_ops.label_settings(v)[0].fieldName == "name"
+    assert layer_ops.label_class_settings(v, "").fieldName == "name"
     layer_ops.set_labels_enabled(v, False)
     assert not layer_ops.labels_enabled(v) and v.labeling() is not None
     # Tabellen und Raster haben keine Beschriftung
@@ -54,24 +54,24 @@ def test_labels_enable_creates_simple_labeling(layers):
 def test_label_scale_and_text_format(layers):
     v = layers["vector"]
     layer_ops.set_labels_enabled(v, True)
-    layer_ops.set_label_scale(v, "max", 500)
-    assert layer_ops.label_scale_range(v) == (True, 500.0, 0.0)
-    layer_ops.clear_label_scales(v)
-    assert layer_ops.label_scale_range(v) == (False, 0.0, 0.0)
+    layer_ops.set_label_scale(v, "", "max", 500)
+    assert layer_ops.label_scale_range(v, "") == (True, 500.0, 0.0)
+    layer_ops.clear_label_scales(v, "")
+    assert layer_ops.label_scale_range(v, "") == (False, 0.0, 0.0)
 
-    layer_ops.set_font_size(v, 13)
-    assert layer_ops.text_format(v).size() == 13
-    layer_ops.change_font_size(v, +1)
-    assert layer_ops.text_format(v).size() == 14
-    layer_ops.change_font_size(v, -1)
-    layer_ops.change_font_size(v, -1)
-    assert layer_ops.text_format(v).size() == 11
-    layer_ops.set_font_color(v, QColor("#ff0000"))
-    assert layer_ops.text_format(v).color().name() == "#ff0000"
-    family = layer_ops.text_format(v).font().family()
-    layer_ops.set_font_family(v, family)
-    layer_ops.set_font_style(v, "Bold")
-    assert layer_ops.text_format(v).namedStyle() == "Bold"
+    layer_ops.set_font_size(v, "", 13)
+    assert layer_ops.text_format(v, "").size() == 13
+    layer_ops.change_font_size(v, "", +1)
+    assert layer_ops.text_format(v, "").size() == 14
+    layer_ops.change_font_size(v, "", -1)
+    layer_ops.change_font_size(v, "", -1)
+    assert layer_ops.text_format(v, "").size() == 11
+    layer_ops.set_font_color(v, "", QColor("#ff0000"))
+    assert layer_ops.text_format(v, "").color().name() == "#ff0000"
+    family = layer_ops.text_format(v, "").font().family()
+    layer_ops.set_font_family(v, "", family)
+    layer_ops.set_font_style(v, "", "Bold")
+    assert layer_ops.text_format(v, "").namedStyle() == "Bold"
 
 
 def test_step_font_size():
@@ -82,7 +82,7 @@ def test_step_font_size():
     assert layer_ops.step_font_size(6, -1) == 6
 
 
-def test_rule_based_labeling_changes_all_rules(layers):
+def test_rule_based_labeling_changes_only_selected_class(layers):
     v = layers["vector"]
     root = QgsRuleBasedLabeling.Rule(None)
     for expr in ("\"name\" = 'p0'", "\"name\" <> 'p0'"):
@@ -93,8 +93,11 @@ def test_rule_based_labeling_changes_all_rules(layers):
         root.appendChild(rule)
     v.setLabeling(QgsRuleBasedLabeling(root))
     v.setLabelsEnabled(True)
-    layer_ops.set_font_size(v, 20)
-    assert [s.format().size() for s in layer_ops.label_settings(v)] == [20, 20]
+    first, second = [k for k, _n, _a in layer_ops.label_classes(v)]
+    before = layer_ops.text_format(v, second).size()
+    layer_ops.set_font_size(v, first, 20)
+    assert layer_ops.text_format(v, first).size() == 20
+    assert layer_ops.text_format(v, second).size() == before
 
 
 def test_renderer_switch(layers):
@@ -106,6 +109,8 @@ def test_renderer_switch(layers):
     calls = styled(v)
     assert layer_ops.set_renderer(v, "categorizedSymbol")
     assert layer_ops.renderer_type(v) == "categorizedSymbol"
+    assert layer_ops.set_renderer(v, "graduatedSymbol")
+    assert layer_ops.renderer_type(v) == "graduatedSymbol"
     assert layer_ops.set_renderer(v, "RuleRenderer")
     assert layer_ops.set_renderer(v, "singleSymbol")
     assert not layer_ops.set_renderer(v, "singleSymbol")  # schon gesetzt

@@ -55,7 +55,7 @@ def test_unplaced_commands_are_editor_offers(ribbon):
 # Wörter, in denen ae/oe/ue/ss richtig geschrieben sind (keine Ersatzschreibweise)
 ALLOWED_ASCII = {"ausschneiden", "messen", "messwerkzeuge", "neue", "neues", "neuer", "aktueller",
                  "processing", "quelle", "anpassen", "ausschnitt", "klasse",
-                 "beschriftungsklasse", "bildverbesserung", "virtueller", "aktuelles",
+                 "beschriftungsklasse", "beschriftungsklassen", "bildverbesserung", "virtueller", "aktuelles",
                  "kartenausschnitt", "neuen", "virtuellen", "zeitsteuerung", "zusammenfassung",
                  "ausschalten", "datenquellen", "hilfsspeicher", "oberflächenanpassung"}
 

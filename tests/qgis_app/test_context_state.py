@@ -81,7 +81,7 @@ def test_layer_change_disconnects_previous_layer(fake_iface, layers):
         fake_iface.set_active_layer(t)
     settle()
     assert len(hub) == 2                 # nur currentLayerChanged und aktueller Knoten der Layerliste
-    assert len(state.layer_hub) == 4     # willBeDeleted, Bearbeitung an/aus, Auswahl der Tabelle
+    assert len(state.layer_hub) == 6     # willBeDeleted, Bearbeitung an/aus, Auswahl, styleChanged, repaintRequested
     assert rec.last[0] == Snapshot("table", field_caps=ALL)
     n = len(rec.calls)
     v.selectByIds(v.allFeatureIds())     # alter Layer: keine Aktualisierung mehr

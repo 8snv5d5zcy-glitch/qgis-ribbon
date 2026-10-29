@@ -163,8 +163,8 @@ def test_labels_toggle_and_text_controls(ribbon, fake_iface, layers):
     size = control(w, "groesse")
     size.editor.setEditText("15,5")
     size.editor.lineEdit().editingFinished.emit()
-    assert layer_ops.text_format(v).size() == 15.5
-    layer_ops.set_font_size(v, 9)
+    assert layer_ops.text_format(v, "").size() == 15.5
+    layer_ops.set_font_size(v, "", 9)
     settle()
     assert size.editor.currentText() == "9"
 

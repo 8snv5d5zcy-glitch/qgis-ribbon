@@ -42,6 +42,7 @@ class Snapshot:
     editable: bool = False       # Layer im Bearbeitungsmodus
     has_selection: bool = False  # mindestens ein Objekt gewählt
     field_caps: FrozenSet[str] = frozenset()  # Felder anlegen/löschen/umbenennen (``FIELD_CAPS``)
+    label_classes: bool = False  # Beschriftung des Layers ist regelbasiert (Klassen an)
 
     def __post_init__(self):
         if self.layer_kind is not None and self.layer_kind not in LAYER_KINDS:
@@ -100,6 +101,9 @@ CONDITIONS = {
     "active_layer_can_rename_fields": (
         ("field_caps",), lambda s: "rename" in s.field_caps,
         tr("Fields of the active layer can be renamed.")),
+    "label_classes_on": (
+        ("label_classes",), lambda s: s.label_classes,
+        tr("The active layer labels by class (rule-based labeling).")),
 }
 
 EVENTS = {

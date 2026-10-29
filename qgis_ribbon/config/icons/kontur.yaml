@@ -330,6 +330,12 @@ motive:
     a:
       - '<path d="M15.5 9h5M15.5 13h3" transform="translate(0.6 0.6) scale(0.78)"/>'
       - '<path d="M18.5 14.5v8M14.5 18.5h8"/>'
+  beschriftungsklassen:
+    k:
+      - '<path d="M4 19.5L9.5 5h1L16 19.5M6.2 14h7.6"/>'
+    a:
+      - '<rect x="17" y="5" width="4.5" height="5" rx="1"/>'
+      - '<rect x="17" y="13" width="4.5" height="5" rx="1"/>'
   beziehungen:
     f:
       - '<rect x="3" y="3" width="8" height="7" rx="1.4"/>'
@@ -2370,6 +2376,7 @@ befehle:
   beschriftungsklasse_filter: filter
   beschriftungsklasse_loeschen: beschriftungsklasse_loeschen
   beschriftungsklasse_neu: beschriftungsklasse_neu
+  beschriftungsklassen: beschriftungsklassen
   beziehungen_verwalten: beziehungen
   cpp_api: dokumentation
   daten_hinzufuegen: daten_hinzufuegen

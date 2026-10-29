@@ -3,7 +3,7 @@ name=QGIS Ribbon
 qgisMinimumVersion=3.44
 supportsQt6=True
 description=A ribbon interface for QGIS: tabs, contextual tabs, Quick Access Toolbar, KeyTips and command search instead of toolbars.
-version=1.5.0
+version=1.6.0
 author=Paul Liecke
 email=paul.liecke@gmx.de
 about=QGIS Ribbon replaces the QGIS toolbars with a ribbon. Commands are sorted into tabs and groups (Map, Insert, Analysis, View, Edit, Imagery, Share, Extensions). Contextual tabs appear for the active vector layer, table or raster. It includes a Quick Access Toolbar, KeyTips for keyboard use (Alt), a command search, a graphical editor to customize tabs, groups and galleries, saved and shareable arrangements, light and dark appearance, and a tab for the commands of installed plugins. The ribbon only calls existing QGIS functions; the panels stay unchanged, the menu bar can optionally be hidden, and deactivating the plugin restores the QGIS toolbars exactly. User interface in English and German, with a built-in guide (Help > Plugins > QGIS Ribbon Guide). The layout follows the ribbon concept of ArcGIS Pro to help users switching to QGIS. This is an independent project, not affiliated with or endorsed by Esri, and it contains no Esri icons, texts or graphics. Tested on Windows with QGIS 3.44. No extra Python packages needed (uses PyYAML, which ships with QGIS).
@@ -11,6 +11,7 @@ tracker=https://github.com/8snv5d5zcy-glitch/qgis-ribbon/issues
 repository=https://github.com/8snv5d5zcy-glitch/qgis-ribbon
 homepage=https://github.com/8snv5d5zcy-glitch/qgis-ribbon#readme
 changelog=
+    1.6.0 Labeling tab: new Label Classes button switches between labeling by class and one simple label (both versions are kept in the project); all groups of the tab read and change only the selected class; scale limits of a class are stored in its rule scale range; fixed: Graduated in the symbology gallery failed; Symbol group: Class is grayed out for a single symbol.
     1.5.0 Save Arrangement saves into the current arrangement, Save As creates a new one; every gallery can be customized (right-click or ribbon editor), also dropdowns like Basemap, with commands of other plugins; dropdowns of split buttons and menus too, by dropping a command onto the button in the ribbon editor; dropdown buttons no longer duplicate their entries in wide windows; Simulate Color Blindness as one button with the QGIS preview menu; Advanced Digitizing with the Construction Panel in its dropdown; the button only switches the aids, the panel is shown or hidden separately; Hide QGIS Menu Bar with a menu button in the ribbon header; 82 further commands in the editor and the search: every options page, Manage and Install Plugins, help commands, decorations, layer visibility and every QGIS menu as a dropdown; Symbol group in the Appearance tab: fill color, outline color and width per class, symbol editor.
     1.4.1 Qt6 preparation: all Qt and QGIS enums fully qualified, exec() instead of exec_(), as one code base for QGIS 3.44 (Qt5) and QGIS 4 (Qt6). Not yet tested on QGIS 4. No changes in behavior.
     1.4.0 New Fields group (add, delete, rename fields, field calculator); 94 further QGIS commands in the editor and the search, e.g. direct access to layer, project and options pages; built-in tabs and groups can be deleted in the editor; smaller refinements.

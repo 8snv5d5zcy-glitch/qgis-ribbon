@@ -5,17 +5,20 @@ QGIS-Dialog setzt, und meldet sie wie QGIS: neu zeichnen, ``styleChanged``,
 Projekt geändert. So bleiben Layereigenschaften, Layer-Styling und Legende
 im Einklang mit dem Ribbon.
 
-Beschriftung: Einfache Beschriftung und regelbasierte Beschriftung werden
-unterstützt. Bei regelbasierter Beschriftung wirkt eine Änderung auf alle
-Regeln, angezeigt werden die Werte der ersten Regel.
+Beschriftung: Einfache Beschriftung und regelbasierte Beschriftung (Klassen)
+werden unterstützt. Lesen und Schreiben gehen über den Klassenschlüssel
+(``label_class_settings`` / ``update_label_class``); einfache Beschriftung ist
+die Klasse ``SIMPLE_KEY``. Der Schalter „Beschriftungsklassen“ wechselt
+zwischen beiden und merkt die nicht verwendete Fassung am Layer.
 """
 
-from qgis.core import (Qgis, QgsApplication, QgsCategorizedSymbolRenderer, QgsCoordinateTransform,
-                       QgsExpression, QgsFeatureRenderer, QgsGraduatedSymbolRenderer,
-                       QgsHeatmapRenderer, QgsMapLayer, QgsPalLayerSettings, QgsProject,
-                       QgsProviderRegistry, QgsRasterLayer, QgsRuleBasedLabeling,
-                       QgsRuleBasedRenderer, QgsSettings, QgsSingleSymbolRenderer, QgsVectorLayer,
-                       QgsVectorLayerSimpleLabeling)
+from qgis.core import (Qgis, QgsAbstractVectorLayerLabeling, QgsApplication,
+                       QgsCategorizedSymbolRenderer, QgsCoordinateTransform, QgsExpression,
+                       QgsFeatureRenderer, QgsGraduatedSymbolRenderer, QgsHeatmapRenderer, QgsMapLayer,
+                       QgsPalLayerSettings, QgsProject, QgsProviderRegistry, QgsRasterLayer,
+                       QgsReadWriteContext, QgsRuleBasedLabeling, QgsRuleBasedRenderer, QgsSettings,
+                       QgsSingleSymbolRenderer, QgsVectorLayer, QgsVectorLayerSimpleLabeling)
+from qgis.PyQt.QtXml import QDomDocument
 from ..core.i18n import tr
 
 # Schriftgrößen für Vergrößern/Verkleinern und die Größenauswahl (Punkt)
@@ -123,18 +126,6 @@ def _rules(labeling):
     return [r for r in root.descendants() if r.settings() is not None]
 
 
-def label_settings(layer):
-    """Beschriftungseinstellungen des Layers (Kopien), leer ohne Beschriftung."""
-    if not is_vector(layer) or layer.labeling() is None:
-        return []
-    lab = layer.labeling()
-    if isinstance(lab, QgsVectorLayerSimpleLabeling):
-        return [lab.settings()]
-    if isinstance(lab, QgsRuleBasedLabeling):
-        return [QgsPalLayerSettings(r.settings()) for r in _rules(lab)]
-    return []
-
-
 def update_label_settings(layer, change):
     """``change(settings)`` auf alle Beschriftungseinstellungen anwenden und zurückschreiben.
 
@@ -191,17 +182,48 @@ def set_labels_enabled(layer, on):
     changed(layer)
 
 
-def label_scale_range(layer):
-    """(an, größter, kleinster) Maßstab der Beschriftung (erste Einstellung)."""
-    settings = label_settings(layer)
-    if not settings:
+def label_scale_range(layer, key):
+    """(an, größter, kleinster) Maßstab der Klasse ``key``.
+
+    Bei Klassen steht der Maßstab am Regelbereich (Spalten „Min./Max. Maßstab“
+    der Regelliste in QGIS), sonst in den Einstellungen der einfachen Beschriftung.
+    """
+    rule = _label_rule(layer, key)
+    if rule is not None:
+        return bool(rule.minimumScale() or rule.maximumScale()), rule.maximumScale(), rule.minimumScale()
+    s = label_class_settings(layer, key)
+    if s is None:
         return False, 0.0, 0.0
-    s = settings[0]
     return s.scaleVisibility, s.maximumScale, s.minimumScale
 
 
-def set_label_scale(layer, which, scale):
+def label_class_extra_scale(layer, key):
+    """Hat die Klasse zusätzlich zum Regelbereich einen Bereich in ihren Einstellungen,
+    oder eine Elternregel mit eigenem Bereich? (Wirkt, wird im Ribbon aber nicht angezeigt.)"""
+    rule = _label_rule(layer, key)
+    if rule is None:
+        return False
+    s = rule.settings()
+    if s is not None and s.scaleVisibility and (s.minimumScale or s.maximumScale):
+        return True
+    parent = rule.parent()
+    while parent is not None:
+        if parent.minimumScale() or parent.maximumScale():
+            return True
+        parent = parent.parent()
+    return False
+
+
+def set_label_scale(layer, key, which, scale):
     scale = float(scale or 0)
+    rule = _label_rule(layer, key)
+    if rule is not None:
+        if which == "max":
+            rule.setMaximumScale(scale)
+        else:
+            rule.setMinimumScale(scale)
+        changed(layer)
+        return True
 
     def change(s):
         if which == "max":
@@ -211,59 +233,68 @@ def set_label_scale(layer, which, scale):
         if scale:
             s.scaleVisibility = True
 
-    return update_label_settings(layer, change)
+    return update_label_class(layer, key, change)
 
 
-def clear_label_scales(layer):
+def clear_label_scales(layer, key):
+    """Grenzen der Klasse entfernen; bei Klassen auch einen Bereich in ihren Einstellungen."""
+    rule = _label_rule(layer, key)
+    if rule is not None:
+        rule.setMaximumScale(0)
+        rule.setMinimumScale(0)
+
     def change(s):
         s.scaleVisibility = False
         s.maximumScale = 0
         s.minimumScale = 0
 
-    return update_label_settings(layer, change)
+    if rule is not None and rule.settings() is None:
+        changed(layer)
+        return True
+    return update_label_class(layer, key, change)
 
 
-def text_format(layer):
-    """Textformat der Beschriftung (erste Einstellung) oder Standardformat des Projekts."""
-    settings = label_settings(layer)
-    if settings:
-        return settings[0].format()
+def text_format(layer, key):
+    """Textformat der Klasse oder Standardformat des Projekts."""
+    settings = label_class_settings(layer, key)
+    if settings is not None:
+        return settings.format()
     return QgsProject.instance().styleSettings().defaultTextFormat()
 
 
-def update_text_format(layer, change):
+def update_text_format(layer, key, change):
     def apply(s):
         fmt = s.format()
         change(fmt)
         s.setFormat(fmt)
 
-    return update_label_settings(layer, apply)
+    return update_label_class(layer, key, apply)
 
 
-def set_text_format(layer, fmt):
-    return update_label_settings(layer, lambda s: s.setFormat(fmt))
+def set_text_format(layer, key, fmt):
+    return update_label_class(layer, key, lambda s: s.setFormat(fmt))
 
 
-def set_font_family(layer, family):
+def set_font_family(layer, key, family):
     def change(fmt):
         font = fmt.font()
         font.setFamily(family)
         fmt.setFont(font)
         fmt.setNamedStyle("")
 
-    return update_text_format(layer, change)
+    return update_text_format(layer, key, change)
 
 
-def set_font_style(layer, style):
-    return update_text_format(layer, lambda fmt: fmt.setNamedStyle(style))
+def set_font_style(layer, key, style):
+    return update_text_format(layer, key, lambda fmt: fmt.setNamedStyle(style))
 
 
-def set_font_size(layer, size):
-    return update_text_format(layer, lambda fmt: fmt.setSize(float(size)))
+def set_font_size(layer, key, size):
+    return update_text_format(layer, key, lambda fmt: fmt.setSize(float(size)))
 
 
-def set_font_color(layer, color):
-    return update_text_format(layer, lambda fmt: fmt.setColor(color))
+def set_font_color(layer, key, color):
+    return update_text_format(layer, key, lambda fmt: fmt.setColor(color))
 
 
 def step_font_size(size, step):
@@ -275,8 +306,8 @@ def step_font_size(size, step):
     return smaller[-1] if smaller else size
 
 
-def change_font_size(layer, step):
-    return update_text_format(layer, lambda fmt: fmt.setSize(step_font_size(fmt.size(), step)))
+def change_font_size(layer, key, step):
+    return update_text_format(layer, key, lambda fmt: fmt.setSize(step_font_size(fmt.size(), step)))
 
 
 # -- Beschriftungsklassen ---------------------------------------------------
@@ -345,25 +376,129 @@ def update_label_class(layer, key, change):
     return True
 
 
-def add_label_class(layer, key, name):
-    """Neue Beschriftungsklasse nach dem Muster der Klasse ``key``; gibt ihren Schlüssel zurück.
+def label_classes_on(layer):
+    """Ist die Beschriftung des Layers regelbasiert (Klassen an)?"""
+    return is_vector(layer) and isinstance(layer.labeling(), QgsRuleBasedLabeling)
 
-    Einfache Beschriftung wird dafür regelbasiert, die bisherigen Einstellungen
-    bleiben als erste Klasse („Standard“). Die neue Klasse hat keinen Filter.
+
+# Die nicht verwendete Fassung der Beschriftung (einfach oder Klassen) steht als XML
+# in diesen Layer-Eigenschaften und wird mit dem Projekt gespeichert.
+KEPT_SIMPLE = "qgis_ribbon/beschriftung_einfach"
+KEPT_CLASSES = "qgis_ribbon/beschriftung_klassen"
+
+
+def _keep_labeling(layer, name, labeling):
+    doc = QDomDocument()
+    doc.appendChild(labeling.save(doc, QgsReadWriteContext()))
+    layer.setCustomProperty(name, doc.toString())
+
+
+def _kept_labeling(layer, name):
+    xml = layer.customProperty(name, "")
+    if not xml:
+        return None
+    doc = QDomDocument()
+    if not doc.setContent(xml):
+        return None
+    return QgsAbstractVectorLayerLabeling.create(doc.documentElement(), QgsReadWriteContext())
+
+
+def _scale_to_rule(settings, rule):
+    """Maßstabsbereich der Einstellungen an die Regel übergeben (Einstellungen ohne Bereich)."""
+    if settings.scaleVisibility:
+        rule.setMaximumScale(settings.maximumScale)
+        rule.setMinimumScale(settings.minimumScale)
+    settings.scaleVisibility = False
+    settings.maximumScale = 0
+    settings.minimumScale = 0
+
+
+def to_rule_based(layer):
+    """Beschriftung des Layers regelbasiert machen; gibt den Schlüssel der ersten Klasse zurück.
+
+    Gemerkte Klassen werden unverändert eingesetzt. Sonst wird die einfache
+    Beschriftung (ohne Beschriftung: die Standardeinstellungen) als Klasse
+    „Standard“ übernommen, ausgeschaltet; ihr Maßstab wird der Bereich der
+    Regel. Die einfache Beschriftung wird gemerkt.
     """
     if not is_vector(layer):
         return None
-    if layer.labeling() is None:
-        layer.setLabeling(QgsVectorLayerSimpleLabeling(default_label_settings(layer)))
     lab = layer.labeling()
-    if isinstance(lab, QgsVectorLayerSimpleLabeling):
-        root = QgsRuleBasedLabeling.Rule(None)
-        first = QgsRuleBasedLabeling.Rule(QgsPalLayerSettings(lab.settings()))
-        first.setDescription(SIMPLE_NAME)
-        root.appendChild(first)
-        key = first.ruleKey()
-        layer.setLabeling(QgsRuleBasedLabeling(root))
-        lab = layer.labeling()
+    if not isinstance(lab, QgsRuleBasedLabeling):
+        kept = _kept_labeling(layer, KEPT_CLASSES)
+        if isinstance(lab, QgsVectorLayerSimpleLabeling):
+            _keep_labeling(layer, KEPT_SIMPLE, lab)
+        if isinstance(kept, QgsRuleBasedLabeling):
+            layer.setLabeling(kept)
+        else:
+            settings = (QgsPalLayerSettings(lab.settings()) if isinstance(lab, QgsVectorLayerSimpleLabeling)
+                        else default_label_settings(layer))
+            rule = QgsRuleBasedLabeling.Rule(None)
+            first = QgsRuleBasedLabeling.Rule(QgsPalLayerSettings(settings))
+            _scale_to_rule(settings, first)
+            first.setSettings(settings)
+            first.setDescription(SIMPLE_NAME)
+            first.setActive(False)
+            rule.appendChild(first)
+            layer.setLabeling(QgsRuleBasedLabeling(rule))
+        changed(layer)
+    classes = label_classes(layer)
+    return classes[0][0] if classes else None
+
+
+def to_simple(layer, key):
+    """Beschriftung des Layers einfach machen; die Klassen werden gemerkt.
+
+    Eingesetzt wird die gemerkte einfache Beschriftung. Gibt es keine, übernimmt die
+    einfache Beschriftung die Einstellungen der Klasse ``key`` samt Maßstabsbereich.
+    """
+    lab = layer.labeling() if is_vector(layer) else None
+    if not isinstance(lab, QgsRuleBasedLabeling):
+        return False
+    _keep_labeling(layer, KEPT_CLASSES, lab)
+    kept = _kept_labeling(layer, KEPT_SIMPLE)
+    if not isinstance(kept, QgsVectorLayerSimpleLabeling):
+        rule = _label_rule(layer, key)
+        if rule is None or rule.settings() is None:
+            rules = _rules(lab)
+            rule = rules[0] if rules else None
+        if rule is not None:
+            settings = QgsPalLayerSettings(rule.settings())
+            if rule.minimumScale() or rule.maximumScale():
+                settings.scaleVisibility = True
+                settings.maximumScale = rule.maximumScale()
+                settings.minimumScale = rule.minimumScale()
+        else:
+            settings = default_label_settings(layer)
+        kept = QgsVectorLayerSimpleLabeling(settings)
+    layer.setLabeling(kept)
+    changed(layer)
+    return True
+
+
+def set_label_classes(layer, on, key=None):
+    """Schalter „Beschriftungsklassen“: Klassen an (regelbasiert) oder aus (einfach)."""
+    if not is_vector(layer):
+        return False
+    if bool(on) == label_classes_on(layer):
+        return True
+    if on:
+        return to_rule_based(layer) is not None
+    return to_simple(layer, key)
+
+
+def add_label_class(layer, key, name):
+    """Neue Beschriftungsklasse nach dem Muster der Klasse ``key``; gibt ihren Schlüssel zurück.
+
+    Bei einfacher Beschriftung werden zuerst die Klassen eingeschaltet
+    (``to_rule_based``); Muster ist dann die erste Klasse. Die neue Klasse hat
+    keinen Filter und ist eingeschaltet.
+    """
+    if not is_vector(layer):
+        return None
+    if not label_classes_on(layer):
+        key = to_rule_based(layer)
+    lab = layer.labeling()
     if not isinstance(lab, QgsRuleBasedLabeling):
         return None
     template = label_class_settings(layer, key) or default_label_settings(layer)
@@ -495,11 +630,11 @@ def _placement_name(value):
     return None
 
 
-def label_placement(layer):
-    settings = label_settings(layer)
-    if not settings:
+def label_placement(layer, key):
+    settings = label_class_settings(layer, key)
+    if settings is None:
         return None
-    return _placement_name(settings[0].placement)
+    return _placement_name(settings.placement)
 
 
 def suit_placement(layer, settings):
@@ -515,12 +650,12 @@ def suit_placement(layer, settings):
     return True
 
 
-def set_label_placement(layer, name):
+def set_label_placement(layer, key, name):
     value = getattr(Qgis.LabelPlacement, name)
 
     def change(s):
         s.placement = value
-    return update_label_settings(layer, change)
+    return update_label_class(layer, key, change)
 
 
 # -- Abfragbare Layer ------------------------------------------------------------
@@ -596,7 +731,7 @@ def set_renderer(layer, name):
     elif name == "categorizedSymbol":
         new = QgsCategorizedSymbolRenderer.convertFromRenderer(old, layer)
     elif name == "graduatedSymbol":
-        new = QgsGraduatedSymbolRenderer.convertFromRenderer(old, layer)
+        new = QgsGraduatedSymbolRenderer.convertFromRenderer(old)
     elif name == "RuleRenderer":
         new = QgsRuleBasedRenderer.convertFromRenderer(old, layer)
     elif name == "heatmapRenderer":

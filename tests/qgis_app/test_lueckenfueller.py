@@ -199,18 +199,18 @@ def test_new_and_deleted_label_class(layers):
 def test_label_on_gives_lines_parallel_placement():
     line = QgsVectorLayer("LineString?crs=EPSG:25832&field=name:string", "Linien", "memory")
     layer_ops.set_labels_enabled(line, True)
-    assert layer_ops.label_placement(line) == "Line"                       # „Parallel“
+    assert layer_ops.label_placement(line, "") == "Line"                       # „Parallel“
     # Vorhandene Beschriftung mit „Um Punkt“ (QGIS beschriftet Linien damit nicht)
     s = QgsPalLayerSettings()
     s.fieldName = "name"
     s.placement = Qgis.LabelPlacement.AroundPoint
     line.setLabeling(QgsVectorLayerSimpleLabeling(s))
     layer_ops.set_labels_enabled(line, True)
-    assert layer_ops.label_placement(line) == "Line"
+    assert layer_ops.label_placement(line, "") == "Line"
     # Punkte und Flächen behalten ihre (passende) Platzierung
     poly = polygons()
     layer_ops.set_labels_enabled(poly, True)
-    assert layer_ops.label_placement(poly) == "AroundPoint"
+    assert layer_ops.label_placement(poly, "") == "AroundPoint"
 
 
 def test_label_class_commands_update_class_list(ribbon, fake_iface, layers, monkeypatch):
@@ -278,8 +278,8 @@ def test_label_placement(layers):
         "OrderedPositionsAroundPoint", "AroundPoint", "OverPoint"]
     assert [n for n, _l in layer_ops.placement_choices(polygons())][-1] == "OutsidePolygons"
     layer_ops.set_labels_enabled(v, True)
-    layer_ops.set_label_placement(v, "OverPoint")
-    assert layer_ops.label_placement(v) == "OverPoint"
+    layer_ops.set_label_placement(v, "", "OverPoint")
+    assert layer_ops.label_placement(v, "") == "OverPoint"
     assert isinstance(v.labeling(), QgsVectorLayerSimpleLabeling)
 
 
@@ -537,7 +537,7 @@ def test_placement_and_band_galleries(ribbon, fake_iface, layers, multiband):
     settle()
     acts = gallery_actions(w, "Platzierung")
     acts["Versetzt zum Punkt"].trigger()
-    assert layer_ops.label_placement(v) == "OverPoint" and v.labelsEnabled()
+    assert layer_ops.label_placement(v, "") == "OverPoint" and v.labelsEnabled()
     fake_iface.set_active_layer(multiband)
     settle()
     acts = gallery_actions(w, "Kanalkombination")

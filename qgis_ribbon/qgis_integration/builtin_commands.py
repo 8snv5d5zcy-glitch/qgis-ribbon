@@ -163,16 +163,38 @@ def _on_active_vector(env, change):
     return run
 
 
+def selected_key(env, layer):
+    """Schlüssel der gewählten Beschriftungsklasse (einfache Beschriftung: ``SIMPLE_KEY``)."""
+    key = label_class_state(env).selected(layer)
+    return layer_ops.SIMPLE_KEY if key is None else key
+
+
+def beschriftung_klassen_schalten(env, command):
+    """Beschriftungsklassen an (regelbasiert) oder aus (einfache Beschriftung)."""
+    def read(layer):
+        return layer_ops.is_vector(layer), layer_ops.label_classes_on(layer)
+
+    def run(layer, checked):
+        if not _vector_or_warn(env, layer):
+            return
+        layer_ops.set_label_classes(layer, checked, selected_key(env, layer))
+        label_class_state(env).changed.emit()
+
+    return env.keep(StateAction(env, command.label, read, run))
+
+
 def beschriftung_massstab_aus(env, command):
-    return _on_active_vector(env, layer_ops.clear_label_scales)
+    return _on_active_vector(env, lambda layer: layer_ops.clear_label_scales(layer, selected_key(env, layer)))
 
 
 def beschriftung_groesser(env, command):
-    return _on_active_vector(env, lambda layer: layer_ops.change_font_size(layer, +1))
+    return _on_active_vector(
+        env, lambda layer: layer_ops.change_font_size(layer, selected_key(env, layer), +1))
 
 
 def beschriftung_kleiner(env, command):
-    return _on_active_vector(env, lambda layer: layer_ops.change_font_size(layer, -1))
+    return _on_active_vector(
+        env, lambda layer: layer_ops.change_font_size(layer, selected_key(env, layer), -1))
 
 
 def processing_optionen(env, command):
@@ -261,7 +283,7 @@ def textformat_galerie(env, command):
                 if not _vector_or_warn(env, target):
                     return
                 had_labels = target.labeling() is not None
-                layer_ops.set_text_format(target, fmt)
+                layer_ops.set_text_format(target, selected_key(env, target), fmt)
                 if not had_labels:
                     layer_ops.set_labels_enabled(target, True)
 
@@ -689,7 +711,7 @@ def abfragbare_layer(env, command):
 def platzierung_galerie(env, command):
     def entries():
         layer = env.iface.activeLayer()
-        current = layer_ops.label_placement(layer)
+        current = layer_ops.label_placement(layer, selected_key(env, layer)) if layer_ops.is_vector(layer) else None
         out = []
         for name, label in layer_ops.placement_choices(layer):
             def apply(name=name):
@@ -697,7 +719,7 @@ def platzierung_galerie(env, command):
                 if not _vector_or_warn(env, target):
                     return
                 had_labels = target.labeling() is not None
-                layer_ops.set_label_placement(target, name)
+                layer_ops.set_label_placement(target, selected_key(env, target), name)
                 if not had_labels:
                     layer_ops.set_labels_enabled(target, True)
             out.append(GalleryEntry(label, apply, checked=(name == current)))
@@ -980,6 +1002,7 @@ BUTTONS = {
     "ribbon.locator_fokus": locator_fokus,
     "ribbon.layer_massstab_schalten": layer_massstab_schalten,
     "ribbon.beschriftung_schalten": beschriftung_schalten,
+    "ribbon.beschriftung_klassen_schalten": beschriftung_klassen_schalten,
     "ribbon.beschriftung_massstab_aus": beschriftung_massstab_aus,
     "ribbon.beschriftung_groesser": beschriftung_groesser,
     "ribbon.beschriftung_kleiner": beschriftung_kleiner,

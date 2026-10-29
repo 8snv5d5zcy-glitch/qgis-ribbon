@@ -188,7 +188,10 @@ class ScaleControl(LayerControl):
         self.which = which
         self.labels = labels
         self.group_aware = not labels
+        self.state = builtin_commands.label_class_state(env) if labels else None
         LayerControl.__init__(self, env, command, ctx, parent, size)
+        if labels:
+            ctx.hub.connect(self.state, "changed", self.refresh)
 
     def create_editor(self):
         w = QgsScaleWidget(self)
@@ -203,7 +206,11 @@ class ScaleControl(LayerControl):
 
     def read(self, layer):
         if self.labels:
-            _on, max_scale, min_scale = layer_ops.label_scale_range(layer)
+            key = builtin_commands.selected_key(self.env, layer)
+            _on, max_scale, min_scale = layer_ops.label_scale_range(layer, key)
+            self.editor.setToolTip(
+                tr("The class also has a scale range in its label settings. It applies but is not shown here.")
+                if layer_ops.label_class_extra_scale(layer, key) else "")
         else:
             _on, max_scale, min_scale = layer_ops.scale_range(layer)
         value = max_scale if self.which == "max" else min_scale
@@ -221,7 +228,8 @@ class ScaleControl(LayerControl):
     def _changed(self, *_args):
         value = self.value()
         if self.labels:
-            self.write(lambda layer: layer_ops.set_label_scale(layer, self.which, value))
+            self.write(lambda layer: layer_ops.set_label_scale(
+                layer, builtin_commands.selected_key(self.env, layer), self.which, value))
         else:
             self.write(lambda layer: layer_ops.set_layer_scale(layer, self.which, value))
 
@@ -288,10 +296,24 @@ class FeatureBlendModeControl(LayerControl):
 
 
 class LabelControl(LayerControl):
-    """Steuerelemente der Beschriftung: nur für Vektorlayer."""
+    """Steuerelemente der Beschriftung: nur für Vektorlayer.
+
+    Sie lesen und schreiben die gewählte Beschriftungsklasse (bei einfacher
+    Beschriftung diese). Ein Klassenwechsel (``LabelClassState.changed``) liest alle neu.
+    """
+
+    def __init__(self, env, command, ctx, parent=None, size="medium"):
+        self.state = builtin_commands.label_class_state(env)
+        LayerControl.__init__(self, env, command, ctx, parent, size)
+        ctx.hub.connect(self.state, "changed", self.refresh)
 
     def suitable(self, layer):
         return layer_ops.is_vector(layer)
+
+    def key(self, layer):
+        """Schlüssel der gewählten Klasse; ohne Beschriftung der der einfachen."""
+        key = self.state.selected(layer)
+        return layer_ops.SIMPLE_KEY if key is None else key
 
 
 class FontControl(LabelControl):
@@ -300,11 +322,11 @@ class FontControl(LabelControl):
     def create_editor(self):
         w = QFontComboBox(self)
         w.currentFontChanged.connect(
-            lambda font: self.write(lambda layer: layer_ops.set_font_family(layer, font.family())))
+            lambda font: self.write(lambda layer: layer_ops.set_font_family(layer, self.key(layer), font.family())))
         return w
 
     def read(self, layer):
-        self.editor.setCurrentFont(layer_ops.text_format(layer).font())
+        self.editor.setCurrentFont(layer_ops.text_format(layer, self.key(layer)).font())
 
 
 def parse_size(text):
@@ -336,12 +358,12 @@ class FontSizeControl(LabelControl):
         if size is None:
             self.refresh()
             return
-        if abs(size - layer_ops.text_format(self.layer()).size()) < 1e-9:
+        if abs(size - layer_ops.text_format(self.layer(), self.key(self.layer())).size()) < 1e-9:
             return
-        self.write(lambda layer: layer_ops.set_font_size(layer, size))
+        self.write(lambda layer: layer_ops.set_font_size(layer, self.key(layer), size))
 
     def read(self, layer):
-        self.editor.setEditText(format_size(layer_ops.text_format(layer).size()))
+        self.editor.setEditText(format_size(layer_ops.text_format(layer, self.key(layer)).size()))
 
 
 class FontStyleControl(LabelControl):
@@ -350,11 +372,11 @@ class FontStyleControl(LabelControl):
     def create_editor(self):
         w = QComboBox(self)
         w.activated.connect(lambda _i: self.write(
-            lambda layer: layer_ops.set_font_style(layer, w.currentText())))
+            lambda layer: layer_ops.set_font_style(layer, self.key(layer), w.currentText())))
         return w
 
     def read(self, layer):
-        fmt = layer_ops.text_format(layer)
+        fmt = layer_ops.text_format(layer, self.key(layer))
         family = fmt.font().family()
         styles = QFontDatabase().styles(family) or ["Regular"]
         current = fmt.namedStyle() or QFontDatabase().styleString(fmt.font())
@@ -373,11 +395,11 @@ class FontColorControl(LabelControl):
         w.setShowNoColor(False)
         w.setColorDialogTitle(self.command.label)
         w.colorChanged.connect(
-            lambda color: self.write(lambda layer: layer_ops.set_font_color(layer, color)))
+            lambda color: self.write(lambda layer: layer_ops.set_font_color(layer, self.key(layer), color)))
         return w
 
     def read(self, layer):
-        self.editor.setColor(layer_ops.text_format(layer).color())
+        self.editor.setColor(layer_ops.text_format(layer, self.key(layer)).color())
 
 
 # -- Lückenfüller --------------------------------------------------------------
@@ -390,11 +412,6 @@ class LabelClassControl(LabelControl):
     """
 
     editor_kind = "class"
-
-    def __init__(self, env, command, ctx, parent=None, size="medium"):
-        self.state = builtin_commands.label_class_state(env)
-        LabelControl.__init__(self, env, command, ctx, parent, size)
-        ctx.hub.connect(self.state, "changed", self.refresh)
 
     def create_editor(self):
         w = QComboBox(self)
@@ -423,11 +440,6 @@ class LabelClassActiveControl(LabelControl):
 
     show_label = False
 
-    def __init__(self, env, command, ctx, parent=None, size="medium"):
-        self.state = builtin_commands.label_class_state(env)
-        LabelControl.__init__(self, env, command, ctx, parent, size)
-        ctx.hub.connect(self.state, "changed", self.refresh)
-
     def create_editor(self):
         w = QCheckBox(self.command.label, self)
         w.toggled.connect(self._toggled)
@@ -446,11 +458,6 @@ class LabelFieldControl(LabelControl):
     """Feld oder Ausdruck der gewählten Beschriftungsklasse (QGIS-Feldauswahl mit Ausdruck)."""
 
     editor_kind = "field"
-
-    def __init__(self, env, command, ctx, parent=None, size="medium"):
-        self.state = builtin_commands.label_class_state(env)
-        LabelControl.__init__(self, env, command, ctx, parent, size)
-        ctx.hub.connect(self.state, "changed", self.refresh)
 
     def create_editor(self):
         w = QgsFieldExpressionWidget(self)
@@ -541,6 +548,12 @@ class SymbolClassControl(SymbolControl):
         w.setIconSize(QSize(16, 16))
         w.activated.connect(self._chosen)
         return w
+
+    def blocked(self, layer):
+        reason = SymbolControl.blocked(self, layer)
+        if reason is None and len(symbol_ops.classes(layer)) < 2:
+            return tr("The symbology has a single symbol; there is no class to choose.")
+        return reason
 
     def read(self, layer):
         self.editor.clear()

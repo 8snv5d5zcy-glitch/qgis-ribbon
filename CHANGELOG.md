@@ -1,6 +1,14 @@
 # Changelog
 
-## 1.5.0 (unreleased)
+## 1.6.0 (2026-10-29)
+
+- Labeling tab: the new Label Classes button switches between labeling by class (rule-based) and one simple label. With classes on, all groups of the tab (visibility range, text symbol, placement) read and change only the class chosen in the list; before, most of them changed all classes. With classes off, they control the simple label and the class commands are grayed out.
+- The scale limits of a class are stored in the scale range of its rule, the values shown in the rule list of the layer properties. Clear Limits removes the range of the rule and any range in the label settings; a hint shows when a class has such an additional range.
+- Switching never loses a version: the label version that is not in use is kept as XML in the layer (custom properties) and saved with the project. The first switch turns the simple label into the class Default, switched off, so nothing is labeled twice. New Class switches classes on and creates a class that is switched on.
+- Fixed: choosing Graduated in the symbology gallery failed with an error.
+- Symbol group: Class is grayed out when the symbology has a single symbol, because there is nothing to choose.
+
+## 1.5.0 (2026-10-29)
 
 - Appearance tab of vector layers, new Symbol group: choose a class (category, class or rule, also by clicking it in the Layers panel) and change its fill color, outline color and width directly; with All … the width applies to every class. Edit Symbol opens the QGIS symbol editor for the class. Works with single symbol, categorized, graduated and rule-based symbology and inside point cluster and displacement; every change is one step on the style undo stack.
 - Hide QGIS Menu Bar (▾ menu and right-click menu) for more room: the menu bar gets no height, keyboard shortcuts and Alt+letter keep working, and a ☰ button at the left of the ribbon header opens all QGIS menus. The classic interface and deactivating the plugin always bring the menu bar back.

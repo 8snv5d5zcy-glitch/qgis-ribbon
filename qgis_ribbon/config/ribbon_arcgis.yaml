@@ -318,6 +318,7 @@ contextual_tabs:
       - id: "beschriftungsklasse"
         label: "Label Class"
         items:
+          - {command: "beschriftungsklassen", size: "large"}
           - row: ["beschriftungsklasse", "beschriftungsklasse_neu", "beschriftungsklasse_loeschen", "beschriftungsklasse_filter", "beschriftungsklasse_aktiv", "beschriftungsfeld"]
       - id: "sichtbarkeitsbereich"
         label: "Visibility Range"
@@ -1311,21 +1312,20 @@ commands:
     label: "Class"
     source: {type: "custom", id: "ribbon.beschriftung_regel"}
     kind: "control"
-    icon: "/mIconLabelingRules.svg"
     description: "Choose a labeling rule of the active layer; the other commands of the group apply to it."
-    enabled_when: ["active_layer_is_vector"]
+    enabled_when: ["active_layer_is_vector", "label_classes_on"]
   beschriftungsklasse_filter:
     label: "Filter"
     source: {type: "custom", id: "ribbon.beschriftung_regel_filter"}
     icon: "/mIconExpressionFilter.svg"
     description: "Edit the filter expression of the selected label class."
-    enabled_when: ["active_layer_is_vector"]
+    enabled_when: ["active_layer_is_vector", "label_classes_on"]
   beschriftungsklasse_aktiv:
     label: "Label Class Features"
     source: {type: "custom", id: "ribbon.beschriftung_regel_aktiv"}
     kind: "control"
     description: "Label the features of the selected label class (rule on or off)."
-    enabled_when: ["active_layer_is_vector"]
+    enabled_when: ["active_layer_is_vector", "label_classes_on"]
   beschriftungsfeld:
     label: "Field"
     source: {type: "custom", id: "ribbon.beschriftung_feld"}
@@ -1337,27 +1337,27 @@ commands:
     source: {type: "custom", id: "ribbon.beschriftung_massstab_max"}
     kind: "control"
     icon: "/mActionZoomIn.svg"
-    description: "Zoomed in further, no labels are drawn. Empty = no limit."
+    description: "Zoomed in further, the selected label class draws no labels. Empty = no limit."
     enabled_when: ["active_layer_is_vector"]
   beschriftung_massstab_min:
     label: "Minimum Scale"
     source: {type: "custom", id: "ribbon.beschriftung_massstab_min"}
     kind: "control"
     icon: "/mActionZoomOut.svg"
-    description: "Zoomed out further, no labels are drawn. Empty = no limit."
+    description: "Zoomed out further, the selected label class draws no labels. Empty = no limit."
     enabled_when: ["active_layer_is_vector"]
   beschriftung_massstab_aus:
     label: "Clear Limits"
     source: {type: "custom", id: "ribbon.beschriftung_massstab_aus"}
     icon: "/mIconClearText.svg"
-    description: "Remove the scale limits of the labels."
+    description: "Remove the scale limits of the selected label class."
     enabled_when: ["active_layer_is_vector"]
   textformat_galerie:
     label: "Text Format"
     source: {type: "custom", id: "ribbon.textformat_galerie"}
     kind: "control"
     icon: "/propertyicons/labelformatting.svg"
-    description: "Apply a saved text format to the labels."
+    description: "Apply a saved text format to the selected label class."
     enabled_when: ["active_layer_is_vector"]
     gallery: {display: "dropdown"}
   beschriftung_schrift:
@@ -1365,40 +1365,40 @@ commands:
     source: {type: "custom", id: "ribbon.beschriftung_schrift"}
     kind: "control"
     icon: "/mIconFonts.svg"
-    description: "Font of the labels."
+    description: "Font of the selected label class."
     enabled_when: ["active_layer_is_vector"]
   beschriftung_groesse:
     label: "Font Size"
     source: {type: "custom", id: "ribbon.beschriftung_groesse"}
     kind: "control"
     icon: "/text.svg"
-    description: "Font size of the labels in points."
+    description: "Font size of the selected label class in points."
     enabled_when: ["active_layer_is_vector"]
   beschriftung_groesser:
     label: "Increase Font Size"
     source: {type: "custom", id: "ribbon.beschriftung_groesser"}
     icon: "/mActionIncreaseFont.svg"
-    description: "Make the label font one step larger."
+    description: "Make the font of the selected label class one step larger."
     enabled_when: ["active_layer_is_vector"]
   beschriftung_kleiner:
     label: "Decrease Font Size"
     source: {type: "custom", id: "ribbon.beschriftung_kleiner"}
     icon: "/mActionDecreaseFont.svg"
-    description: "Make the label font one step smaller."
+    description: "Make the font of the selected label class one step smaller."
     enabled_when: ["active_layer_is_vector"]
   beschriftung_schriftschnitt:
     label: "Font Style"
     source: {type: "custom", id: "ribbon.beschriftung_schriftschnitt"}
     kind: "control"
     icon: "/mActionEditBold.svg"
-    description: "Font style of the labels (e.g. bold, italic)."
+    description: "Font style of the selected label class (e.g. bold, italic)."
     enabled_when: ["active_layer_is_vector"]
   beschriftung_farbe:
     label: "Font Color"
     source: {type: "custom", id: "ribbon.beschriftung_farbe"}
     kind: "control"
     icon: "/mIconColorPicker.svg"
-    description: "Font color of the labels."
+    description: "Font color of the selected label class."
     enabled_when: ["active_layer_is_vector"]
   beschriftungseigenschaften:
     label: "Label Properties"
@@ -1809,6 +1809,13 @@ commands:
     label: "Delete Class"
     source: {type: "custom", id: "ribbon.beschriftung_regel_loeschen"}
     description: "Delete the selected label class. The last class of a layer stays."
+    enabled_when: ["active_layer_is_vector", "label_classes_on"]
+  beschriftungsklassen:
+    label: "Label Classes"
+    source: {type: "custom", id: "ribbon.beschriftung_klassen_schalten"}
+    icon: "/mIconLabelingRules.svg"
+    description: "Label by class (rule-based labeling) or with one simple label. Switching keeps both versions on the layer."
+    enabled_when: ["active_layer_is_vector"]
   beschriftungsausdruck:
     label: "Expression"
     source: {type: "custom", id: "ribbon.beschriftung_ausdruck"}

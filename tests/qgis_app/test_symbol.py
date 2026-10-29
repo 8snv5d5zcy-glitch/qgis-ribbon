@@ -185,6 +185,22 @@ def test_single_line_symbol(ribbon, fake_iface):
     assert line.renderer().symbol().width() == pytest.approx(1.2)
 
 
+def test_class_grayed_without_choice(ribbon, fake_iface):
+    """Einzelsymbol: nichts zu wählen, Klasse grau; mit Kategorien wieder wählbar."""
+    w = ribbon
+    poly = layer("Polygon")
+    fake_iface.set_active_layer(poly)
+    settle()
+    klasse = control(w, "klasse")
+    assert not klasse.isEnabled() and "einziges Symbol" in klasse.toolTip()
+    assert control(w, "breite").isEnabled()
+    categorized(poly)
+    poly.triggerRepaint()
+    poly.emitStyleChanged()
+    settle()
+    assert klasse.isEnabled() and "einziges Symbol" not in klasse.toolTip()
+
+
 def test_data_defined_size_blocks_width(ribbon, fake_iface):
     w = ribbon
     points = layer("Point")
