@@ -39,7 +39,7 @@ Das Ribbon folgt der Sprache von QGIS. Sie lässt sich unter **Einstellungen ›
 Solange das Ribbon aktiv ist, sind Plugin-Leisten ausgeblendet. Ihre Befehle stehen im Tab [Erweiterungen](extensions.md).
 
 **Alt zeigt keine Kürzel.**
-Alt allein drücken und loslassen, ohne andere Taste, während das Hauptfenster von QGIS aktiv ist. Alt mit einem Buchstaben öffnet die Menüs von QGIS.
+Alt allein drücken und loslassen, ohne andere Taste, während das Hauptfenster von QGIS aktiv ist. Alt mit einem Buchstaben öffnet die Menüs von QGIS. Auf dem Mac die Wahltaste ⌥ nehmen.
 
 ## Deinstallieren
 

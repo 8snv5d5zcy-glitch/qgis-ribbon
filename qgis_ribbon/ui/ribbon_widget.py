@@ -46,7 +46,7 @@ from ..core import quick_access, theme_tokens
 from ..qgis_integration import log, menu_bar
 from ..qgis_integration.arrangements import Arrangements
 from ..qgis_integration.user_settings import MemoryStore, UserSettings
-from . import guide, icons, theme
+from . import guide, icons, keys, theme
 from .controls.buttons import BuildContext
 from .quick_access import QuickAccessBar
 from .qt_compat import event_pos
@@ -58,7 +58,7 @@ TEXT_DESIGN = tr("Appearance")
 TEXT_ICONS = tr("Own Icons")
 TEXT_ANIMATIONS = tr("Animations")
 TEXT_WHOLE = tr("Kontur for All of QGIS")
-MINIMIZE_SHORTCUT = "Ctrl+F1"
+MINIMIZE_SHORTCUT = keys.MINIMIZE
 TEXT_MINIMIZE = tr("Minimize the Ribbon")
 TEXT_PIN = tr("Pin the Ribbon")
 TEXT_ADD = tr("Add to Quick Access Toolbar")
@@ -87,8 +87,15 @@ class RibbonTabBar(QTabBar):
 
     def __init__(self, ribbon, parent=None):
         QTabBar.__init__(self, parent)
+        # Zustand vor jedem Setter: unter macOS lösen setDocumentMode & Co.
+        # sofort ein Layout aus, das tabSizeHint (also _fm) aufruft.
         self.ribbon = ribbon
         self.contextual = set()
+        self._hover = -1
+        self._metrics = {}  # Schriftmaße (Tab, Kontextname); geleert bei Schrift-/Stilwechsel
+        self._from = None   # Unterstrich vor dem Wechsel (QRectF)
+        self._progress = 1.0
+        self._last = -1
         self.setDrawBase(False)
         self.setExpanding(False)
         self.setDocumentMode(True)
@@ -96,16 +103,11 @@ class RibbonTabBar(QTabBar):
         self.setUsesScrollButtons(True)
         self.setMouseTracking(True)
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
-        self._hover = -1
-        self._metrics = {}  # Schriftmaße (Tab, Kontextname); geleert bei Schrift-/Stilwechsel
-        self._from = None   # Unterstrich vor dem Wechsel (QRectF)
-        self._progress = 1.0
         self._anim = QVariantAnimation(self)
         self._anim.setStartValue(0.0)
         self._anim.setEndValue(1.0)
         self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
         self._anim.valueChanged.connect(self._on_anim)
-        self._last = -1
         self.currentChanged.connect(self._start_animation)
 
     # Schriften
@@ -646,7 +648,8 @@ class RibbonWidget(QWidget):
             self.pin.setText("▾" if self.minimized else "▴")  # ▾ / ▴
         else:
             self.pin.setIcon(icon)
-        self.pin.setToolTip(tr("<b>%s</b><br>Shortcut: Ctrl+F1, double-click a tab") % text)
+        self.pin.setToolTip(tr("<b>%s</b><br>Shortcut: %s, double-click a tab")
+                            % (text, keys.text(MINIMIZE_SHORTCUT)))
         icon = icons.ui_icon("hilfe")
         if icon.isNull():
             self.guide_button.setText("?")

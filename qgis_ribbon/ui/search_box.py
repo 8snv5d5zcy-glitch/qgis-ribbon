@@ -19,11 +19,11 @@ from qgis.PyQt.QtWidgets import QCompleter, QLineEdit, QToolBar
 
 from ..core.search import PATH_SEP, Entry, SearchIndex, pool_entries, ribbon_entries
 from ..qgis_integration.action_resolver import clean_text
-from . import icons, theme
+from . import icons, keys, theme
 from ..core.i18n import tr
 
 PLACEHOLDER = tr("Search commands")
-HINT = "Alt Q"          # KeyTip-Hinweis rechts im leeren Feld
+HINT = keys.text("Alt") + " Q"   # KeyTip-Hinweis rechts im leeren Feld
 WIDTH = 220
 LIMIT = 15
 ROLE_ENTRY = Qt.ItemDataRole.UserRole + 1

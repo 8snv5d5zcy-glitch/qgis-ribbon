@@ -61,3 +61,18 @@ Das Feld **Befehl suchen** rechts in der Kopfzeile findet Befehle nach Name, Bes
 | F1 im Editor | diese Anleitung |
 
 Die Tastenkürzel von QGIS (zum Beispiel Strg+S, Strg+Z) gelten weiter. Die Tooltips im Ribbon zeigen das Tastenkürzel eines Befehls.
+
+## Auf dem Mac
+
+Das Ribbon verwendet die Mac-Tasten. Tooltips und Meldungen zeigen sie mit ihren Symbolen.
+
+| Windows, Linux | Mac |
+|---|---|
+| Strg (Strg+Z, Strg+X …) | ⌘ Befehl (⌘Z, ⌘X …) |
+| Alt für die Kürzel | ⌥ Wahl, drücken und loslassen |
+| Strg+F1, Ribbon minimieren | ⌥⌘T |
+| Strg+Y, Wiederholen im Editor | ⇧⌘Z |
+| Strg+Q, in den Schnellzugriff im Editor | ⌃Q (Control), weil ⌘Q QGIS beendet |
+| Entf im Editor | ⌫ |
+
+Die Menüleiste steht auf dem Mac oben am Bildschirmrand; **QGIS-Menüleiste ausblenden** gibt es dort deshalb nicht.

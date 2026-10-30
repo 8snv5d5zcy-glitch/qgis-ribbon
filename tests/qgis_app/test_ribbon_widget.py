@@ -1,13 +1,13 @@
 import copy
 
 from qgis.core import QgsApplication
-from qgis.PyQt.QtWidgets import QAction, QToolButton, QWidget
+from qgis.PyQt.QtWidgets import QAction, QTabBar, QToolButton, QWidget
 
 from qgis_ribbon.core import config_loader
 from qgis_ribbon.qgis_integration.action_resolver import ActionResolver
 from qgis_ribbon.qgis_integration.signals import SignalHub
 from qgis_ribbon.ui import theme
-from qgis_ribbon.ui.ribbon_widget import RibbonWidget
+from qgis_ribbon.ui.ribbon_widget import RibbonTabBar, RibbonWidget
 
 
 def qa(name):
@@ -149,6 +149,21 @@ def test_disconnect_releases_qgis_actions(fake_iface):
     w.deleteLater()
     QgsApplication.processEvents()
     fake_iface.mainWindow().findChild(QAction, "mActionDeleteSelected").setEnabled(True)
+
+
+def test_tabbar_survives_layout_during_construction(monkeypatch):
+    # macOS: setDocumentMode & Co. lösen schon im Konstruktor ein Layout aus,
+    # das tabSizeHint aufruft (AttributeError '_metrics' in 1.6.0)
+    calls = []
+
+    def set_document_mode(self, on):
+        calls.append(self.tabSizeHint(0).width())
+        QTabBar.setDocumentMode(self, on)
+
+    monkeypatch.setattr(RibbonTabBar, "setDocumentMode", set_document_mode)
+    bar = RibbonTabBar(config_loader.parse(copy.deepcopy(DEFINITION)))
+    assert calls and calls[0] > 0
+    bar.deleteLater()
 
 
 def test_large_labels_wrap():

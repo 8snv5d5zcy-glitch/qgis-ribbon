@@ -62,6 +62,10 @@ class TabPage(QScrollArea):
     def __init__(self, tab, ctx, parent=None):
         QScrollArea.__init__(self, parent)
         self.tab = tab
+        self.groups = []
+        self.inner = None
+        self.last_layout_ms = None   # Messpunkt: Umstellen nach Größenänderung
+        self._width = None
         self.setObjectName("ribbon_page_" + tab.id)
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setWidgetResizable(True)
@@ -72,7 +76,6 @@ class TabPage(QScrollArea):
         lay = QHBoxLayout(inner)
         lay.setContentsMargins(2, theme.PAGE_TOP, 2, 0)
         lay.setSpacing(theme.GROUP_GAP)
-        self.groups = []
         ctx.begin_tab(tab.id)  # KeyTip-Ziele dieses Tabs in Aufbaureihenfolge
         for group in tab.groups:
             gw = GroupWidget(group, ctx, inner)
@@ -81,10 +84,8 @@ class TabPage(QScrollArea):
         lay.addStretch(1)
         ctx.end_tab()
         inner.groups = self.groups
-        self.setWidget(inner)
         self.inner = inner
-        self.last_layout_ms = None   # Messpunkt: Umstellen nach Größenänderung
-        self._width = None
+        self.setWidget(inner)
         if any(v.kind == "gallery" for g in self.groups for v in g.views):
             size = builtin_commands.gallery_size(ctx.env)
             ctx.hub.connect(size, "changed", self.gallery_size_changed)
@@ -120,7 +121,8 @@ class TabPage(QScrollArea):
         choice = adaptive.choose(widths, ideal, width, theme.GROUP_GAP)
         for g, i in zip(self.groups, choice):
             g.apply(i)
-        self.inner.update()
+        if self.inner is not None:   # None nur während des Aufbaus
+            self.inner.update()
         self.last_layout_ms = (time.perf_counter() - start) * 1000.0
 
     def resizeEvent(self, event):  # noqa: N802 (Qt)

@@ -61,3 +61,18 @@ The field **Search commands** at the right of the header finds commands by their
 | F1 in the editor | this guide |
 
 The QGIS keyboard shortcuts (for example Ctrl+S, Ctrl+Z) keep working. Tooltips in the ribbon show the shortcut of a command.
+
+## On the Mac
+
+The ribbon uses the Mac keys. Tooltips and messages show them with their symbols.
+
+| Windows, Linux | Mac |
+|---|---|
+| Ctrl (Ctrl+Z, Ctrl+X …) | ⌘ Command (⌘Z, ⌘X …) |
+| Alt for the KeyTips | ⌥ Option, press and release |
+| Ctrl+F1, minimize the ribbon | ⌥⌘T |
+| Ctrl+Y, redo in the editor | ⇧⌘Z |
+| Ctrl+Q, add to Quick Access in the editor | ⌃Q (Control), because ⌘Q quits QGIS |
+| Delete in the editor | ⌫ |
+
+The menu bar is at the top of the screen on the Mac, so **Hide QGIS Menu Bar** is not offered there.

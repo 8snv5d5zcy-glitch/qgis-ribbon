@@ -41,7 +41,7 @@ from ..core import editor as ed
 from ..core.editor import EditError, Editor, Place
 from ..core.model import CommandRef, Menu, Row, Split
 from ..core.search import ribbon_entries
-from . import guide, icons, theme
+from . import guide, icons, keys, theme
 from .qt_compat import event_pos
 from .editor_widgets import (MIME_TYPE, GroupCard, NewGroupCard, Palette, Preview, QuickStrip, TabChip,
                              TabStrip, chip_pixmap, drag_pixmap, menu_entries, mime, scroll_area)
@@ -278,12 +278,12 @@ class RibbonEditor(QDialog):
         foot.addWidget(self.save_button)
         lay.addLayout(foot)
 
-        keys = [(QKeySequence.StandardKey.Undo, self.undo), (QKeySequence.StandardKey.Redo, self.redo),
-                (QKeySequence.StandardKey.Save, self.save),
-                (QKeySequence.StandardKey.HelpContents, lambda: guide.show_help("customize", self))]
-        if QKeySequence("Ctrl+Y") not in QKeySequence.keyBindings(QKeySequence.StandardKey.Redo):
-            keys.append((QKeySequence("Ctrl+Y"), self.redo))   # Strg+Y auch außerhalb von Windows
-        for seq, slot in keys:
+        bindings = [(QKeySequence.StandardKey.Undo, self.undo), (QKeySequence.StandardKey.Redo, self.redo),
+                    (QKeySequence.StandardKey.Save, self.save),
+                    (QKeySequence.StandardKey.HelpContents, lambda: guide.show_help("customize", self))]
+        if QKeySequence(keys.REDO) not in QKeySequence.keyBindings(QKeySequence.StandardKey.Redo):
+            bindings.append((QKeySequence(keys.REDO), self.redo))   # Strg+Y auch außerhalb von Windows
+        for seq, slot in bindings:
             sc = QShortcut(seq, self)
             sc.setContext(Qt.ShortcutContext.WindowShortcut)
             sc.activated.connect(slot)
@@ -403,10 +403,11 @@ class RibbonEditor(QDialog):
         self.arrangement_label.setText(text)
         self.undo_button.setEnabled(self.editor.can_undo)
         self.redo_button.setEnabled(self.editor.can_redo)
-        self.undo_button.setToolTip(tr("Undo: %s (Ctrl+Z)") % self.editor.undo_label()
-                                    if self.editor.can_undo else tr("Undo (Ctrl+Z)"))
-        self.redo_button.setToolTip(tr("Redo: %s (Ctrl+Y)") % self.editor.redo_label()
-                                    if self.editor.can_redo else tr("Redo (Ctrl+Y)"))
+        undo, redo = keys.text("Ctrl+Z"), keys.text(keys.REDO)
+        self.undo_button.setToolTip(tr("Undo: %s (%s)") % (self.editor.undo_label(), undo)
+                                    if self.editor.can_undo else tr("Undo (%s)") % undo)
+        self.redo_button.setToolTip(tr("Redo: %s (%s)") % (self.editor.redo_label(), redo)
+                                    if self.editor.can_redo else tr("Redo (%s)") % redo)
 
     def set_status(self, text, error=False):
         self._message = text or ""
@@ -566,7 +567,7 @@ class RibbonEditor(QDialog):
         act = menu.addAction(tr("Reset to Default"), lambda: self.reset_group(sel))
         act.setEnabled(cz.is_modified(self.base, group))
         if cz.can_remove_group(tab, group):
-            menu.addAction(tr("Delete (Del)"), lambda: self.remove(sel))
+            menu.addAction(tr("Delete (%s)") % keys.text("Del"), lambda: self.remove(sel))
         return menu
 
     def reset_group(self, sel):
@@ -602,7 +603,8 @@ class RibbonEditor(QDialog):
             tab = self.editor.arr.tab(place.tab)
             home = tab.is_home(tab.groups[place.group])
             return self.do(self.editor.remove_group, place.tab, place.group, select=after_group,
-                           message=tr("Group deleted. Bring it back from the palette (Groups) or with Ctrl+Z.")
+                           message=tr("Group deleted. Bring it back from the palette (Groups) or with %s.")
+                           % keys.text("Ctrl+Z")
                            if home else None)
         if kind == "tab":
             index = ed.tab_index(self.editor.arr, sel[1])
@@ -688,14 +690,14 @@ class RibbonEditor(QDialog):
         if sel[0] != "item":
             return False
         self.clip = sel[1]
-        self.set_status(tr("Cut: “%s”. Choose a target (group or item, also in another tab) and press Ctrl+V.")
-                        % cz.item_label(self.base, self.editor.item(sel[1])))
+        self.set_status(tr("Cut: “%s”. Choose a target (group or item, also in another tab) and press %s.")
+                        % (cz.item_label(self.base, self.editor.item(sel[1])), keys.text("Ctrl+V")))
         self.refresh(focus=True)
         return True
 
     def paste(self, sel):
         if self.clip is None:
-            self.set_status(tr("Nothing cut (Ctrl+X on an item)."))
+            self.set_status(tr("Nothing cut (%s on an item).") % keys.text("Ctrl+X"))
             return None
         src, kind = self.clip, sel[0]
         if kind == "item":
@@ -769,7 +771,7 @@ class RibbonEditor(QDialog):
 
     def palette_key(self, event):
         """Tasten der Palette, die der Editor übernimmt (Strg+V fügt den Ausschnitt nicht ein)."""
-        if event.key() == Qt.Key.Key_Q and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+        if event.key() == Qt.Key.Key_Q and event.modifiers() & keys.QUICK_ACCESS_MODIFIER:
             self.add_to_quick_access()
             return True
         return False
@@ -1110,7 +1112,8 @@ class RibbonEditor(QDialog):
         cmd = self.base.commands[ids[sel[1]]]
         self._prop_label(cmd.label, "ribbon_editor_prop_title")
         self._prop_label(tr("Quick Access, position %d") % (sel[1] + 1), "ribbon_editor_prop_muted")
-        self._prop_label(tr("Move: drag or Ctrl+Arrow. Remove: drag into the palette or Del."),
+        self._prop_label(tr("Move: drag or %s. Remove: drag into the palette or %s.")
+                         % (keys.text("Ctrl+Arrow"), keys.text("Del")),
                          "ribbon_editor_prop_muted")
         self._prop_button(tr("Remove from Quick Access"), lambda: self.remove(sel),
                           name="ribbon_editor_remove")
@@ -1139,7 +1142,8 @@ class RibbonEditor(QDialog):
         else:
             text, ok = tr("Insert into a group (select a group first)"), False
         self._prop_button(text, self.insert_from_palette, enabled=ok, name="ribbon_editor_insert")
-        self._prop_button(tr("Add to Quick Access (Ctrl+Q)"), lambda: self.add_to_quick_access(cmd.id),
+        self._prop_button(tr("Add to Quick Access (%s)") % keys.text(keys.QUICK_ACCESS),
+                          lambda: self.add_to_quick_access(cmd.id),
                           enabled=ed.quick_allowed(cmd), name="ribbon_editor_quick_add")
 
     # Ganzes
@@ -1155,7 +1159,7 @@ class RibbonEditor(QDialog):
     def reset_all(self):
         self.clip = None
         return self.do(self.editor.reset_all, select=("tab", self.current_tab),
-                       message=tr("Defaults restored. Undo with Ctrl+Z, applied only with “Save”."))
+                       message=tr("Defaults restored. Undo with %s, applied only with “Save”.") % keys.text("Ctrl+Z"))
 
     def save(self):
         if self.editor.problems():

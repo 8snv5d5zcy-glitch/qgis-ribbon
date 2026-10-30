@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.1 (2026-10-30)
+
+- Fixed: on macOS the ribbon failed to load with `AttributeError: 'RibbonTabBar' object has no attribute '_metrics'`. On macOS Qt lays out the tab bar while it is still being created; the tab bar, the tab pages and the guide now set up their state first.
+- macOS: shortcuts that macOS uses itself are replaced. Minimize the ribbon with ⌥⌘T (⌘F1 mirrors the displays), add a command to Quick Access in the ribbon editor with ⌃Q (⌘Q quits QGIS), redo in the editor with ⇧⌘Z.
+- macOS: tooltips, messages and the KeyTip hints show the Mac keys (⌘Z, ⌥, ⌫) instead of Ctrl, Alt and Del. Windows and Linux are unchanged.
+- Hide QGIS Menu Bar is no longer offered when the menu bar is native (macOS, global menus on Linux): it is outside the QGIS window and cannot be hidden there.
+- Guide: new section On the Mac on the Keyboard page.
+
 ## 1.6.0 (2026-10-29)
 
 - Labeling tab: the new Label Classes button switches between labeling by class (rule-based) and one simple label. With classes on, all groups of the tab (visibility range, text symbol, placement) read and change only the class chosen in the list; before, most of them changed all classes. With classes off, they control the simple label and the class commands are grayed out.

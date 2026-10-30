@@ -41,6 +41,7 @@ Nothing changes in the ribbon until you click **Save**. **Cancel** asks before d
 
 Notes:
 
+- On the Mac, use ⌘ instead of Ctrl, ⇧⌘Z to redo, ⌃Q for Quick Access and ⌫ to remove (see [Keyboard](keyboard.md)).
 - A command can be in a group only once, but several times in the same tab.
 - Contextual tabs only accept commands that can work there.
 - A group of the shipped ribbon becomes your own version as soon as you change it. It is marked as *customized* and can be reset on its own.

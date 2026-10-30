@@ -59,13 +59,13 @@ def language_of(path):
 class HelpBrowser(QDialog):
     def __init__(self, parent=None):
         QDialog.__init__(self, parent, Qt.WindowType.Window)
+        self.history = []   # vor resize(): resizeEvent liest self.path
+        self.position = -1
+        self.path = None
         self.setObjectName("ribbon_help")
         theme.style_dialog(self)
         self.setWindowTitle(TITLE)
         self.resize(940, 760)
-        self.history = []
-        self.position = -1
-        self.path = None
 
         lay = QVBoxLayout(self)
         bar = QHBoxLayout()

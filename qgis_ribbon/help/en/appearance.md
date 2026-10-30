@@ -31,7 +31,7 @@ The ribbon contains the commands of the menu bar. If you need the room for the m
 - with **Alt+letter** as before (for example Alt+P for Project),
 - via the commands **QGIS Menus** and **Project Menu**, **Settings Menu** … in the editor, which you can put into your own groups or the Quick Access Toolbar.
 
-Keyboard shortcuts such as Ctrl+S keep working. Choosing the entry again shows the menu bar again. QGIS remembers the setting; in the classic QGIS interface and after deactivating the plugin the menu bar is always there.
+On the Mac the menu bar is at the top of the screen and the entry is not offered. Keyboard shortcuts such as Ctrl+S keep working. Choosing the entry again shows the menu bar again. QGIS remembers the setting; in the classic QGIS interface and after deactivating the plugin the menu bar is always there.
 
 ## Classic QGIS interface
 

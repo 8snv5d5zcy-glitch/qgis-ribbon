@@ -41,6 +41,7 @@ Im Ribbon ändert sich erst etwas mit **Speichern**. **Abbrechen** fragt nach, b
 
 Hinweise:
 
+- Auf dem Mac gilt ⌘ statt Strg, ⇧⌘Z zum Wiederholen, ⌃Q für den Schnellzugriff und ⌫ zum Entfernen (siehe [Tastatur](keyboard.md)).
 - Ein Befehl steht höchstens einmal in einer Gruppe, im selben Tab aber gern mehrfach.
 - Kontext-Tabs nehmen nur Befehle, die dort funktionieren können.
 - Eine Gruppe des gelieferten Ribbons wird bei der ersten Änderung zur eigenen Fassung. Sie ist als *angepasst* markiert und lässt sich einzeln zurücksetzen.

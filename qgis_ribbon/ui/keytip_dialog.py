@@ -17,7 +17,7 @@ from qgis.PyQt.QtWidgets import (QDialog, QDialogButtonBox, QLabel, QLineEdit, Q
                                  QStyledItemDelegate, QTreeWidget, QTreeWidgetItem, QVBoxLayout)
 
 from ..core import keytips
-from . import guide, theme
+from . import guide, keys, theme
 from .keytips import element_codes, tab_codes
 from ..core.i18n import tr
 
@@ -26,9 +26,9 @@ COL_ELEMENT, COL_PLACE, COL_AUTO, COL_OWN, COL_EFFECTIVE = range(5)
 ROLE_KEY = Qt.ItemDataRole.UserRole + 1
 ROLE_LEVEL = Qt.ItemDataRole.UserRole + 2
 TABS_LEVEL = "__tabs__"
-HINT = tr("Press and release Alt to show the KeyTips in the ribbon. Own KeyTip: double-click in the “Own” "
+HINT = tr("Press and release %s to show the KeyTips in the ribbon. Own KeyTip: double-click in the “Own” "
           "column, 1–2 letters, empty = automatic. The other KeyTips of a level adapt. Quick Access (1–9) "
-          "and search (Q) are fixed.")
+          "and search (Q) are fixed.") % keys.text("Alt")
 
 
 class _OwnColumnDelegate(QStyledItemDelegate):

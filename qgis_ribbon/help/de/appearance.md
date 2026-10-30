@@ -31,7 +31,7 @@ Das Ribbon enthält die Befehle der Menüleiste. Wer den Platz für die Karte br
 - mit **Alt+Buchstabe** wie bisher (zum Beispiel Alt+J für Projekt),
 - über die Befehle **QGIS-Menüs** und **Menü Projekt**, **Menü Einstellungen** … im Editor, die sich in eigene Gruppen oder die Schnellzugriffsleiste legen lassen.
 
-Tastenkürzel wie Strg+S bleiben aktiv. Erneutes Wählen blendet die Menüleiste wieder ein. QGIS merkt sich die Einstellung; in der klassischen QGIS-Oberfläche und nach dem Abschalten des Plugins ist die Menüleiste immer da.
+Auf dem Mac steht die Menüleiste oben am Bildschirmrand, der Eintrag fehlt dort. Tastenkürzel wie Strg+S bleiben aktiv. Erneutes Wählen blendet die Menüleiste wieder ein. QGIS merkt sich die Einstellung; in der klassischen QGIS-Oberfläche und nach dem Abschalten des Plugins ist die Menüleiste immer da.
 
 ## Klassische QGIS-Oberfläche
 

@@ -44,7 +44,7 @@ from .qgis_integration.context_state import ContextState
 from .qgis_integration.custom_commands import CommandEnv
 from .qgis_integration.extensions import ExtensionCatalog
 from .qgis_integration.layer_watch import LayerWatch
-from .qgis_integration.menu_bar import MenuBarHider
+from .qgis_integration.menu_bar import MenuBarHider, can_hide
 from .qgis_integration.signals import SignalHub
 from .qgis_integration.toolbar_manager import ToolbarManager
 from .qgis_integration.user_settings import UserSettings
@@ -279,7 +279,7 @@ class RibbonPlugin:
                                    logic=self.logic, user=self.user,
                                    arrangements=self.arrangements, theme_manager=self.themes)
         self.widget.whole_available = True
-        self.widget.menubar_available = True
+        self.widget.menubar_available = can_hide(mw)   # nicht bei nativer Menüleiste (macOS)
         self.widget.classicRequested.connect(lambda: self.set_classic(True))
         self.widget.menuBarToggled.connect(self._set_menubar_hidden)
         self.toolbar.addWidget(self.widget)
@@ -292,7 +292,7 @@ class RibbonPlugin:
         self.menubar = MenuBarHider(mw)
         if self.user.menubar_hidden():
             self.menubar.hide()
-            self.widget.set_menubar_hidden(True)
+            self.widget.set_menubar_hidden(self.menubar.hidden)
         if self.base.extensions.hide:
             self.toolbars.hide_bars(self.catalog.toolbars)
         self.catalog.changed.connect(self.request_rebuild)

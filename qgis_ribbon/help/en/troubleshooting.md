@@ -39,7 +39,7 @@ The ribbon follows the QGIS language. Change it under **Settings › Options ›
 While the ribbon is active, plugin toolbars are hidden. Their commands are in the [Extensions](extensions.md) tab.
 
 **Alt does not show the KeyTips.**
-Press and release Alt alone, without another key, while the QGIS main window is active. Alt with a letter opens the QGIS menus.
+Press and release Alt alone, without another key, while the QGIS main window is active. Alt with a letter opens the QGIS menus. On the Mac, use the ⌥ Option key.
 
 ## Uninstalling
 

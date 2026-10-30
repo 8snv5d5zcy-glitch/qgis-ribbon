@@ -90,7 +90,7 @@ The ▾ menu also contains the settings of the ribbon: KeyTips, minimizing, the 
 The ribbon can be reduced to its header to leave more room for the map:
 
 - the **^** button at the right of the header,
-- **Ctrl+F1**,
+- **Ctrl+F1** (Mac: ⌥⌘T),
 - double-click a tab,
 - **Minimize the Ribbon** in the ▾ menu or the right-click menu.
 

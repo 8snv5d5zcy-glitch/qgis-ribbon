@@ -90,7 +90,7 @@ Das Menü ▾ enthält außerdem die Einstellungen des Ribbons: Kürzel, Minimie
 Das Ribbon lässt sich auf seine Kopfzeile verkleinern, damit die Karte mehr Platz hat:
 
 - Knopf **^** rechts in der Kopfzeile,
-- **Strg+F1**,
+- **Strg+F1** (Mac: ⌥⌘T),
 - Doppelklick auf einen Tab,
 - **Ribbon minimieren** im Menü ▾ oder im Rechtsklick-Menü.
 

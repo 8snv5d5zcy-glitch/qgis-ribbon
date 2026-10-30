@@ -8,6 +8,9 @@ Menüleiste. Mit Höhe 0 bleibt die Leiste für Qt sichtbar, Kürzel und
 Alt+Buchstabe funktionieren weiter. ``restore()`` setzt Mindest- und
 Höchsthöhe auf die Werte von vorher zurück.
 
+Eine native Menüleiste (macOS, globale Menüs unter Linux) steht nicht im
+Fenster; dort gibt es nichts auszublenden (``can_hide``), die Option fehlt.
+
 ``fill_menu`` füllt ein eigenes Menü mit den Menüs der Menüleiste (deren
 Menüaktionen, unverändert), damit sie auch bei ausgeblendeter Leiste
 erreichbar bleiben. Aufgerufen wird es bei jedem Öffnen, damit Menüs von
@@ -22,6 +25,12 @@ def menu_bar(main_window):
         return None
 
 
+def can_hide(main_window):
+    """Lässt sich die Menüleiste ausblenden? Nicht, wenn sie nativ außerhalb des Fensters steht."""
+    bar = menu_bar(main_window)
+    return bar is not None and not bar.isNativeMenuBar()
+
+
 class MenuBarHider(object):
     def __init__(self, main_window):
         self.mw = main_window
@@ -33,7 +42,7 @@ class MenuBarHider(object):
 
     def hide(self):
         bar = menu_bar(self.mw)
-        if bar is None or self._saved is not None:
+        if bar is None or self._saved is not None or not can_hide(self.mw):
             return
         self._saved = (bar.minimumHeight(), bar.maximumHeight())
         bar.setMinimumHeight(0)
