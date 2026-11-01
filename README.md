@@ -29,7 +29,7 @@ In QGIS: **Plugins › Manage and Install Plugins …**, search for *QGIS Ribbon
 
 Manual installation: download the ZIP of a release and use **Install from ZIP** in the same dialog.
 
-Requirements: QGIS 3.44 or later (QGIS 3.x, Qt 5). Developed and tested on Windows. No extra Python packages (PyYAML ships with QGIS).
+Requirements: QGIS 3.44 or later (QGIS 3.x with Qt 5, QGIS 4.x with Qt 6). Developed and tested on Windows with QGIS 3.44; also tested on macOS with QGIS 4.2.3 (conda-forge build, Qt 6.11). No extra Python packages (PyYAML ships with QGIS).
 
 ## Documentation
 
@@ -62,6 +62,7 @@ tools/                  ZIP build, icon builder, guide screenshots, test runner 
 
 - Tests without QGIS: `python -m pytest` (Python 3, pytest, PyYAML; tests that need QGIS are left out).
 - All tests in QGIS Python (Windows): `tools\qgis_pytest.cmd`.
+- All tests in QGIS Python (macOS / Linux, e.g. a conda-forge QGIS environment): `QT_QPA_PLATFORM=offscreen python -m pytest`.
 - Build the plugin ZIP: `python tools/build_zip.py` (writes `dist/qgis_ribbon-<version>.zip`).
 - English is the source language. German texts are in `qgis_ribbon/i18n/de.json` (texts in the code) and `de_ribbon.json` (texts of the ribbon definition). Other languages can be added as `<lang>.json` and `<lang>_ribbon.json`.
 - The ribbon definition `qgis_ribbon/config/ribbon_arcgis.yaml` describes tabs, groups, commands (with the QGIS action, menu, dialog or Processing tool they call), conditions and galleries; `core/config_loader.py` checks it on load.

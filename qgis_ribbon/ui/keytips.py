@@ -118,7 +118,8 @@ class KeyTipController(QObject):
                      QEvent.Type.NonClientAreaMouseButtonPress):
                 self.exit()
                 return False
-            if t == QEvent.Type.ApplicationDeactivate or (t == QEvent.Type.WindowDeactivate and obj is self.mw):
+            if t == QEvent.Type.ApplicationDeactivate or (t == QEvent.Type.WindowDeactivate and obj is self.mw
+                                                          and not self._own_popup_active()):
                 self.exit()
             return False
         if t == QEvent.Type.ShortcutOverride and event.key() == Qt.Key.Key_Alt and self._alt_alone(event) \
@@ -153,6 +154,19 @@ class KeyTipController(QObject):
         # Modifier schließen aus (AltGr kommt unter Windows als Strg+Alt).
         return not event.modifiers() & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier
                                         | Qt.KeyboardModifier.MetaModifier)
+
+    def _own_popup_active(self):
+        """Ob gerade ein Popup des Ribbons offen ist (aufgeklapptes Ribbon, eingeklappte Gruppe).
+
+        Unter Qt6 deaktiviert ein solches Popup das Hauptfenster; die KeyTips laufen
+        darin weiter und dürfen deshalb nicht enden.
+        """
+        widget = QApplication.activePopupWidget()
+        while widget is not None:
+            if widget is self.rw:
+                return True
+            widget = widget.parentWidget()
+        return False
 
     def _window_ready(self):
         return (self.mw.isActiveWindow() and QApplication.activePopupWidget() is None

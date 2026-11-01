@@ -811,7 +811,7 @@ def test_gallery_dialog_with_icons_and_drag_order(shipped):
         assert dlg.list.model().moveRow(QModelIndex(), 0, QModelIndex(), 3)
         assert dlg.ids() == before[1:3] + before[:1] + before[3:]
         assert "(Standard)" not in dlg.status.text()
-        assert dlg.list.dragDropMode() == dlg.list.InternalMove
+        assert dlg.list.dragDropMode() == dlg.list.DragDropMode.InternalMove
     finally:
         dlg.deleteLater()
         settle()

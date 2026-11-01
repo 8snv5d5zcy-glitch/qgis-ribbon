@@ -228,10 +228,10 @@ def test_label_class_commands_update_class_list(ribbon, fake_iface, layers, monk
     assert klasse.editor.currentText() == "Groß"
     delete = builtin_commands.beschriftung_regel_loeschen(env, SimpleNamespace(label="Klasse löschen"))
     assert delete.isEnabled()
-    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.No)
+    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.StandardButton.No)
     delete.trigger()
     assert len(layer_ops.label_classes(v)) == 2                            # abgelehnt
-    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.Yes)
+    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.StandardButton.Yes)
     delete.trigger()
     settle()
     assert [klasse.editor.itemText(i) for i in range(klasse.editor.count())] == ["Standard"]
@@ -256,10 +256,10 @@ def test_discard_edits_of_active_layer_only(ribbon, fake_iface, layers, monkeypa
         layer.addFeature(f)
     settle()
     assert discard.isEnabled()                                             # über layerModified
-    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.No)
+    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.StandardButton.No)
     discard.trigger()
     assert v.isModified()                                                  # abgelehnt
-    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.Yes)
+    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.StandardButton.Yes)
     discard.trigger()
     settle()
     assert v.featureCount() == 3 and v.isEditable() and not v.isModified()
@@ -685,7 +685,7 @@ def test_domain_dialog_creates_and_assigns(gpkg, fake_iface, monkeypatch):
     dlg.assign("art", "Arten")
     assert save.isEnabled()
     dlg.save()
-    assert dlg.result() == dlg.Accepted
+    assert dlg.result() == dlg.DialogCode.Accepted
     assert layer.fields().field("art").constraints().domainName() == "Arten"
     # Erneut geöffnet: gespeicherte Domäne mit festem Namen, Art und Feldtyp
     dlg2 = domain_dialog.DomainDialog(layer, domains.store_for(layer), fake_iface.mainWindow())

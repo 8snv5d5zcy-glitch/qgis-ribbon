@@ -669,8 +669,11 @@ def identifiable_layers():
 
 def set_identifiable(layer, on):
     flags = layer.flags()
-    flags = (flags | QgsMapLayer.LayerFlag.Identifiable) if on else (flags & ~QgsMapLayer.LayerFlag.Identifiable)
-    layer.setFlags(flags)
+    bit = int(QgsMapLayer.LayerFlag.Identifiable)
+    # Über int rechnen: unter PyQt6 (QGIS 4) liefert ``~`` auf dem Enum ein int,
+    # das ``setFlags`` nicht annimmt; zurück in den Flag-Typ der Layer-Flags.
+    value = (int(flags) | bit) if on else (int(flags) & ~bit)
+    layer.setFlags(type(flags)(value))
     QgsProject.instance().setDirty(True)
 
 

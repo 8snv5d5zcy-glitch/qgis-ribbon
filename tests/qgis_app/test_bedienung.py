@@ -15,7 +15,7 @@ from qgis_ribbon.qgis_integration.user_settings import (KEY_MINIMIZED, KEY_QUICK
                                                          UserSettings)
 from qgis_ribbon.ui.controls.gallery import GalleryGrid
 from qgis_ribbon.ui.keytips import KeyTipController
-from qgis_ribbon.ui.ribbon_widget import TEXT_ADD, TEXT_REMOVE, RibbonWidget
+from qgis_ribbon.ui.ribbon_widget import MINIMIZE_SHORTCUT, TEXT_ADD, TEXT_REMOVE, RibbonWidget
 
 
 def qa(name):
@@ -171,11 +171,11 @@ def test_tab_then_element(setup, fake_iface):
     assert len(set(c.values())) == len(c)
     # Grauer Befehl: Modus bleibt
     for ch in c["Löschen"]:
-        QTest.keyClick(mw, getattr(Qt, "Key_" + ch))
+        QTest.keyClick(mw, getattr(Qt.Key, "Key_" + ch))
     assert keys.active
     # Split per Tastatur: Menü mit Hauptbefehl oben
     for ch in c["Verschieben"]:
-        QTest.keyClick(mw, getattr(Qt, "Key_" + ch))
+        QTest.keyClick(mw, getattr(Qt.Key, "Key_" + ch))
     assert not keys.active
     settle()
     menu = QApplication.activePopupWidget()
@@ -285,10 +285,11 @@ def test_minimized_state_survives_restart(fake_iface, settings):
 
 
 def test_ctrl_f1_toggles(setup):
+    # Kürzel je Plattform (Mac: ⌘⌥T, sonst Strg+F1), siehe ui/keys.py
     w, _keys, mw = setup
-    QTest.keyClick(mw, Qt.Key.Key_F1, Qt.KeyboardModifier.ControlModifier)
+    QTest.keySequence(mw, QKeySequence(MINIMIZE_SHORTCUT))
     assert w.minimized
-    QTest.keyClick(mw, Qt.Key.Key_F1, Qt.KeyboardModifier.ControlModifier)
+    QTest.keySequence(mw, QKeySequence(MINIMIZE_SHORTCUT))
     assert not w.minimized
 
 
@@ -392,7 +393,7 @@ def test_keytip_dialog_lists_and_saves_overrides(setup, settings):
     assert dlg._items[tab_karte].text(COL_EFFECTIVE) == "M"
     # Konflikt: gleiches Kürzel wie ein anderes eigenes -> rot, nicht speicherbar
     dlg.set_override(keytips.tab_key("ansicht"), "M")
-    assert dlg.problems() and not dlg.buttons.button(dlg.buttons.Save).isEnabled()
+    assert dlg.problems() and not dlg.buttons.button(dlg.buttons.StandardButton.Save).isEnabled()
     dlg.set_override(keytips.tab_key("ansicht"), "Q")       # reserviert für die Suche
     assert any("Suche" in p[1] for p in dlg.problems())
     dlg.set_override(keytips.tab_key("ansicht"), "")

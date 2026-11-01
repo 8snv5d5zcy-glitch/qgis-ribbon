@@ -18,7 +18,7 @@ SVG im Temp-Verzeichnis (``asset``), weil QSS-Bilder Dateien brauchen.
 import os
 import sys
 
-from qgis.PyQt.QtCore import QDir, QObject, pyqtSignal
+from qgis.PyQt.QtCore import QDir, QEvent, QObject, pyqtSignal
 from qgis.PyQt.QtGui import QColor, QPalette
 from qgis.PyQt.QtWidgets import QApplication
 
@@ -181,11 +181,22 @@ class ThemeManager(QObject):
         self.lightness_override = None   # Gesamtbild: Helligkeit von QGIS vor der eigenen Palette
         self.high_contrast = high_contrast()
         self._connected = False
+        self._filtering = False
         app = QApplication.instance()
         if app is not None and hasattr(app, "paletteChanged"):
             app.paletteChanged.connect(self._on_palette)
             self._connected = True
+        elif app is not None:
+            # Qt6 (QGIS 4) kennt ``paletteChanged`` nicht mehr; der Wechsel kommt
+            # als Ereignis ``ApplicationPaletteChange`` an der Anwendung an.
+            app.installEventFilter(self)
+            self._filtering = True
         self.refresh(emit=False)
+
+    def eventFilter(self, obj, event):  # noqa: N802 (Qt)
+        if event.type() == QEvent.Type.ApplicationPaletteChange and obj is QApplication.instance():
+            self._on_palette()
+        return False
 
     def settings(self):
         return self.user.design()
@@ -229,6 +240,11 @@ class ThemeManager(QObject):
             except (TypeError, RuntimeError):
                 pass
             self._connected = False
+        if self._filtering:
+            app = QApplication.instance()
+            if app is not None:
+                app.removeEventFilter(self)
+            self._filtering = False
 
 
 # Bilder für Stylesheets

@@ -23,7 +23,12 @@ zusammengefasst (Farbdialog mit Live-Vorschau, Zahlenfeld).
 from qgis.core import (Qgis, QgsLayerTreeModelLegendNode, QgsLineSymbol, QgsMapLayerStyle, QgsMarkerSymbol,
                        QgsSymbolLayer, QgsUnitTypes, QgsVectorLayer)
 from qgis.PyQt.QtCore import QObject
-from qgis.PyQt.QtWidgets import QUndoCommand
+try:
+    # Qt6 / QGIS 4: QUndoCommand liegt in QtGui
+    from qgis.PyQt.QtGui import QUndoCommand
+except ImportError:
+    # Qt5 / QGIS 3
+    from qgis.PyQt.QtWidgets import QUndoCommand
 
 from ..core.i18n import tr
 
