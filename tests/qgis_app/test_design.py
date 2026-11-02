@@ -377,3 +377,55 @@ def test_whole_theme_sets_palette_for_layer_tree_and_restores(plugin):
     plugin.themes.set("whole", False)
     settle()
     assert app.palette() == before
+
+
+def test_tab_scroll_arrows_have_their_own_place(plugin, fake_iface):
+    """Schmales Fenster: beide Scrollpfeile der Tableiste nebeneinander, nicht übereinander auf einem Tab."""
+    mw = fake_iface.mainWindow()
+    mw.resize(420, 700)
+    settle()
+    bar = plugin.widget.tabbar
+    arrows = [b for b in bar.findChildren(QToolButton) if b.isVisible()]
+    assert len(arrows) == 2
+    left, right = sorted(arrows, key=lambda b: b.x())
+    assert left.geometry().right() <= right.geometry().left()   # Qt legt sie um höchstens ein Pixel übereinander
+    assert left.width() >= 20 and right.width() >= 20               # eigener Platz (::scroller)
+    assert "left-arrow" in plugin.widget.styleSheet()
+
+
+def test_whole_theme_colors_qgis_status_message_and_restores(plugin, fake_iface):
+    """QGIS schreibt die Schriftfarbe des Meldungsfelds fest in dessen Stylesheet."""
+    from qgis.PyQt.QtWidgets import QLineEdit, QStatusBar
+
+    mw = fake_iface.mainWindow()
+    bar = mw.findChild(QStatusBar) or mw.statusBar()
+    edit = QLineEdit(bar)
+    original = "* { border: 0; background-color: rgba(0, 0, 0, 0); color: #000000; }"
+    edit.setStyleSheet(original)
+    try:
+        plugin.themes.set("mode", "dunkel")
+        plugin.themes.set("whole", True)
+        settle()
+        muted = theme.color("muted", theme.current()).name()
+        assert edit.styleSheet() == original.replace("#000000", muted)
+        plugin.themes.set("mode", "hell")                  # Wechsel: wieder aus dem Original
+        settle()
+        assert edit.styleSheet() == original.replace("#000000", theme.color("muted", theme.current()).name())
+        plugin.themes.set("whole", False)
+        settle()
+        assert edit.styleSheet() == original
+    finally:
+        edit.deleteLater()
+
+
+def test_whole_theme_rules_for_qgis_widgets_with_own_palettes():
+    from qgis_ribbon.ui.whole_theme import whole_palette, whole_qss
+    from qgis.PyQt.QtGui import QPalette
+
+    t = theme.themes().tokens("dunkel")
+    qss = whole_qss(t)
+    for part in ("QStatusBar QToolButton", "qt_scrollarea_viewport", "scrollAreaWidgetContents",
+                 "QgsCollapsibleGroupBox::title"):
+        assert part in qss
+    pal = whole_palette(t, QPalette())
+    assert pal.color(QPalette.ColorRole.PlaceholderText).name() == theme.color("muted", t).name()

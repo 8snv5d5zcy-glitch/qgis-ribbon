@@ -249,6 +249,7 @@ _ASSETS = {
     "chevron_down": '<path d="M6 9l6 6 6-6"/>',
     "chevron_up": '<path d="M6 15l6-6 6 6"/>',
     "chevron_right": '<path d="M9 6l6 6-6 6"/>',
+    "chevron_left": '<path d="M15 6l-6 6 6 6"/>',
     "check": '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
 }
 
@@ -385,6 +386,21 @@ def ribbon_qss(t):
         "#ribbon_split_bottom { border-top-left-radius: 0px; border-top-right-radius: 0px; padding: 0px 2px 2px 2px; }",
         'QToolButton[ribbon_tile="true"] { padding: 3px; }',
         "#ribbon_group_label { color: %s; background: transparent; }" % c("muted"),
+        # Scrollpfeile der Tableiste: eigener Platz und deckender Grund. Ohne das gelten die
+        # allgemeinen QToolButton-Regeln (durchsichtig), die Pfeile sind kaum zu sehen und
+        # liegen unter Qt6 auf dem macOS-Stil übereinander auf dem letzten Tab (Beitrag PawelKra).
+        "QTabBar#ribbon_tabbar::scroller { width: 44px; }",
+        ("QTabBar#ribbon_tabbar QToolButton { background: %s; border: 0px; border-radius: 0px; "
+         "padding: 0px; }") % c("win"),
+        "QTabBar#ribbon_tabbar QToolButton:hover { background: %s; }" % c("hover"),
+        "QTabBar#ribbon_tabbar QToolButton::left-arrow { image: url(%s); width: 12px; height: 12px; }"
+        % asset("chevron_left", "text", t),
+        "QTabBar#ribbon_tabbar QToolButton::right-arrow { image: url(%s); width: 12px; height: 12px; }"
+        % asset("chevron_right", "text", t),
+        "QTabBar#ribbon_tabbar QToolButton::left-arrow:disabled { image: url(%s); }"
+        % asset("chevron_left", "faint", t),
+        "QTabBar#ribbon_tabbar QToolButton::right-arrow:disabled { image: url(%s); }"
+        % asset("chevron_right", "faint", t),
         ("QLineEdit#ribbon_search { background: %s; color: %s; border: 1px solid %s; "
          "border-radius: 15px; padding: 0px 10px 0px 4px; min-height: 28px; max-height: 28px; }")
         % (c("surf"), c("text"), c("bord")),

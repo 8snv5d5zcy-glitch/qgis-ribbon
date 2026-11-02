@@ -16,12 +16,20 @@ Setzt QGIS oder ein anderes Plugin inzwischen ein eigenes Stylesheet oder
 eine eigene Palette, wird diese übernommen statt überschrieben.
 """
 
+import re
+
+from qgis.PyQt.QtCore import QTimer
 from qgis.PyQt.QtGui import QColor, QPalette
-from qgis.PyQt.QtWidgets import QApplication
+from qgis.PyQt.QtWidgets import QApplication, QLineEdit, QStatusBar
 
 from . import theme
 
 MARKER = "/* qgis_ribbon:kontur */"
+# Meldungsfeld der QGIS-Statusleiste: QGIS schreibt die Schriftfarbe beim Start fest in dessen
+# eigenes Stylesheet („* { … color: #000000; }“); kein äußeres Stylesheet und keine Palette
+# erreicht sie danach (Beitrag PawelKra).
+_MESSAGE_SHEET = "background-color: rgba(0, 0, 0, 0)"
+_MESSAGE_COLOR = re.compile(r"(\bcolor:\s*)#[0-9A-Fa-f]{6}")
 
 
 def menu_button_qss(t, scope):
@@ -63,6 +71,11 @@ def whole_qss(t):
         ("QStatusBar { background: %s; color: %s; border-top: 1px solid %s; }"
          % (c("win"), c("muted"), c("div"))),
         "QStatusBar QLabel { color: %s; }" % c("muted"),
+        # Knöpfe der Statusleiste (KBS, Meldungen): QGIS gibt ihnen eine eigene Palette, die ein
+        # Palettenwechsel nicht erreicht; ohne Regel blieb die Schrift schwarz.
+        ("QStatusBar QToolButton { background: transparent; color: %s; border: 1px solid transparent; "
+         "border-radius: 5px; }") % c("text"),
+        "QStatusBar QToolButton:hover { background: %s; }" % c("hover"),
         "QStatusBar::item { border: 0px; }",
         "QToolBar { background: %s; border: 0px; spacing: 2px; padding: 2px; }" % c("win"),
         ("QToolBar QToolButton { background: transparent; border: 1px solid transparent; "
@@ -73,6 +86,11 @@ def whole_qss(t):
         ("QDockWidget::title { background: %s; padding: 7px 10px 5px 10px; text-align: left; "
          "border-bottom: 1px solid %s; }") % (c("win"), c("div")),
         "QDockWidget > QWidget { background: %s; }" % c("surf"),
+        # Rollbereiche in Docks (z. B. Layer-Styling): Viewport und Inhalt füllen ihren Grund mit
+        # einer eigenen Palette von QGIS; beim Einschalten zur Laufzeit stand sonst helle Schrift
+        # auf hellem Grund.
+        ("QDockWidget QAbstractScrollArea > QWidget#qt_scrollarea_viewport, "
+         "QDockWidget QWidget#scrollAreaWidgetContents { background: %s; }") % c("surf"),
         ("QDockWidget QAbstractItemView { background: %s; color: %s; border: 0px; "
          "selection-background-color: %s; selection-color: %s; outline: 0px; "
          "alternate-background-color: %s; }") % (c("surf"), c("text"), c("accS"), c("accT"), c("win")),
@@ -86,6 +104,12 @@ def whole_qss(t):
         "QDockWidget QToolButton:hover { background: %s; }" % c("hover"),
         "QDockWidget QToolButton:checked { background: %s; border-color: %s; }" % (c("accS"), c("accB")),
         "QDockWidget QToolBar { background: %s; border-bottom: 1px solid %s; }" % (c("surf"), c("div")),
+        # Aufklappbare Gruppen von QGIS (z. B. „Layer Rendering“ im Layer-Styling): sonst steht
+        # helle Schrift auf einem hellen Titelbalken
+        ("QDockWidget QgsCollapsibleGroupBoxBasic, QDockWidget QgsCollapsibleGroupBox "
+         "{ background: transparent; color: %s; }") % c("text"),
+        ("QDockWidget QgsCollapsibleGroupBoxBasic::title, QDockWidget QgsCollapsibleGroupBox::title "
+         "{ background: transparent; color: %s; }") % c("text"),
         ("QMainWindow > QTabBar::tab { background: %s; color: %s; padding: 5px 12px; border: 0px; "
          "border-top: 2px solid transparent; }") % (c("win"), c("muted")),
         "QMainWindow > QTabBar::tab:selected { background: %s; color: %s; border-top-color: %s; }"
@@ -113,7 +137,8 @@ def whole_palette(t, base):
         QPalette.ColorRole.Link: "acc", QPalette.ColorRole.LinkVisited: "accT", QPalette.ColorRole.Light: "surf",
         QPalette.ColorRole.Midlight: "hover", QPalette.ColorRole.Mid: "bord", QPalette.ColorRole.Dark: "bord",
     }
-    if hasattr(QPalette, "PlaceholderText"):
+    # PyQt6 kennt nur QPalette.ColorRole.PlaceholderText, nicht die Kurzform
+    if hasattr(QPalette.ColorRole, "PlaceholderText"):
         roles[QPalette.ColorRole.PlaceholderText] = "muted"
     for role, token in roles.items():
         pal.setColor(role, c(token))
@@ -176,6 +201,48 @@ class WholeTheme(object):
         self.active = False
         self._palette_before = None
         self._palette_applied = None
+        self._messages = {}   # Meldungsfeld -> (Stylesheet vorher, gesetztes Stylesheet)
+
+    def _message_edits(self):
+        # findChildren statt statusBar(): das legte eine fehlende Statusleiste erst an
+        return [e for bar in self.mw.findChildren(QStatusBar) for e in bar.findChildren(QLineEdit)
+                if _MESSAGE_SHEET in e.styleSheet() and _MESSAGE_COLOR.search(e.styleSheet())]
+
+    def _color_messages(self, t):
+        color = theme.color("muted", t).name()
+        for edit in self._message_edits():
+            before = edit.styleSheet()
+            if edit in self._messages and before == self._messages[edit][1]:
+                before = self._messages[edit][0]   # sonst hat QGIS es inzwischen neu gesetzt
+            sheet = _MESSAGE_COLOR.sub(lambda m: m.group(1) + color, before)
+            edit.setStyleSheet(sheet)
+            self._messages[edit] = (before, sheet)
+
+    def _restore_messages(self):
+        for edit, (before, applied) in self._messages.items():
+            try:
+                if edit.styleSheet() == applied:
+                    edit.setStyleSheet(before)
+            except RuntimeError:   # Widget inzwischen gelöscht
+                pass
+        self._messages = {}
+
+    def _repolish_later(self, sheet):
+        """Stylesheet nach dem Zurücksetzen der Palette noch einmal setzen.
+
+        QGIS gibt manchen Widgets eigene Paletten, die ein Wechsel der Anwendungspalette nicht
+        erreicht. Erst ein neu gesetztes Stylesheet poliert sie mit der dann gültigen Palette;
+        sonst blieben nach dem Abschalten Docks dunkel. Nur beim Abschalten: beim Einschalten
+        überdeckte das neue Polieren die Hintergründe der Docks.
+        """
+        def repolish():
+            try:
+                if self.mw.styleSheet() == sheet:
+                    self.mw.setStyleSheet(sheet + "\n")
+                    self.mw.setStyleSheet(sheet)
+            except RuntimeError:   # Hauptfenster inzwischen gelöscht
+                pass
+        QTimer.singleShot(0, repolish)
 
     def apply(self, tokens=None):
         t = tokens or theme.current()
@@ -189,6 +256,7 @@ class WholeTheme(object):
         self._palette_applied = pal
         if self.app.palette() != pal:
             self.app.setPalette(pal)
+        self._color_messages(t)
 
     def _foreign_palette(self):
         return self._palette_applied is not None and self.app.palette() != self._palette_applied
@@ -203,9 +271,11 @@ class WholeTheme(object):
         if not self.active:
             return
         self.active = False
+        self._restore_messages()
         self.sheet.restore()
         if self.app.palette() == self._palette_applied:
             self.app.setPalette(self._palette_before)
+            self._repolish_later(self.mw.styleSheet())
         self._palette_before = None
         self._palette_applied = None
 

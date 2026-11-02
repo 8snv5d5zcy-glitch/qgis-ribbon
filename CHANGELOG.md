@@ -4,6 +4,9 @@
 
 - macOS with QGIS 3.44: fixed QGIS crashing shortly after start, and then at every start, while the plugin is active. The cause was an application-wide event filter of the plugin, which PyQt5 on macOS cannot handle. On macOS with QGIS 3.44 the plugin therefore leaves out the KeyTips (Alt) and the entry Customize KeyTips; menus that other plugins open from their own button appear where that hidden toolbar button was. Everything else is unchanged. QGIS 4 on macOS, Windows and Linux are not affected.
 - README: new section Troubleshooting, how to start QGIS without plugins or remove the plugin folder if QGIS crashes at start.
+- Scroll arrows of the tab bar (narrow window): they have their own place and background now. Before, they were hardly visible, and on macOS with QGIS 4 they lay on top of each other over the last tab.
+- Whole interface appearance: placeholder text in input fields gets the theme color on QGIS 4 too; the message field and the buttons of the status bar, scroll areas in panels (e.g. Layer Styling) and the titles of collapsible groups follow the appearance; switching the appearance off restores the panels right away instead of after a restart.
+- Thanks to PawelKra (https://github.com/PawelKra) for finding and fixing these on macOS with QGIS 4 (pull request #1). The QGIS 4 fixes in the same pull request had already been made independently for 1.7.0.
 
 ## 1.7.0 (2026-11-02)
 
