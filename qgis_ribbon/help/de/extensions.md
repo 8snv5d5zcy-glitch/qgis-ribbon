@@ -12,6 +12,8 @@ Solange das Ribbon aktiv ist, sind die Werkzeugleisten der Plugins ausgeblendet;
 
 Die Gruppen des Tabs Erweiterungen verhalten sich wie alle anderen Gruppen: Sie lassen sich im Editor ausblenden, umsortieren und ändern (siehe [Ribbon anpassen](customize.md)).
 
+Im Layout-Fenster gibt es den Tab ebenfalls, nur wenn Plugins eigene Befehle in dessen Leisten legen, siehe [Ribbon im Layout-Fenster](layout.md).
+
 ## Plugin-Befehle in eigenen Gruppen
 
 Im Editor listet der Filter **Erweiterungen (Plugins)** alle Plugin-Befehle. Sie lassen sich in jede Gruppe oder in die Schnellzugriffsleiste ziehen.

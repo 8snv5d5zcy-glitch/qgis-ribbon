@@ -197,6 +197,7 @@ def test_ribbon_gallery_mirrors_exclusive_map_tools(ribbon, fake_iface):
     tile = gallery.findChild(QToolButton, "ribbon_tile_verschieben")
     assert tile.defaultAction().isChecked()
     # columns: 1 -> im Ribbon nur der erste Eintrag (kompakt: zwei), alle im Aufklapp-Menü
+    gallery.set_visible(gallery.ideal_count())     # die adaptive Breite hängt von den Schriftmaßen ab
     assert gallery.grid.findChild(QToolButton, "ribbon_tile_zoomen").isHidden()
     assert gallery.menu.findChildren(QToolButton) == []   # Raster erst beim Öffnen
     gallery.menu.aboutToShow.emit()

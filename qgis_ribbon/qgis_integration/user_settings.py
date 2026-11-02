@@ -9,6 +9,10 @@ QGIS-Oberfläche gewählt und die Menüleiste ausgeblendet ist und das Design
 (Modus, Akzent, Gesamtbild, Animationen, eigene Icons). Sie bleiben beim Entladen erhalten; das
 Hauptfenster stellt ``unload()`` trotzdem exakt wieder her.
 
+Der Ribbon im Layout-Fenster hat einen eigenen Bereich (``scope``, ``LAYOUT_SCOPE``):
+Schnellzugriff, Minimiert, Kürzel und Anordnung gelten je Fensterart, Design,
+klassische Oberfläche und Menüleiste für beide.
+
 Tests übergeben eine eigene Einstellungsdatei (``settings``), nie das echte
 Profil.
 """
@@ -18,6 +22,7 @@ import json
 from qgis.core import QgsSettings
 
 PREFIX = "qgis_ribbon/"
+LAYOUT_SCOPE = "layout/"
 KEY_QUICK_ACCESS = PREFIX + "schnellzugriff"
 KEY_MINIMIZED = PREFIX + "minimiert"
 KEY_KEYTIPS = PREFIX + "kuerzel"
@@ -26,6 +31,7 @@ KEY_SAVED = PREFIX + "anordnungen"
 KEY_CURRENT = PREFIX + "anordnung_aktuell"
 KEY_CLASSIC = PREFIX + "klassisch"
 KEY_MENUBAR_HIDDEN = PREFIX + "menueleiste_aus"
+KEY_DESIGNER_RIBBON = PREFIX + LAYOUT_SCOPE + "ribbon"
 KEY_EDITOR_SIZE = PREFIX + "editor/groesse"
 KEY_DESIGN_MODE = PREFIX + "design/modus"
 KEY_DESIGN_ACCENT = PREFIX + "design/akzent"
@@ -50,8 +56,13 @@ def _bool(value):
 
 
 class UserSettings(object):
-    def __init__(self, settings=None):
+    def __init__(self, settings=None, scope=""):
         self._settings = settings
+        self.scope = scope
+
+    def _key(self, key):
+        """Schlüssel im eigenen Bereich (``qgis_ribbon/layout/...``)."""
+        return PREFIX + self.scope + key[len(PREFIX):]
 
     @property
     def settings(self):
@@ -63,63 +74,63 @@ class UserSettings(object):
 
     def quick_access(self):
         """Gespeicherte Liste (Text) oder None, wenn nichts angepasst wurde."""
-        value = self.settings.value(KEY_QUICK_ACCESS, None)
+        value = self.settings.value(self._key(KEY_QUICK_ACCESS), None)
         return None if value is None else str(value)
 
     def set_quick_access(self, text):
-        self.settings.setValue(KEY_QUICK_ACCESS, text)
+        self.settings.setValue(self._key(KEY_QUICK_ACCESS), text)
 
     def reset_quick_access(self):
-        self.settings.remove(KEY_QUICK_ACCESS)
+        self.settings.remove(self._key(KEY_QUICK_ACCESS))
 
     def minimized(self):
-        return _bool(self.settings.value(KEY_MINIMIZED, "false"))
+        return _bool(self.settings.value(self._key(KEY_MINIMIZED), "false"))
 
     def set_minimized(self, on):
-        self.settings.setValue(KEY_MINIMIZED, "true" if on else "false")
+        self.settings.setValue(self._key(KEY_MINIMIZED), "true" if on else "false")
 
     def keytips(self):
         """Eigene Kürzel {Schlüssel: Kürzel}; leer, wenn nichts angepasst (oder unlesbar)."""
-        data = _json(self.settings.value(KEY_KEYTIPS, None), dict) or {}
+        data = _json(self.settings.value(self._key(KEY_KEYTIPS), None), dict) or {}
         return {str(k): str(v) for k, v in data.items()}
 
     def set_keytips(self, overrides):
         if overrides:
-            self.settings.setValue(KEY_KEYTIPS, json.dumps(dict(sorted(overrides.items()))))
+            self.settings.setValue(self._key(KEY_KEYTIPS), json.dumps(dict(sorted(overrides.items()))))
         else:
-            self.settings.remove(KEY_KEYTIPS)
+            self.settings.remove(self._key(KEY_KEYTIPS))
 
     # Anordnung
     def layout(self):
         """Angepasste Anordnung (dict) oder None (Standard der Definition)."""
-        return _json(self.settings.value(KEY_LAYOUT, None), dict)
+        return _json(self.settings.value(self._key(KEY_LAYOUT), None), dict)
 
     def set_layout(self, data):
         if data:
-            self.settings.setValue(KEY_LAYOUT, json.dumps(data, ensure_ascii=False, sort_keys=True))
+            self.settings.setValue(self._key(KEY_LAYOUT), json.dumps(data, ensure_ascii=False, sort_keys=True))
         else:
-            self.settings.remove(KEY_LAYOUT)
+            self.settings.remove(self._key(KEY_LAYOUT))
 
     def saved(self):
         """Gespeicherte Anordnungen {Name: Anordnung (dict, ``core.customization.make_bundle``)}."""
-        return _json(self.settings.value(KEY_SAVED, None), dict) or {}
+        return _json(self.settings.value(self._key(KEY_SAVED), None), dict) or {}
 
     def set_saved(self, saved):
         if saved:
-            self.settings.setValue(KEY_SAVED, json.dumps(saved, ensure_ascii=False, sort_keys=True))
+            self.settings.setValue(self._key(KEY_SAVED), json.dumps(saved, ensure_ascii=False, sort_keys=True))
         else:
-            self.settings.remove(KEY_SAVED)
+            self.settings.remove(self._key(KEY_SAVED))
 
     def current_name(self):
         """Name der gespeicherten Anordnung, in der gerade gearbeitet wird (zuletzt geladen oder gespeichert)."""
-        value = self.settings.value(KEY_CURRENT, None)
+        value = self.settings.value(self._key(KEY_CURRENT), None)
         return str(value) if value else None
 
     def set_current_name(self, name):
         if name:
-            self.settings.setValue(KEY_CURRENT, name)
+            self.settings.setValue(self._key(KEY_CURRENT), name)
         else:
-            self.settings.remove(KEY_CURRENT)
+            self.settings.remove(self._key(KEY_CURRENT))
 
     def classic(self):
         """Klassische QGIS-Oberfläche statt Ribbon."""
@@ -140,6 +151,16 @@ class UserSettings(object):
             self.settings.setValue(KEY_MENUBAR_HIDDEN, "true")
         else:
             self.settings.remove(KEY_MENUBAR_HIDDEN)
+
+    def designer_ribbon(self):
+        """Ribbon im Layout-Fenster (Standard: an)."""
+        return _bool(self.settings.value(KEY_DESIGNER_RIBBON, "true"))
+
+    def set_designer_ribbon(self, on):
+        if on:
+            self.settings.remove(KEY_DESIGNER_RIBBON)
+        else:
+            self.settings.setValue(KEY_DESIGNER_RIBBON, "false")
 
     # Design „Kontur“
     def editor_size(self):

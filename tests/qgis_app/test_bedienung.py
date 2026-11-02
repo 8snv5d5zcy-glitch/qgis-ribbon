@@ -3,10 +3,11 @@ import copy
 
 import pytest
 from qgis.core import QgsApplication
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import QEvent, Qt
 from qgis.PyQt.QtGui import QKeySequence
 from qgis.PyQt.QtTest import QTest
-from qgis.PyQt.QtWidgets import QAction, QApplication, QLabel, QMenu, QShortcut, QToolButton, QWidget
+from qgis.PyQt.QtWidgets import (QAction, QApplication, QDialogButtonBox, QLabel, QMenu, QShortcut, QToolButton,
+                                 QWidget)
 
 from qgis_ribbon.core import config_loader
 from qgis_ribbon.qgis_integration.action_resolver import ActionResolver
@@ -14,6 +15,7 @@ from qgis_ribbon.qgis_integration.signals import SignalHub
 from qgis_ribbon.qgis_integration.user_settings import (KEY_MINIMIZED, KEY_QUICK_ACCESS,
                                                          UserSettings)
 from qgis_ribbon.ui.controls.gallery import GalleryGrid
+from qgis_ribbon.ui.keys import MAC
 from qgis_ribbon.ui.keytips import KeyTipController
 from qgis_ribbon.ui.ribbon_widget import TEXT_ADD, TEXT_REMOVE, RibbonWidget
 
@@ -171,11 +173,11 @@ def test_tab_then_element(setup, fake_iface):
     assert len(set(c.values())) == len(c)
     # Grauer Befehl: Modus bleibt
     for ch in c["Löschen"]:
-        QTest.keyClick(mw, getattr(Qt, "Key_" + ch))
+        QTest.keyClick(mw, getattr(Qt.Key, "Key_" + ch))
     assert keys.active
     # Split per Tastatur: Menü mit Hauptbefehl oben
     for ch in c["Verschieben"]:
-        QTest.keyClick(mw, getattr(Qt, "Key_" + ch))
+        QTest.keyClick(mw, getattr(Qt.Key, "Key_" + ch))
     assert not keys.active
     settle()
     menu = QApplication.activePopupWidget()
@@ -286,9 +288,12 @@ def test_minimized_state_survives_restart(fake_iface, settings):
 
 def test_ctrl_f1_toggles(setup):
     w, _keys, mw = setup
-    QTest.keyClick(mw, Qt.Key.Key_F1, Qt.KeyboardModifier.ControlModifier)
+    # Kürzel der Plattform: auf dem Mac ⌘⌥T statt Strg+F1
+    key, mods = ((Qt.Key.Key_T, Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.AltModifier) if MAC
+                 else (Qt.Key.Key_F1, Qt.KeyboardModifier.ControlModifier))
+    QTest.keyClick(mw, key, mods)
     assert w.minimized
-    QTest.keyClick(mw, Qt.Key.Key_F1, Qt.KeyboardModifier.ControlModifier)
+    QTest.keyClick(mw, key, mods)
     assert not w.minimized
 
 
@@ -298,12 +303,34 @@ def test_keytips_open_tab_in_minimized_ribbon(setup):
     alt(mw)
     QTest.keyClick(mw, Qt.Key.Key_A)
     settle()
-    assert w.popup.isVisible() and keys.level == 1
+    assert w.popup.isVisible() and keys.level == 1, ("aktives Fenster", QApplication.activeWindow())
     labels = [l for l in w.popup.findChildren(QLabel, "ribbon_keytip") if l.isVisible()]
     assert labels                                       # Kürzel im aufgeklappten Ribbon
     QTest.keyClick(mw, Qt.Key.Key_Escape)
     assert keys.level == 0 and not w.popup.isVisible()
     QTest.keyClick(mw, Qt.Key.Key_Escape)
+
+
+def test_keytips_survive_own_popup_becoming_active(setup, monkeypatch):
+    # Auf dem Mac wird das aufgeklappte Ribbon selbst aktiv: das beendet die Kürzel nicht
+    w, keys, mw = setup
+    w.set_minimized(True)
+    alt(mw)
+    QTest.keyClick(mw, Qt.Key.Key_A)
+    settle()
+    assert keys.level == 1
+    active = [w.popup]
+    monkeypatch.setattr(QApplication, "activeWindow", staticmethod(lambda: active[0]))
+    monkeypatch.setattr(mw, "isActiveWindow", lambda: False)
+    QApplication.sendEvent(mw, QEvent(QEvent.Type.WindowDeactivate))
+    settle()
+    assert keys.level == 1
+    # Ein fremdes Fenster beendet sie
+    active[0] = QWidget()
+    QApplication.sendEvent(mw, QEvent(QEvent.Type.WindowDeactivate))
+    settle()
+    assert not keys.active and keys.level is None
+    active[0].deleteLater()
 
 
 # -- Suche --------------------------------------------------------------------------
@@ -392,7 +419,7 @@ def test_keytip_dialog_lists_and_saves_overrides(setup, settings):
     assert dlg._items[tab_karte].text(COL_EFFECTIVE) == "M"
     # Konflikt: gleiches Kürzel wie ein anderes eigenes -> rot, nicht speicherbar
     dlg.set_override(keytips.tab_key("ansicht"), "M")
-    assert dlg.problems() and not dlg.buttons.button(dlg.buttons.Save).isEnabled()
+    assert dlg.problems() and not dlg.buttons.button(QDialogButtonBox.StandardButton.Save).isEnabled()
     dlg.set_override(keytips.tab_key("ansicht"), "Q")       # reserviert für die Suche
     assert any("Suche" in p[1] for p in dlg.problems())
     dlg.set_override(keytips.tab_key("ansicht"), "")

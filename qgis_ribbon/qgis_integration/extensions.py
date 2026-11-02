@@ -27,6 +27,11 @@ und ihrer Anbieter über den zentralen Hub. Nach einer Änderung wird nach der
 Ereignisschleife neu gesucht; ``changed`` kommt nur, wenn sich der Inhalt
 wirklich geändert hat (Plugin geladen oder entladen, benötigtes Werkzeug
 dazugekommen oder weggefallen).
+
+``DesignerCatalog`` macht dasselbe für ein Layout-Fenster: Es zählen nur die Leisten
+von QGIS, die der Ribbon dort ersetzt. Eigene Leisten fremder Plugins bleiben sichtbar.
+Plugins legen ihre Aktionen oft erst in ihrem eigenen Handler von
+``layoutDesignerOpened`` ab, also nach dem Aufbau des Ribbons; das meldet der Ereignisfilter.
 """
 
 from qgis.core import QgsApplication
@@ -35,7 +40,8 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QMenu, QToolBar, QToolButton, QWidgetAction
 
 from ..core import extensions as ext
-from .action_resolver import clean_text
+from ..core.model import ExtensionSources
+from .action_resolver import clean_text, core_item_tool, edit_actions
 from ..core.i18n import tr
 
 QGIS_PREFIX = "mAction"
@@ -110,6 +116,9 @@ class ExtensionCatalog(QObject):
         self._timer.timeout.connect(self._rescan)
 
     # Suchen
+    def _own(self, act):
+        return _own_action(act, self.known)
+
     def _menus(self):
         # Über die Menüleiste: QGIS hängt Raster, Vektor … erst ein, wenn ein Plugin dort etwas ablegt
         menus = {}
@@ -139,7 +148,7 @@ class ExtensionCatalog(QObject):
                     continue
                 self._collect_menu(sub, top, path + (title,), group or title, found, seen)
                 continue
-            if not _own_action(act, self.known) or id(act) in seen:
+            if not self._own(act) or id(act) in seen:
                 continue
             text = clean_text(act.text())
             k = ext.key(top, *(path + (text,)))
@@ -188,7 +197,7 @@ class ExtensionCatalog(QObject):
         return main, [a for a in extra if a is not main]
 
     def _add_bar_action(self, tb, name, collecting, act, extra, found, seen):
-        if id(act) in self._key_of or not _own_action(act, self.known):
+        if id(act) in self._key_of or not self._own(act):
             return
         if collecting:
             if self._owners is None:
@@ -203,7 +212,7 @@ class ExtensionCatalog(QObject):
         self._key_of[id(act)] = k
         items, subs = [], []
         for sub in extra:
-            if sub.menu() is not None or not _own_action(sub, self.known):
+            if sub.menu() is not None or not self._own(sub):
                 continue
             if id(sub) in self._key_of:          # kommt schon anderswo vor (Menü)
                 items.append(self._key_of[id(sub)])
@@ -360,3 +369,34 @@ class ExtensionCatalog(QObject):
         self._watch()
         if changed:
             self.changed.emit()
+
+
+class DesignerCatalog(ExtensionCatalog):
+    """Aktionen, die Plugins in die Leisten eines Layout-Fensters legen."""
+
+    def __init__(self, iface, window, bars, hub, known=(), parent=None):
+        ExtensionCatalog.__init__(self, iface, ExtensionSources(toolbars=tuple(bars)), hub, known=known, parent=parent)
+        self.window = window
+
+    def _own(self, act):
+        # Rückgängig und Wiederholen haben keinen Namen und liegen auch in der Leiste
+        return _own_action(act, self.known) and not core_item_tool(act) and act not in edit_actions(self.window)
+
+    def _menus(self):
+        return []
+
+    def _bars(self):
+        return [tb for tb in self.window.findChildren(QToolBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
+                if tb.objectName() in self.sources.toolbars]
+
+    def start(self):
+        if not self._started:
+            self._started = True
+            self._needed_state = frozenset()
+            self._watch()
+
+    def _watch(self):
+        self._unwatch()
+        for obj in self.toolbars + self._buttons:
+            obj.installEventFilter(self)
+            self._watched.append(obj)

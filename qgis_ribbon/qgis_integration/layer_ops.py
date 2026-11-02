@@ -668,8 +668,12 @@ def identifiable_layers():
 
 
 def set_identifiable(layer, on):
+    flag = QgsMapLayer.LayerFlag.Identifiable
     flags = layer.flags()
-    flags = (flags | QgsMapLayer.LayerFlag.Identifiable) if on else (flags & ~QgsMapLayer.LayerFlag.Identifiable)
+    # Über Ganzzahlen: ``flags & ~flag`` und ``flags ^ flag`` ergeben unter Qt6 eine
+    # Ganzzahl, die setFlags nicht annimmt; ``type(flags)(…)`` macht daraus wieder die Flags
+    value = (int(flags) | int(flag)) if on else (int(flags) & ~int(flag))
+    flags = type(flags)(value)
     layer.setFlags(flags)
     QgsProject.instance().setDirty(True)
 

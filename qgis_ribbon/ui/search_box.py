@@ -106,9 +106,9 @@ class SearchBox(QLineEdit):
             # Befehle mit Ort im Ribbon, dann der Befehlsvorrat ohne Ort; was
             # eine QGIS-Aktion spiegelt, findet die Suche als QGIS-Aktion
             mirrored = {e.ref[0].source.get("object_name") for e in entries
-                        if e.ref[0].source.type in ("qgis_action", "plugin_action")}
+                        if e.ref[0].source.type in ("qgis_action", "plugin_action", "designer_action")}
             entries += pool_entries(self._ribbon, {e.ref[0].id for e in entries})
-            entries += qgis_action_entries(self._ctx.env.iface.mainWindow(), mirrored)
+            entries += qgis_action_entries(self._ctx.resolver.window, mirrored)
             self.index = SearchIndex(entries)
         return self.index
 

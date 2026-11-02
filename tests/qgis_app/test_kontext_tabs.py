@@ -4,8 +4,8 @@ import subprocess
 
 import pytest
 from qgis.core import (QgsCategorizedSymbolRenderer, QgsCoordinateReferenceSystem, QgsCsException, QgsFeature,
-                       QgsGeometry, QgsMeshLayer, QgsPointCloudLayer, QgsPointXY, QgsProject, QgsRectangle,
-                       QgsVectorLayer, QgsVectorTileBasicLabeling, QgsVectorTileLayer)
+                       QgsGeometry, QgsMeshLayer, QgsPointCloudLayer, QgsPointXY, QgsProject, QgsProviderRegistry,
+                       QgsRectangle, QgsVectorLayer, QgsVectorTileBasicLabeling, QgsVectorTileLayer)
 from qgis.gui import QgsMapMouseEvent
 from qgis.PyQt.QtCore import QEvent, QModelIndex, QPoint, QRectF, Qt
 from qgis.PyQt.QtGui import QColor, QImage, QPainter
@@ -65,6 +65,8 @@ def mesh(tmp_path):
     path = tmp_path / "netz.2dm"
     path.write_text("MESH2D\nND 1 0 0 1\nND 2 1 0 2\nND 3 0 1 3\nND 4 1 1 4\n"
                     "E3T 1 1 2 3 1\nE3T 2 2 4 3 1\n")
+    if "mdal" not in QgsProviderRegistry.instance().providerList():
+        pytest.skip("Netz-Provider (MDAL) nicht verfügbar")
     layer = QgsMeshLayer(str(path), "Netz", "mdal")
     assert layer.isValid()
     return layer

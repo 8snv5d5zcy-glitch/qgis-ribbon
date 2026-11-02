@@ -5,8 +5,9 @@ und in der Ribbon-Definition. Übersetzungen liegen als JSON-Kataloge
 (englischer Text -> übersetzter Text) in ``qgis_ribbon/i18n/``:
 
 - ``<sprache>.json``: Texte aus dem Code, von Hand gepflegt,
-- ``<sprache>_ribbon.json``: Beschriftungen und Beschreibungen der
-  Ribbon-Definition.
+- ``<sprache>_ribbon.json``: Beschriftungen und Beschreibungen der Ribbon-Definition
+  des Hauptfensters, erzeugt vom Generator der Definition,
+- ``<sprache>_ribbon_layout.json``: dasselbe für das Layout-Fenster, von Hand gepflegt.
 
 Die Sprache setzt ``classFactory`` vor dem ersten Import der übrigen Module
 (``set_language`` mit der Sprache von QGIS). Texte auf Modulebene werden beim
@@ -23,7 +24,7 @@ import re
 
 SOURCE_LANGUAGE = "en"
 DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "i18n")
-CATALOG_PARTS = ("", "_ribbon")
+CATALOG_PARTS = ("", "_ribbon", "_ribbon_layout")
 PLACEHOLDER = re.compile(r"%(?:\([a-z_]+\))?[-+ #0]*\d*(?:\.\d+)?[sdirf%]")
 
 _state = {"language": SOURCE_LANGUAGE, "catalog": {}}
@@ -38,7 +39,7 @@ def normalize(locale):
 
 
 def catalog_files(language, folder=DIR):
-    """Vorhandene Katalogdateien einer Sprache (Code, dann Ribbon-Definition)."""
+    """Vorhandene Katalogdateien einer Sprache (Code, dann Ribbon-Definitionen)."""
     out = []
     for part in CATALOG_PARTS:
         path = os.path.join(folder, "%s%s.json" % (language, part))
@@ -64,7 +65,7 @@ def available_languages(folder=DIR):
     found = {SOURCE_LANGUAGE}
     if os.path.isdir(folder):
         for name in os.listdir(folder):
-            m = re.match(r"^([a-z]{2,3})(?:_ribbon)?\.json$", name)
+            m = re.match(r"^([a-z]{2,3})(?:_ribbon(?:_layout)?)?\.json$", name)
             if m:
                 found.add(m.group(1))
     return sorted(found)

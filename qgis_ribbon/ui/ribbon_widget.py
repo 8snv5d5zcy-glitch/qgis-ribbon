@@ -21,7 +21,8 @@ Anpassen (Menü ▾ oder Rechtsklick): grafischer Editor „Ribbon anpassen“
 (``ui/ribbon_editor.py``), gespeicherte Anordnungen
 (Untermenü „Anordnungen“) und der Wechsel zur klassischen QGIS-Oberfläche
 (``classicRequested``, nur mit Plugin). Nach einer Änderung baut das Plugin
-den Ribbon neu auf (``Arrangements.changed``).
+den Ribbon neu auf (``Arrangements.changed``). Mit dem Plugin kommt der Schalter
+„Ribbon im Layout-Fenster“ dazu (``designerToggled``).
 
 Design „Kontur“: Farben aus ``theme.ThemeManager``, ein
 Stylesheet am Wurzel-Widget, Tableiste und Ribbon-Fläche selbst gezeichnet.
@@ -68,6 +69,7 @@ TEXT_CUSTOMIZE = tr("Customize Ribbon …")
 TEXT_GALLERY = tr("Customize Gallery “%s” …")
 TEXT_CLASSIC = tr("Classic QGIS Interface")
 TEXT_HIDE_MENUBAR = tr("Hide QGIS Menu Bar")
+TEXT_DESIGNER = tr("Ribbon in Layout Window")
 TEXT_QGIS_MENUS = tr("QGIS Menus")
 
 
@@ -372,6 +374,7 @@ class RibbonPopup(QFrame):
 class RibbonWidget(QWidget):
     classicRequested = pyqtSignal()
     menuBarToggled = pyqtSignal(bool)
+    designerToggled = pyqtSignal(bool)
 
     def __init__(self, ribbon, resolver, hub, parent=None, logic=None, user=None, arrangements=None,
                  theme_manager=None):
@@ -387,6 +390,7 @@ class RibbonWidget(QWidget):
         self.whole_available = False   # „Kontur für ganz QGIS“ (nur mit Plugin)
         self.menubar_available = False  # QGIS-Menüleiste ausblenden (nur mit Plugin)
         self.menubar_hidden = False
+        self.designer_available = False  # Schalter „Ribbon im Layout-Fenster“ (nur mit Plugin)
         self.themes.changed.connect(self.apply_theme)
         self.setStyleSheet(theme.ribbon_qss(theme.current()))
         # Ohne Plugin: Anordnung auf Grundlage des gezeigten Ribbons (gespeichert, nicht neu aufgebaut)
@@ -470,8 +474,8 @@ class RibbonWidget(QWidget):
             if tab.contextual:
                 self.tabbar.contextual.add(i)
                 self.tabbar.setTabToolTip(i, "%s: %s" % (tab.context, tab.label))
-                if logic is not None and not logic.tab_visible(tab.id):
-                    self.tabbar.setTabVisible(i, False)
+            if logic is not None and not logic.tab_visible(tab.id):
+                self.tabbar.setTabVisible(i, False)
         self.tabbar.currentChanged.connect(self._on_tab_changed)
         self.tabbar.tabBarClicked.connect(self._on_tab_clicked)
         self.tabbar.tabBarDoubleClicked.connect(lambda _i: self.toggle_minimized())
@@ -747,6 +751,13 @@ class RibbonWidget(QWidget):
         menu.addAction(TEXT_CUSTOMIZE, self.open_customize_dialog)
         arrangement_menu.add_submenu(menu, self)
         self.add_design_menu(menu)
+        if self.designer_available:
+            act = menu.addAction(TEXT_DESIGNER)
+            act.setObjectName("ribbon_designer_ribbon")
+            act.setCheckable(True)
+            act.setChecked(self.user.designer_ribbon())
+            act.setToolTip(tr("Use the ribbon instead of the toolbars in print layout windows."))
+            act.triggered.connect(lambda on: self.designerToggled.emit(bool(on)))
         if self.menubar_available:
             act = menu.addAction(TEXT_HIDE_MENUBAR)
             act.setObjectName("ribbon_hide_menubar")

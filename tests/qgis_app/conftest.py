@@ -29,7 +29,7 @@ else:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from qgis.core import QgsApplication, QgsSettings
     from qgis.gui import QgsMapCanvas, QgsMessageBar
-    from qgis.PyQt.QtCore import QObject, QSettings, Qt, pyqtSignal
+    from qgis.PyQt.QtCore import QEvent, QObject, QSettings, Qt, pyqtSignal
     from qgis.PyQt.QtWidgets import (QAction, QActionGroup, QDockWidget, QMainWindow, QMenu,
                                      QToolBar, QWidget)
 
@@ -44,13 +44,21 @@ else:
             from qgis.analysis import QgsNativeAlgorithms
             QgsApplication.processingRegistry().addProvider(QgsNativeAlgorithms())
         yield QgsApplication.instance()
+        # Ausstehendes deleteLater noch mit lebender Anwendung ausführen: Sonst liefe es unter Qt6
+        # (Linux) erst im Exit-Handler nach ihrem Abbau und stürzte dort ab (Rückgabewert 139)
+        QgsApplication.processEvents()
+        QgsApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 
     class FakeIface(QObject):
         initializationCompleted = pyqtSignal()
         currentLayerChanged = pyqtSignal(object)
+        layoutDesignerOpened = pyqtSignal(object)
+        layoutDesignerWillBeClosed = pyqtSignal(object)
 
         def __init__(self, mw):
             QObject.__init__(self)
+            self.signals = self
+            self.designers_open = []
             self._mw = mw
             self._bar = QgsMessageBar(mw)
             self._canvas = QgsMapCanvas(mw)
@@ -64,6 +72,9 @@ else:
 
         def mainWindow(self):
             return self._mw
+
+        def openLayoutDesigners(self):
+            return list(self.designers_open)
 
         def messageBar(self):
             return self._bar

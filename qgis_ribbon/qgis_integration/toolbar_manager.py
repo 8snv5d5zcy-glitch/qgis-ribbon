@@ -18,6 +18,9 @@ Regeln:
 - Leisten anderer Plugins (``hide_bars``) werden ebenso behandelt;
   Leisten ohne objectName nur über ihr Objekt (QGIS speichert ihren Zustand
   ohnehin nicht).
+- Layout-Fenster (``remember=False``): keine Merkliste. Der Designer speichert
+  seinen Zustand erst beim Schließen, und der Ribbon blendet die Leisten davor
+  wieder ein; nach einem Absturz bleibt der alte Zustand mit allen Leisten.
 """
 
 from qgis.core import QgsSettings
@@ -37,10 +40,10 @@ def _as_list(value):
 
 
 class ToolbarManager(QObject):
-    def __init__(self, main_window, settings=None):
+    def __init__(self, main_window, settings=None, remember=True):
         QObject.__init__(self)
         self.mw = main_window
-        self.settings = settings or QgsSettings()
+        self.settings = (settings or QgsSettings()) if remember else None
         self._hidden = []          # von uns ausgeblendete Toolbars (objectName)
         self._hidden_bars = []     # ausgeblendete Leisten ohne objectName (Objekt)
         self._ribbon = None
@@ -86,7 +89,7 @@ class ToolbarManager(QObject):
     # Kern-Toolbars
     def hide(self, names):
         """Sichtbare Toolbars aus ``names`` ausblenden und merken."""
-        leftover = set(_as_list(self.settings.value(SETTINGS_KEY, [])))
+        leftover = set(_as_list(self.settings.value(SETTINGS_KEY, []))) if self.settings is not None else set()
         wanted = set(names)
         for tb in self._toolbars():
             name = tb.objectName()
@@ -97,7 +100,8 @@ class ToolbarManager(QObject):
                 self._hidden.append(name)
             elif name in leftover:  # nach Absturz noch versteckt
                 self._hidden.append(name)
-        self.settings.setValue(SETTINGS_KEY, list(self._hidden))
+        if self.settings is not None:
+            self.settings.setValue(SETTINGS_KEY, list(self._hidden))
 
     def hide_bars(self, bars):
         """Leisten (Objekte, z. B. von Plugins) ausblenden, sofern sichtbar."""
@@ -132,7 +136,8 @@ class ToolbarManager(QObject):
         self._show_hidden()
         self._hidden = []
         self._hidden_bars = []
-        self.settings.remove(SETTINGS_KEY)
+        if self.settings is not None:
+            self.settings.remove(SETTINGS_KEY)
 
     @property
     def hidden(self):

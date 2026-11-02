@@ -87,7 +87,11 @@ def test_exclusive_children_get_radio_buttons(qgis_app, stylesheet):
     for rect in exclusive:
         assert crop(image, rect) != crop(plain, rect)
     for rect in normal:
-        assert crop(image, rect) == crop(plain, rect)
+        # Mit Stylesheet verschiebt Qt6 den Zeileninhalt um eine Spalte (alle Zeilen gleich):
+        # normale Einträge müssen bis auf diese Verschiebung unverändert sein
+        shifts = (0, -1, 1) if stylesheet else (0,)
+        assert any(image.copy(QRect(rect.left() + dx, rect.top(), 24, rect.height())) == crop(plain, rect)
+                   for dx in shifts)
     view.close()
 
 

@@ -88,10 +88,13 @@ tabs:
         label: "Project"
         items:
           - {command: "neue_kartenansicht", size: "large"}
-          - {command: "neues_layout", size: "large"}
+          - split: "neues_layout"
+            items: ["neues_layout_a4_quer", "neues_layout_a4_hoch", "neues_layout_a3_quer", "neues_layout_a3_hoch"]
+            size: "large"
           - {command: "neuer_bericht", size: "large"}
           - {command: "werkzeuge", size: "medium"}
           - {command: "layerdefinition_laden", size: "medium"}
+          - {command: "layout_oeffnen", size: "medium"}
           - {command: "layoutverwaltung", size: "medium"}
           - menu: "Connections"
             key: "Verbindungen"
@@ -264,6 +267,8 @@ tabs:
           - split: "layout_exportieren"
             items: ["layout_als_bild", "atlas_als_pdf"]
             size: "large"
+          - {command: "layout_oeffnen", size: "large"}
+          - {command: "neu_aus_vorlage_layout", size: "large"}
           - {command: "drucken", size: "large"}
   - {id: "erweiterungen", label: "Extensions", dynamic: "erweiterungen"}
 
@@ -1211,10 +1216,10 @@ commands:
     icon: "/mActionSaveAsPDF.svg"
     description: "Export a print layout as PDF; image and atlas in the menu."
   drucken:
-    label: "Print"
+    label: "Layout Manager"
     source: {type: "qgis_action", object_name: "mActionShowLayoutManager"}
     icon: "/mActionFilePrint.svg"
-    description: "Open the layout manager; printing is done from the layout designer."
+    description: "Open the layout manager; printing is done from the layout window."
   layer_massstab_schalten:
     label: "Scale Range"
     source: {type: "custom", id: "ribbon.layer_massstab_schalten"}
@@ -1878,9 +1883,41 @@ commands:
     source: {type: "qgis_menu", object_name: "mProjectToStorageMenu"}
     description: "Save the project to a database or another project storage."
   layout_oeffnen:
-    label: "Open Layout"
+    label: "Layouts"
     source: {type: "qgis_menu", object_name: "mLayoutsMenu"}
     description: "Open one of the print layouts of the project."
+  neues_layout_a4_quer:
+    label: "A4 Landscape"
+    source:
+      type: "custom"
+      id: "ribbon.neues_layout_seite"
+      args: ["A4", "landscape"]
+    description: "Create a new print layout with a landscape A4 page."
+  neues_layout_a4_hoch:
+    label: "A4 Portrait"
+    source:
+      type: "custom"
+      id: "ribbon.neues_layout_seite"
+      args: ["A4", "portrait"]
+    description: "Create a new print layout with a portrait A4 page."
+  neues_layout_a3_quer:
+    label: "A3 Landscape"
+    source:
+      type: "custom"
+      id: "ribbon.neues_layout_seite"
+      args: ["A3", "landscape"]
+    description: "Create a new print layout with a landscape A3 page."
+  neues_layout_a3_hoch:
+    label: "A3 Portrait"
+    source:
+      type: "custom"
+      id: "ribbon.neues_layout_seite"
+      args: ["A3", "portrait"]
+    description: "Create a new print layout with a portrait A3 page."
+  neu_aus_vorlage_layout:
+    label: "Layout from Template"
+    source: {type: "custom", id: "ribbon.layout_aus_vorlage"}
+    description: "Create a new print layout from a template (.qpt)."
   projektmodelle:
     label: "Project Models"
     source: {type: "qgis_menu", object_name: "mMenuProjectModels"}
@@ -2775,3 +2812,68 @@ commands:
     label: "Help Menu"
     source: {type: "qgis_menu", object_name: "mHelpMenu"}
     description: "The Help menu of QGIS as a dropdown."
+  digitalisieren_segment:
+    label: "Digitize with Segments"
+    source: {type: "qgis_action", object_name: "mActionDigitizeWithSegment"}
+    description: "Draw straight segments (the default). Available while a drawing tool is active."
+  digitalisieren_bezier:
+    label: "Digitize with Bézier Curve"
+    source: {type: "qgis_action", object_name: "mActionDigitizeWithBezier"}
+    description: "Draw curves with anchors and handles. Available while a drawing tool is active."
+    qgis_min: 40000
+  digitalisieren_nurbs:
+    label: "Digitize with NURBS Curve"
+    source: {type: "qgis_action", object_name: "mActionDigitizeWithNurbs"}
+    description: "Draw NURBS curves with control points. Available while a drawing tool is active."
+    qgis_min: 40000
+  fasen_runden:
+    label: "Chamfer / Fillet"
+    source: {type: "qgis_action", object_name: "mActionChamferFillet"}
+    description: "Create a chamfer or fillet at a vertex: click the vertex first, then set the distance or radius."
+    qgis_min: 40000
+  objekte_als_array:
+    label: "Copy Features in an Array"
+    source: {type: "qgis_action", object_name: "mActionFeatureArray"}
+    description: "Copy a feature and distribute the copies at regular intervals along a line."
+    qgis_min: 40000
+  hoehenprofile_verwalten:
+    label: "Manage Elevation Profiles"
+    source: {type: "qgis_action", object_name: "mActionManageElevationProfiles"}
+    icon: "/mActionElevationProfile.svg"
+    description: "Show and manage the elevation profiles of the project."
+    qgis_min: 40000
+  annotationen_waehlen:
+    label: "Select Annotations"
+    source: {type: "qgis_action", object_name: "mActionSelectAnnotation"}
+    description: "Select annotations in the map with a click or a rectangle."
+    qgis_min: 40000
+  netz_digitalisieren:
+    label: "Digitize Mesh Elements"
+    source: {type: "qgis_action", object_name: "mActionDigitizing"}
+    description: "Draw vertices and faces of the mesh. Available while a mesh layer is being edited."
+    qgis_min: 40000
+  netz_erzwingen:
+    label: "Force Mesh by Geometries"
+    source: {type: "qgis_action", object_name: "mActionForceByLines"}
+    description: "Force the mesh along the selected geometries. Available while a mesh layer is being edited."
+    qgis_min: 40000
+  netz_reindizieren:
+    label: "Reindex Mesh"
+    source: {type: "qgis_action", object_name: "mActionReindexMesh"}
+    description: "Renumber the faces and vertices of the mesh being edited (asks first)."
+    qgis_min: 40000
+  netz_alle_stuetzpunkte:
+    label: "Select All Mesh Vertices"
+    source: {type: "qgis_action", object_name: "mActionSelectAllVertices"}
+    description: "Select all vertices of the mesh being edited."
+    qgis_min: 40000
+  netz_isolierte_stuetzpunkte:
+    label: "Select Isolated Mesh Vertices"
+    source: {type: "qgis_action", object_name: "mActionSelectIsolatedVertices"}
+    description: "Select vertices of the mesh being edited that belong to no face."
+    qgis_min: 40000
+  netz_transformieren:
+    label: "Transform Mesh Vertices"
+    source: {type: "qgis_action", object_name: "mActionTransformCoordinates"}
+    description: "Change the coordinates of the vertices of the mesh being edited with expressions."
+    qgis_min: 40000

@@ -35,7 +35,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from . import customization as cz
-from .conditions import FIELD_CAPS, LAYER_KINDS, Snapshot, all_true
+from .conditions import FIELD_CAPS, ITEM_KINDS, LAYER_KINDS, Snapshot, all_true
 from .model import CommandRef, Menu, Row, Split, iter_commands
 from .i18n import tr
 
@@ -110,6 +110,10 @@ _SNAPSHOTS = tuple(Snapshot(kind, editable, selection, caps)
                    for kind in (None,) + LAYER_KINDS
                    for editable in (False, True) for selection in (False, True)
                    for caps in (frozenset(), frozenset(FIELD_CAPS)))
+# Layout-Fenster: nichts, ein Element je Art, mehrere; jeweils im Layout und im Bericht
+_SNAPSHOTS += tuple(Snapshot(selected_items=count, item_kind=kind, layout_report=report)
+                    for count, kind in [(0, None), (2, None)] + [(1, k) for k in ITEM_KINDS]
+                    for report in (False, True))
 
 
 def fits(base, tab, commands):

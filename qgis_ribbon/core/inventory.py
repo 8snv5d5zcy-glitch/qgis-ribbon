@@ -15,7 +15,10 @@ from .i18n import tr
 SCHEMA_VERSION = 1
 
 SOURCE_TYPES = ("qgis_action", "qgis_menu", "iface_method", "iface_action", "processing", "dock",
-                "plugin_action", "custom", "extension")
+                "plugin_action", "custom", "extension", "designer_action", "designer_item", "designer_edit")
+
+# Bearbeiten-Aktionen des Layout-Fensters ohne objectName (Quelltyp ``designer_edit``)
+DESIGNER_EDIT_ROLES = ("undo", "redo", "cut", "copy", "paste")
 
 # Ergebnis von check_source
 OK = "ok"
@@ -35,6 +38,10 @@ REQUIRED_PARAMS = {
     "custom": ("id",),
     # Aktion eines anderen Plugins nach ihrem Ort (entsteht erst zur Laufzeit)
     "extension": ("key",),
+    # Layout-Fenster: Aktion nach objectName, Element-Werkzeug nach Elementtyp, Aktion ohne Namen
+    "designer_action": ("object_name",),
+    "designer_item": ("item",),
+    "designer_edit": ("role",),
 }
 
 
@@ -67,6 +74,7 @@ def build_inventory(raw, quelle, qgis_version=None, locale=None, plugins=None):
         items.sort(key=lambda i: (i.get("object_name") or "￿", i.get("text") or ""))
         out[key] = items
     out["menus"] = [dict(m) for m in raw.get("menus", [])]
+    out["items"] = [dict(i) for i in raw.get("items", [])]
     out["toolbars"] = sorted((dict(t) for t in raw.get("toolbars", [])),
                              key=lambda t: t.get("object_name") or "")
     out["processing"] = sorted((dict(a) for a in raw.get("processing", [])),
@@ -95,6 +103,9 @@ class InventoryIndex(object):
         self.menus = dict((m["object_name"], m) for m in inventory.get("menus", [])
                           if m.get("object_name"))
         self.plugins = set(inventory.get("plugins") or [])
+        # Element-Werkzeuge des Layout-Fensters: (Elementtyp, Gruppe, Nummer)
+        self.items = set((i["item"], i.get("group") or "", i.get("index") or 0)
+                         for i in inventory.get("items", []))
         # Statisches Inventar kennt nur Kern-Plugins (processing).
         self.static = self.quelle == "static"
 
@@ -134,7 +145,7 @@ def check_source(source, index):
     for key in REQUIRED_PARAMS[t]:
         if not source.get(key):
             return INVALID, tr("%s without %s") % (t, key)
-    if t == "qgis_action":
+    if t in ("qgis_action", "designer_action"):
         name = source["object_name"]
         if name in index.actions:
             a = index.actions[name]
@@ -174,6 +185,15 @@ def check_source(source, index):
         if index.static or source["plugin"] not in index.plugins:
             return UNCHECKED, tr("Plugin %s not in inventory") % source["plugin"]
         return MISSING, tr("Action %s not found in plugin %s") % key[::-1]
+    if t == "designer_item":
+        key = (source["item"], source.get("group") or "", source.get("index") or 0)
+        if key in index.items:
+            return OK, ""
+        return MISSING, tr("Layout item %s not in inventory") % source["item"]
+    if t == "designer_edit":
+        if source["role"] in DESIGNER_EDIT_ROLES:
+            return OK, ""
+        return INVALID, tr("unknown role %r") % (source["role"],)
     return UNCHECKED, ""
 
 

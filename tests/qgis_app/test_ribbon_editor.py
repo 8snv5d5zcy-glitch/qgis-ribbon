@@ -5,7 +5,7 @@ import json
 import pytest
 from qgis.PyQt.QtCore import QEvent, Qt
 from qgis.PyQt.QtTest import QTest
-from qgis.PyQt.QtWidgets import QApplication, QLineEdit, QToolButton
+from qgis.PyQt.QtWidgets import QAbstractItemView, QApplication, QLineEdit, QToolButton
 
 from qgis_ribbon.core import customization as cz
 from qgis_ribbon.core.editor import Place
@@ -811,7 +811,7 @@ def test_gallery_dialog_with_icons_and_drag_order(shipped):
         assert dlg.list.model().moveRow(QModelIndex(), 0, QModelIndex(), 3)
         assert dlg.ids() == before[1:3] + before[:1] + before[3:]
         assert "(Standard)" not in dlg.status.text()
-        assert dlg.list.dragDropMode() == dlg.list.InternalMove
+        assert dlg.list.dragDropMode() == QAbstractItemView.DragDropMode.InternalMove
     finally:
         dlg.deleteLater()
         settle()
@@ -827,15 +827,14 @@ def test_refresh_keeps_preview_scroll(shipped):
         dlg.select(("item", Place(dlg.current_tab, len(dlg.preview.cards) - 1, len(last.tiles) - 1)), focus=True)
         settle()
         assert bar.value() > 0
-        value = bar.value()
         # Neuaufbau (Palette umschalten) mit Fokus in der Vorschau: im echten QGIS rollte Qt sonst zum
         # nächsten Fokus (offscreen ohne aktives Fenster nicht nachstellbar; der Test sichert das Ergebnis)
-        dlg.palette_box.set_mode("groups")
-        settle()
-        assert bar.value() == value
-        dlg.palette_box.set_mode("commands")
-        settle()
-        assert bar.value() == value
+        # Die Palette kann je nach Schrift die Vorschau um wenige Pixel ändern, dann begrenzt das Maximum
+        for mode in ("groups", "commands"):
+            value = bar.value()
+            dlg.palette_box.set_mode(mode)
+            settle()
+            assert bar.value() == min(value, bar.maximum())
     finally:
         close(dlg)
 

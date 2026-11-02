@@ -23,9 +23,9 @@ zusammengefasst (Farbdialog mit Live-Vorschau, Zahlenfeld).
 from qgis.core import (Qgis, QgsLayerTreeModelLegendNode, QgsLineSymbol, QgsMapLayerStyle, QgsMarkerSymbol,
                        QgsSymbolLayer, QgsUnitTypes, QgsVectorLayer)
 from qgis.PyQt.QtCore import QObject
-from qgis.PyQt.QtWidgets import QUndoCommand
 
 from ..core.i18n import tr
+from .qt_compat import QUndoCommand
 
 ALL = "__alle__"           # Schlüssel „Alle Klassen“
 MERGE_ID = 0x51B0          # Kennung der Schritte, die sich zusammenfassen lassen

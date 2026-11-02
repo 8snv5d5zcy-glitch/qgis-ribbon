@@ -22,6 +22,13 @@ Menüleiste: Auf Wunsch blendet der Ribbon die QGIS-Menüleiste aus (Höhe 0,
 Ribbons erreichbar. Abbau, klassische Oberfläche und ``unload`` stellen sie
 wieder her; die Einstellung bleibt für den nächsten Aufbau.
 
+Layout-Fenster: ``DesignerRibbons`` (``designer_ribbon.py``) baut dort den Ribbon
+auf, solange der Schalter „Ribbon im Layout-Fenster“ an ist (Standard). Er lebt neben
+dem Ribbon des Hauptfensters: Ein Neuaufbau nach einer Anpassung lässt ihn stehen, die
+klassische Oberfläche und ``unload`` bauen ihn ab. Design, Gesamtbild und Menüleiste
+gelten in beiden Fenstern gleich; Änderungen laufen in beide Richtungen über dieses
+Modul. Gespeicherte Anordnungen und Dateien enthalten beide Fenster.
+
 Anleitung: eigene Aktion im QGIS-Menü Hilfe › Plugins (auch in der
 klassischen Oberfläche), beim Entladen entfernt; ein offenes Fenster der
 Anleitung schließt ``unload`` ebenfalls.
@@ -31,14 +38,17 @@ import os
 import time
 
 from qgis.core import Qgis, QgsApplication, QgsMessageLog, QgsSettings
-from qgis.PyQt.QtCore import QEvent, QObject, QTimer
+from qgis.PyQt.QtCore import QTimer
+from qgis.PyQt.QtGui import QIcon, QPalette
 from qgis.PyQt.QtWidgets import QAction, QApplication, QToolBar
 
 from .core import config_loader, yaml_cache
 from .core import extensions as ext
 from .core.context import ContextLogic
+from .designer_ribbon import DesignerRibbons
 from .qgis_integration import builtin_commands, log
 from .qgis_integration.action_resolver import ActionResolver
+from .qgis_integration.after_modal import AfterModal
 from .qgis_integration.arrangements import Arrangements
 from .qgis_integration.context_state import ContextState
 from .qgis_integration.custom_commands import CommandEnv
@@ -50,6 +60,7 @@ from .qgis_integration.toolbar_manager import ToolbarManager
 from .qgis_integration.user_settings import UserSettings
 from .ui import dialog_commands, guide, icons, theme
 from .ui.controls import custom as custom_controls
+from .ui.controls import layout_item as layout_item_controls
 from .ui.keytips import KeyTipController
 from .ui.layer_tree_style import LayerTreeRadios, layer_tree_exclusive
 from .ui.ribbon_widget import RibbonWidget
@@ -63,30 +74,6 @@ HELP_ACTION_NAME = "mActionQgisRibbonGuide"
 VIEW_ACTION_TEXT = tr("Ribbon Interface")
 VIEW_ACTION_TIP = tr("Off: classic QGIS interface with toolbars")
 CLASSIC_MESSAGE = tr("Classic QGIS interface. Back to the ribbon: View › Ribbon Interface.")
-
-
-class _AfterModal(QObject):
-    """Ruft ``callback`` auf, sobald der modale Dialog ``widget`` geschlossen ist."""
-
-    def __init__(self, widget, callback):
-        QObject.__init__(self)
-        self.widget = widget
-        self.callback = callback
-        widget.installEventFilter(self)
-
-    def eventFilter(self, obj, event):  # noqa: N802 (Qt)
-        if obj is self.widget and event.type() in (QEvent.Type.Hide, QEvent.Type.Close):
-            self.cancel()
-            QTimer.singleShot(0, self.callback)
-        return False
-
-    def cancel(self):
-        if self.widget is not None:
-            try:
-                self.widget.removeEventFilter(self)
-            except RuntimeError:
-                pass
-            self.widget = None
 
 
 class RibbonPlugin:
@@ -119,6 +106,7 @@ class RibbonPlugin:
         self.whole = None
         self.catalog = None       # Aktionen anderer Plugins, Werkzeuge
         self.radios = None        # Kreise statt Haken in exklusiven Gruppen der Layerliste
+        self.designers = None     # Ribbons der Layout-Fenster (DesignerRibbons)
         self._after_modal = None
         self.registered = False
         self.startup_ms = None
@@ -130,7 +118,7 @@ class RibbonPlugin:
         start = time.perf_counter()
         yaml_cache.set_dir(self.cache_dir)
         try:
-            self.base = config_loader.load(self.config_path)
+            self.base = config_loader.load(self.config_path, qgis_version=Qgis.QGIS_VERSION_INT)
         except config_loader.ConfigError as exc:
             QgsMessageLog.logMessage(str(exc), LOG_TAG, Qgis.MessageLevel.Critical)
             self.iface.messageBar().pushMessage(
@@ -142,6 +130,7 @@ class RibbonPlugin:
         self.user = UserSettings(self.store)
         self.arrangements = Arrangements(self.base, self.user)
         self.arrangements.changed.connect(self.request_rebuild)
+        self.designers = DesignerRibbons(self.iface, self.store, self)
         self._add_view_action()
         self._add_help_action()
         if self.user.classic():
@@ -231,6 +220,7 @@ class RibbonPlugin:
         if not self.user or not self.user.classic() or self.widget is None:
             return
         self._teardown()
+        self._sync_designers()
         self.iface.messageBar().pushMessage(LOG_TAG, CLASSIC_MESSAGE, level=Qgis.MessageLevel.Info, duration=8)
 
     # Aufbau und Abbau
@@ -248,6 +238,7 @@ class RibbonPlugin:
         # Eigene Befehle (Steuerelemente, Galerien) und ihr Layer-Beobachter
         builtin_commands.register_all()
         custom_controls.register_all()
+        layout_item_controls.register_all()
         dialog_commands.register_all()
         self.registered = True
         self.layers = LayerWatch(self.iface, self.hub)
@@ -256,7 +247,7 @@ class RibbonPlugin:
             self.iface, CommandEnv(self.iface, self.layers, self.store, self.hub,
                                    host=self.arrangements))
         self.resolver.extensions = self.catalog
-        icons.set_runtime_icons(self.catalog.icon)
+        icons.set_runtime_icons(self._runtime_icon)
         self.toolbars = ToolbarManager(mw, self.store)
 
         self.toolbar = QToolBar("Ribbon", mw)
@@ -281,7 +272,9 @@ class RibbonPlugin:
         self.widget.whole_available = True
         self.widget.menubar_available = can_hide(mw)   # nicht bei nativer Menüleiste (macOS)
         self.widget.classicRequested.connect(lambda: self.set_classic(True))
-        self.widget.menuBarToggled.connect(self._set_menubar_hidden)
+        self.widget.menuBarToggled.connect(self.menubar_toggled)
+        self.widget.designer_available = True
+        self.widget.designerToggled.connect(self.switch_toggled)
         self.toolbar.addWidget(self.widget)
         self.keytips = KeyTipController(self.widget, mw)
         self.keytips.install()
@@ -299,15 +292,49 @@ class RibbonPlugin:
         self.catalog.start()
         self._apply_whole()
         self._install_radios()
+        self._sync_designers()
         self._lap(lap, "einsetzen")
         self.startup_ms = (time.perf_counter() - start) * 1000.0
         log.info_later(tr("Ribbon built in %.1f ms") % self.startup_ms)
 
-    def _set_menubar_hidden(self, on):
-        """QGIS-Menüleiste aus- oder einblenden (Menü ▾ und Rechtsklick im Ribbon)."""
+    def _runtime_icon(self, command):
+        icon = self.catalog.icon(command) if self.catalog is not None else QIcon()
+        return icon if not icon.isNull() or self.designers is None else self.designers.icon(command)
+
+    def menubar_toggled(self, on):
+        """QGIS-Menüleiste in allen Fenstern aus- oder einblenden (Menü ▾ und Rechtsklick im Ribbon)."""
         self.user.set_menubar_hidden(on)
         if self.menubar is not None:
             self.menubar.set_hidden(on)
+        if self.widget is not None:
+            self.widget.set_menubar_hidden(on)
+        if self.designers is not None:
+            self.designers.set_menubar_hidden(on)
+
+    # Layout-Fenster
+    def switch_toggled(self, on):
+        """Schalter „Ribbon im Layout-Fenster“; umgebaut wird nach dem auslösenden Menü."""
+        self.user.set_designer_ribbon(on)
+        QTimer.singleShot(0, self._sync_designers)
+
+    def _sync_designers(self):
+        if self.designers is None:
+            return
+        if self.widget is not None and self.user.designer_ribbon():
+            self.designers.start()
+        else:
+            self.designers.stop()
+
+    def theme_changed(self):
+        """Design im Layout-Fenster geändert: Hauptfenster nachziehen (von dort die übrigen Fenster)."""
+        if self.themes is not None:
+            self.themes.refresh()
+
+    def lightness(self):
+        """Helligkeit von QGIS ohne die Palette des Gesamtbilds (Modus „Automatisch“)."""
+        if self.whole is not None:
+            return self.whole.base_lightness()
+        return QApplication.instance().palette().color(QPalette.ColorRole.Window).lightness()
 
     def _install_radios(self):
         try:
@@ -341,6 +368,8 @@ class RibbonPlugin:
     def _apply_whole(self):
         if self.whole is not None and self.themes is not None:
             self.whole.update(bool(self.themes.settings()["whole"]), theme.current())
+        if self.designers is not None:
+            self.designers.refresh_themes()
 
     def _on_context(self, snapshot, events):
         changes = self.logic.update(snapshot, events)
@@ -362,7 +391,7 @@ class RibbonPlugin:
         if modal is not None:
             # Nicht unter einem offenen Dialog abbauen (er kann aus dem Ribbon stammen)
             if self._after_modal is None:
-                self._after_modal = _AfterModal(modal, self._after_modal_closed)
+                self._after_modal = AfterModal(modal, self._after_modal_closed)
             return
         start = time.perf_counter()
         tab = self.widget.current_tab()
@@ -441,10 +470,14 @@ class RibbonPlugin:
         if self.registered:
             builtin_commands.unregister_all()
             custom_controls.unregister_all()
+            layout_item_controls.unregister_all()
             dialog_commands.unregister_all()
             self.registered = False
 
     def unload(self):
+        if self.designers is not None:
+            self.designers.close()
+            self.designers = None
         self._teardown(save_state=True)
         yaml_cache.set_dir(None)
         self._remove_view_action()

@@ -118,8 +118,11 @@ class KeyTipController(QObject):
                      QEvent.Type.NonClientAreaMouseButtonPress):
                 self.exit()
                 return False
-            if t == QEvent.Type.ApplicationDeactivate or (t == QEvent.Type.WindowDeactivate and obj is self.mw):
+            if t == QEvent.Type.ApplicationDeactivate:
                 self.exit()
+            elif t == QEvent.Type.WindowDeactivate and obj is self.mw:
+                # Auf dem Mac wird ein aufgeklapptes Popup des Ribbons selbst aktiv; erst danach steht fest, welches
+                QTimer.singleShot(0, self._exit_if_elsewhere)
             return False
         if t == QEvent.Type.ShortcutOverride and event.key() == Qt.Key.Key_Alt and self._alt_alone(event) \
                 and self._window_ready():
@@ -153,6 +156,13 @@ class KeyTipController(QObject):
         # Modifier schließen aus (AltGr kommt unter Windows als Strg+Alt).
         return not event.modifiers() & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier
                                         | Qt.KeyboardModifier.MetaModifier)
+
+    def _exit_if_elsewhere(self):
+        window = QApplication.activeWindow()
+        while window is not None and window is not self.rw:
+            window = window.parentWidget()
+        if self.active and window is None and not self.mw.isActiveWindow():
+            self.exit()
 
     def _window_ready(self):
         return (self.mw.isActiveWindow() and QApplication.activePopupWidget() is None

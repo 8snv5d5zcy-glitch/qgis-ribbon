@@ -12,6 +12,8 @@ While the ribbon is active, the toolbars of the plugins are hidden; their comman
 
 The groups of the Extensions tab behave like all other groups: they can be hidden, reordered and changed in the editor (see [Customizing the ribbon](customize.md)).
 
+The layout window has this tab too, only when plugins put their own commands into its toolbars, see [Ribbon in the layout window](layout.md).
+
 ## Plugin commands in your own groups
 
 In the editor, the filter **Extensions (plugins)** lists all plugin commands. Drag them into any group or into the Quick Access Toolbar.

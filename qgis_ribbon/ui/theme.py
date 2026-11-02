@@ -4,8 +4,8 @@ Die Farben kommen aus den Tokens (``core.theme_tokens``, Datei
 ``config/themes/kontur.yaml``). ``ThemeManager`` wählt Modus und Akzent nach
 den Einstellungen des Nutzers (automatisch wie QGIS, hell, dunkel), hält die
 aktuellen Tokens (``current()``) und meldet Wechsel über ``changed``. Im
-automatischen Modus folgt er der QGIS-Palette (Signal ``paletteChanged`` der
-Anwendung, kein Polling). Im Hochkontrastmodus von Windows nimmt er die
+automatischen Modus folgt er der QGIS-Palette (Signal ``paletteChanged``, unter Qt6
+Ereignis ``ApplicationPaletteChange`` der Anwendung, kein Polling). Im Hochkontrastmodus von Windows nimmt er die
 Systemfarben statt der Tokens.
 
 Stylesheets entstehen aus den Tokens und werden einmal am Wurzel-Widget
@@ -23,6 +23,7 @@ from qgis.PyQt.QtGui import QColor, QPalette
 from qgis.PyQt.QtWidgets import QApplication
 
 from ..core import theme_tokens
+from .qt_compat import PALETTE_CHANGE
 
 # Maße (Raster 4 px)
 LARGE_ICON = 32
@@ -182,8 +183,11 @@ class ThemeManager(QObject):
         self.high_contrast = high_contrast()
         self._connected = False
         app = QApplication.instance()
-        if app is not None and hasattr(app, "paletteChanged"):
-            app.paletteChanged.connect(self._on_palette)
+        if app is not None:
+            if hasattr(app, "paletteChanged"):       # Qt5
+                app.paletteChanged.connect(self._on_palette)
+            else:                                    # Qt6: Signal entfernt, Ereignis stattdessen
+                app.installEventFilter(self)
             self._connected = True
         self.refresh(emit=False)
 
@@ -201,12 +205,12 @@ class ThemeManager(QObject):
         else:
             mode = theme_tokens.resolve_mode(s["mode"], self.base_lightness())
             tokens = themes().tokens(mode, s["accent"] or None)
-        old = self.tokens
+        old, last = self.tokens, self._last_settings
         self.tokens = tokens
-        _set_current(tokens, s)
-        if emit and (old != tokens or self._last_settings != s):
-            self.changed.emit()
         self._last_settings = dict(s)
+        _set_current(tokens, s)
+        if emit and (old != tokens or last != s):
+            self.changed.emit()
 
     def base_lightness(self):
         """Helligkeit von QGIS ohne eigene Palette (Gesamtbild setzt ggf. eine eigene)."""
@@ -222,10 +226,19 @@ class ThemeManager(QObject):
         if self.settings()["mode"] == "auto" or self.high_contrast:
             self.refresh()
 
+    def eventFilter(self, obj, event):
+        if event.type() == PALETTE_CHANGE and obj is QApplication.instance():
+            self._on_palette()
+        return False
+
     def stop(self):
         if self._connected:
+            app = QApplication.instance()
             try:
-                QApplication.instance().paletteChanged.disconnect(self._on_palette)
+                if hasattr(app, "paletteChanged"):
+                    app.paletteChanged.disconnect(self._on_palette)
+                else:
+                    app.removeEventFilter(self)
             except (TypeError, RuntimeError):
                 pass
             self._connected = False

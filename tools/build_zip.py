@@ -19,7 +19,7 @@ import zipfile
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PLUGIN = os.path.join(ROOT, "qgis_ribbon")
 NAME = "qgis_ribbon"
-REQUIRED = ("name", "qgisMinimumVersion", "description", "about", "version", "author", "email",
+REQUIRED = ("name", "qgisMinimumVersion", "qgisMaximumVersion", "description", "about", "version", "author", "email",
             "repository", "tracker")
 MAX_BYTES = 25 * 1024 * 1024
 SKIP_DIRS = {"__pycache__"}
@@ -56,6 +56,10 @@ def check(folder=PLUGIN):
     for key in REQUIRED:
         if not meta.get(key, "").strip():
             errors.append("metadata.txt: %s fehlt" % key)
+    if "supportsQt6" in meta:
+        errors.append("metadata.txt: supportsQt6 entfällt (QGIS 4 kennt den Schalter nicht)")
+    if meta.get("qgisMaximumVersion", "").split(".")[0] != "4":
+        errors.append("metadata.txt: qgisMaximumVersion muss 4.x sein (sonst gilt das Plugin nur bis 3.99)")
     for key in ("repository", "tracker", "homepage"):
         if meta.get(key) and not meta[key].startswith("https://"):
             errors.append("metadata.txt: %s ist keine https-Adresse" % key)

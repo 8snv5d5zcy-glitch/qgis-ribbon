@@ -62,7 +62,8 @@ geladenen Plugins), bleiben stehen, damit sie gelöscht bleiben, wenn es
 wieder da ist.
 
 Eine Datei zum Teilen (``make_bundle``/``read_bundle``) enthält zusätzlich die
-Schnellzugriffsleiste und die eigenen Kürzel.
+Schnellzugriffsleiste und die eigenen Kürzel, ab Format 5 auch dasselbe für das
+Layout-Fenster.
 """
 
 import copy
@@ -75,8 +76,9 @@ from .model import (SIZES, Command, CommandRef, Group, Menu, Ribbon, Row, Split,
 from .i18n import tr
 
 FORMAT = "qgis_ribbon_anordnung"
-VERSION = 4
-READ_VERSIONS = (1, 2, 3, 4)
+VERSION = 5
+READ_VERSIONS = (1, 2, 3, 4, 5)
+LAYOUT_WINDOW = "layout_window"   # Teil einer Anordnung für das Layout-Fenster (ab Format 5)
 CUSTOM_TAB_PREFIX = "eigener_tab_"
 CUSTOM_GROUP_PREFIX = "eigene_gruppe_"
 NEW_TAB_LABEL = tr("New Tab")
@@ -1094,26 +1096,40 @@ def move_in_list(items, index, delta):
 
 
 # Dateien zum Teilen
-def make_bundle(layout, quick_access=None, keytips=None, name=None):
+def window_part(layout=None, quick_access=None, keytips=None):
+    """Anpassung eines Fensters: Tabs und Gruppen, Schnellzugriff, eigene Kürzel."""
+    return {"layout": layout or {},
+            "quick_access": list(quick_access) if quick_access is not None else None,
+            "keytips": dict(sorted((keytips or {}).items()))}
+
+
+def make_bundle(layout, quick_access=None, keytips=None, name=None, layout_window=None):
     """Anordnung zum Speichern oder Teilen: Anpassung, Schnellzugriff, eigene Kürzel.
 
     ``quick_access``: Liste der Befehls-IDs oder None (Standard der Definition).
+    ``layout_window``: Anpassung des Layout-Fensters (``window_part``) oder None.
     """
     data = {"format": FORMAT, "version": VERSION}
     if name:
         data["name"] = name
-    data["layout"] = layout or {}
-    data["quick_access"] = list(quick_access) if quick_access is not None else None
-    data["keytips"] = dict(sorted((keytips or {}).items()))
+    data.update(window_part(layout, quick_access, keytips))
+    if layout_window is not None:
+        data[LAYOUT_WINDOW] = layout_window
     return data
 
 
 def same_bundle(a, b):
-    """Gleiche Anordnung (ohne Name und Formatversion; Format 1 = Format 2 ohne Neuerungen)."""
+    """Gleiche Anordnung (ohne Name und Formatversion; Format 1 = Format 2 ohne Neuerungen).
+
+    Anordnungen aus der Zeit vor dem Layout-Fenster sagen darüber nichts aus: Dieser Teil
+    zählt nur, wenn beide ihn haben.
+    """
     def strip(data):
         out = dict(data)
         out.pop("name", None)
         out.pop("version", None)
+        if LAYOUT_WINDOW not in a or LAYOUT_WINDOW not in b:
+            out.pop(LAYOUT_WINDOW, None)
         return out
     return strip(a) == strip(b)
 
@@ -1124,6 +1140,17 @@ class Bundle:
     quick_access: Optional[List[str]]
     keytips: Dict[str, str]
     name: Optional[str] = None
+    layout_window: Optional["Bundle"] = None
+
+
+def _read_part(data):
+    layout = data.get("layout")
+    qat = data.get("quick_access")
+    if qat is not None:
+        qat = [str(c) for c in qat] if isinstance(qat, list) else None
+    keytips = data.get("keytips")
+    keytips = ({str(k): str(v) for k, v in keytips.items()} if isinstance(keytips, dict) else {})
+    return Bundle(layout=layout if isinstance(layout, dict) and layout else None, quick_access=qat, keytips=keytips)
 
 
 def read_bundle(data):
@@ -1133,12 +1160,8 @@ def read_bundle(data):
     if data.get("version") not in READ_VERSIONS:
         raise BundleError(tr("Version %r is not supported (expected %s)")
                           % (data.get("version"), tr(" or ").join(str(v) for v in READ_VERSIONS)))
-    layout = data.get("layout")
-    qat = data.get("quick_access")
-    if qat is not None:
-        qat = [str(c) for c in qat] if isinstance(qat, list) else None
-    keytips = data.get("keytips")
-    keytips = ({str(k): str(v) for k, v in keytips.items()} if isinstance(keytips, dict) else {})
-    name = data.get("name") if isinstance(data.get("name"), str) else None
-    return Bundle(layout=layout if isinstance(layout, dict) and layout else None,
-                  quick_access=qat, keytips=keytips, name=name)
+    bundle = _read_part(data)
+    bundle.name = data.get("name") if isinstance(data.get("name"), str) else None
+    part = data.get(LAYOUT_WINDOW)
+    bundle.layout_window = _read_part(part) if isinstance(part, dict) else None
+    return bundle

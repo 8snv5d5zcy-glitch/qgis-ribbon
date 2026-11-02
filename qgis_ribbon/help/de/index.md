@@ -7,12 +7,13 @@ QGIS Ribbon ersetzt die Werkzeugleisten von QGIS durch ein Ribbon: Befehle geord
 ## Inhalt
 
 1. [Mit dem Ribbon arbeiten](ribbon.md): Tabs, Kontext-Tabs, Buttons, Menüs, Galerien, Schnellzugriff, Minimieren
-2. [Tastatur: Kürzel und Suche](keyboard.md): Alt, Alt und Q, eigene Kürzel
-3. [Ribbon anpassen](customize.md): der Editor, Galerien, Anordnungen
-4. [Darstellung](appearance.md): hell und dunkel, Akzentfarben, Icons, klassische QGIS-Oberfläche
-5. [Erweiterungen](extensions.md): Befehle von Plugins, eigene Skripte und Modelle
-6. [Weitere Werkzeuge](tools.md): Domänen und andere Befehle des Ribbons
-7. [Einstellungen, Zurücksetzen und Probleme](troubleshooting.md)
+2. [Ribbon im Layout-Fenster](layout.md): Tabs, Elemente, Vorlagen, Seitengrößen, Berichte
+3. [Tastatur: Kürzel und Suche](keyboard.md): Alt, Alt und Q, eigene Kürzel
+4. [Ribbon anpassen](customize.md): der Editor, Galerien, Anordnungen
+5. [Darstellung](appearance.md): hell und dunkel, Akzentfarben, Icons, klassische QGIS-Oberfläche
+6. [Erweiterungen](extensions.md): Befehle von Plugins, eigene Skripte und Modelle
+7. [Weitere Werkzeuge](tools.md): Domänen und andere Befehle des Ribbons
+8. [Einstellungen, Zurücksetzen und Probleme](troubleshooting.md)
 
 ## Diese Anleitung öffnen
 

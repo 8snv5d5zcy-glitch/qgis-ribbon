@@ -137,7 +137,7 @@ def test_groups_use_available_width(plugin, fake_iface, tab):
         avail = page.available_width()
         used = used_width(page)
         choice = [g.variant for g in page.groups]
-        history.append(sum(choice))
+        history.append(used)   # nicht die Summe der Fassungen: Ihre Schritte sind je Gruppe verschieden breit
         assert used <= avail or all(v == 0 for v in choice), (width, used, avail)
         # Kein Schritt nach oben hätte noch gepasst (Fläche ausgenutzt)
         for g in page.groups:
@@ -185,7 +185,7 @@ def test_narrow_collapses_and_keytips_reach_group(plugin, fake_iface):
         for ch in item.code:
             keys.type_char(ch)
         settle()
-        assert keys.level == 2 and item.group.popup.isVisible()
+        assert keys.level == 2 and item.group.popup.isVisible(), ("aktives Fenster", QApplication.activeWindow())
         assert keys.items and all(i.widget.window() is item.group.popup for i in keys.items)
         labels = [l for l in item.group.popup.findChildren(QLabel, "ribbon_keytip") if l.isVisible()]
         assert len(labels) == len(keys.items)

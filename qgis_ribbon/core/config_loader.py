@@ -15,7 +15,7 @@ import re
 
 from . import yaml_cache
 from .conditions import CONDITIONS, EVENTS
-from .inventory import REQUIRED_PARAMS, SOURCE_TYPES
+from .inventory import DESIGNER_EDIT_ROLES, REQUIRED_PARAMS, SOURCE_TYPES
 from .extensions import DYNAMIC_KINDS
 from .model import (COMMAND_KINDS, GALLERY_DISPLAYS, SIZES, Command, CommandRef, ExtensionSources,
                     Gallery, Group, Menu, Ribbon, Row, Source, Split, SubMenu, Tab)
@@ -24,6 +24,7 @@ from .i18n import tr
 SCHEMA_VERSION = 1
 DEFAULT_CONFIG = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config",
                               "ribbon_arcgis.yaml")
+LAYOUT_CONFIG = os.path.join(os.path.dirname(DEFAULT_CONFIG), "ribbon_layout.yaml")
 
 ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 MAX_MENU_DEPTH = 3
@@ -31,10 +32,10 @@ MAX_MENU_DEPTH = 3
 _TOP_KEYS = {"version", "hide_toolbars", "quick_access", "tabs", "contextual_tabs", "commands",
              "extensions"}
 _EXTENSION_KEYS = {"menus", "toolbars", "qgis_toolbars", "hide"}
-_COMMAND_KEYS = {"label", "source", "kind", "icon", "enabled_when", "description", "gallery"}
+_COMMAND_KEYS = {"label", "source", "kind", "icon", "enabled_when", "description", "gallery", "qgis_min"}
 _GALLERY_KEYS = {"display", "items", "columns"}
-_TAB_KEYS = {"id", "label", "groups", "activate_on", "dynamic"}
-_CONTEXT_TAB_KEYS = (_TAB_KEYS - {"dynamic"}) | {"context", "visible_when"}
+_TAB_KEYS = {"id", "label", "groups", "activate_on", "dynamic", "visible_when"}
+_CONTEXT_TAB_KEYS = (_TAB_KEYS - {"dynamic"}) | {"context"}
 _GROUP_KEYS = {"id", "label", "items", "launcher"}
 _ELEMENT_KEYS = {
     "command": {"command", "size"},
@@ -44,7 +45,8 @@ _ELEMENT_KEYS = {
 }
 _SUBMENU_KEYS = {"menu", "items", "icon", "gallery", "key"}
 # Optionale Parameter je Quelltyp (Pflichtparameter: core.inventory)
-_OPTIONAL_PARAMS = {"iface_method": {"args"}, "dock": {"modus"}, "custom": {"args"}}
+_OPTIONAL_PARAMS = {"iface_method": {"args"}, "dock": {"modus"}, "custom": {"args"},
+                    "designer_item": {"group", "index", "submenu"}}
 # Dock: umschalten (Standard, Button zeigt Sichtbarkeit) oder nur zeigen
 DOCK_MODES = ("umschalten", "zeigen")
 
@@ -56,7 +58,8 @@ class ConfigError(Exception):
 
 
 class _Parser(object):
-    def __init__(self):
+    def __init__(self, qgis_version=None):
+        self.qgis_version = qgis_version  # None: alle Befehle behalten (Prüfung ohne QGIS)
         self.errors = []
         self.commands = {}
         self.broken = set()  # fehlerhafte Befehle, nicht noch einmal als fehlend melden
@@ -124,6 +127,13 @@ class _Parser(object):
         if "modus" in raw and raw["modus"] not in DOCK_MODES:
             self.err(path, tr("modus %r unknown (allowed: %s)") % (raw["modus"], ", ".join(DOCK_MODES)))
             ok = False
+        if stype == "designer_edit" and raw.get("role") not in DESIGNER_EDIT_ROLES:
+            self.err(path, tr("role %r unknown (allowed: %s)") % (raw.get("role"), ", ".join(DESIGNER_EDIT_ROLES)))
+            ok = False
+        index = raw.get("index", 0)
+        if stype == "designer_item" and (not isinstance(index, int) or isinstance(index, bool) or index < 0):
+            self.err(path, tr("index must be an integer of at least 0"))
+            ok = False
         if not ok:
             return None
         return Source(stype, {k: v for k, v in raw.items() if k != "type"})
@@ -147,10 +157,13 @@ class _Parser(object):
         enabled_when = self._names(raw, "enabled_when", path, CONDITIONS, tr("Condition"))
         if "gallery" in raw and kind != "control":
             self.err(path, tr("gallery only on controls (kind: control)"))
+        qgis_min = raw.get("qgis_min")
+        if qgis_min is not None and (type(qgis_min) is not int or qgis_min <= 0):
+            self.err(path, tr("qgis_min must be a version number like 40000"))
         if label is None or src is None:
             return None
         return Command(id=cid, label=label, source=src, kind=kind, icon=icon,
-                       enabled_when=enabled_when, description=description)
+                       enabled_when=enabled_when, description=description, qgis_min=qgis_min)
 
     def gallery_spec(self, cmd, raw):
         """Galerie eines Steuerelements; Einträge verweisen auf andere Befehle."""
@@ -189,6 +202,9 @@ class _Parser(object):
         cmd = self.commands.get(cid)
         if cmd is None and cid not in self.broken:
             self.err(path, tr("command %r not defined") % cid)
+        if cmd is not None and cmd.qgis_min:
+            # Die Standardanordnung bleibt in allen Versionen gleich
+            self.err(path, tr("command %r has qgis_min and may only stand in the command pool") % cid)
         return cmd
 
     def _size(self, raw, path):
@@ -319,11 +335,8 @@ class _Parser(object):
             if tid is None or label is None:
                 return None
             return Tab(id=tid, label=label, dynamic=dynamic if dynamic in DYNAMIC_KINDS else None)
-        context, visible_when = None, ()
-        if contextual:
-            context = tr(self._text(raw, "context", path))
-            visible_when = self._names(raw, "visible_when", path, CONDITIONS, tr("Condition"),
-                                       required=True)
+        context = tr(self._text(raw, "context", path)) if contextual else None
+        visible_when = self._names(raw, "visible_when", path, CONDITIONS, tr("Condition"), required=contextual)
         raw_groups = self._list(raw, "groups", path)
         if not raw_groups:
             self.err(path, tr("groups must not be empty"))
@@ -390,7 +403,9 @@ class _Parser(object):
 
         if self.errors:
             raise ConfigError(self.errors)
-        return Ribbon(tabs=tuple(tabs), commands=dict(self.commands),
+        commands = {cid: cmd for cid, cmd in self.commands.items()
+                    if self.qgis_version is None or not cmd.qgis_min or self.qgis_version >= cmd.qgis_min}
+        return Ribbon(tabs=tuple(tabs), commands=commands,
                       quick_access=tuple(qat),
                       hide_toolbars=tuple(n for n in hide if isinstance(n, str)),
                       extensions=extensions)
@@ -417,9 +432,13 @@ class _Parser(object):
         return ExtensionSources(hide=hide, **lists)
 
 
-def parse(data):
-    """Geladenes YAML (dict) -> ``Ribbon``. Löst ``ConfigError`` aus."""
-    return _Parser().ribbon(data)
+def parse(data, qgis_version=None):
+    """Geladenes YAML (dict) -> ``Ribbon``. Löst ``ConfigError`` aus.
+
+    ``qgis_version`` (wie ``Qgis.QGIS_VERSION_INT``): Befehle mit höherem
+    ``qgis_min`` fehlen im Ergebnis; ohne Angabe bleiben alle.
+    """
+    return _Parser(qgis_version).ribbon(data)
 
 
 def read_yaml(path):
@@ -433,6 +452,6 @@ def read_yaml(path):
             raise ConfigError([tr("YAML not readable: %s") % exc])
 
 
-def load(path=DEFAULT_CONFIG, cache_dir=None):
+def load(path=DEFAULT_CONFIG, cache_dir=None, qgis_version=None):
     """YAML-Datei laden und prüfen (über den Zwischenspeicher, falls eingerichtet)."""
-    return parse(yaml_cache.load(path, read_yaml, cache_dir))
+    return parse(yaml_cache.load(path, read_yaml, cache_dir), qgis_version)

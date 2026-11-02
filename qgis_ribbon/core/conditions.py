@@ -8,7 +8,7 @@ bewerten sind.
 
 Bedingungen werden in der Ribbon-Definition verwendet:
 
-- ``visible_when`` an Kontext-Tabs: Tab sichtbar, wenn alle gelten;
+- ``visible_when`` an Tabs: Tab sichtbar, wenn alle gelten (Pflicht bei Kontext-Tabs);
 - ``enabled_when`` an Befehlen: Befehl bedienbar, wenn alle gelten
   (zusätzlich zum Zustand der QGIS-Quelle).
 
@@ -26,6 +26,9 @@ from .i18n import tr
 LAYER_KINDS = ("vector", "table", "raster", "vector_tile", "point_cloud", "mesh", "other", "group")
 # Was der Datenanbieter eines Vektorlayers mit Feldern kann
 FIELD_CAPS = ("add", "delete", "rename")
+# Elementarten im Layout-Fenster. ``shape``: Form, Pfeil, Markierung, Knotenelement; ``table``: Rahmen einer
+# Attribut- oder festen Tabelle; ``other``: alles ohne eigenen Kontext-Tab (3D-Karte, HTML, Gruppe, Plugins).
+ITEM_KINDS = ("map", "label", "legend", "scalebar", "picture", "shape", "table", "other")
 
 
 @dataclass(frozen=True)
@@ -43,10 +46,15 @@ class Snapshot:
     has_selection: bool = False  # mindestens ein Objekt gewählt
     field_caps: FrozenSet[str] = frozenset()  # Felder anlegen/löschen/umbenennen (``FIELD_CAPS``)
     label_classes: bool = False  # Beschriftung des Layers ist regelbasiert (Klassen an)
+    selected_items: int = 0      # Layout-Fenster: Zahl der gewählten Elemente
+    item_kind: Optional[str] = None  # Layout-Fenster: Art des einzigen gewählten Elements (``ITEM_KINDS``)
+    layout_report: bool = False  # Layout-Fenster: Es zeigt einen Bericht, kein Drucklayout
 
     def __post_init__(self):
         if self.layer_kind is not None and self.layer_kind not in LAYER_KINDS:
             raise ValueError(tr("Invalid layer kind: %r") % self.layer_kind)
+        if self.item_kind is not None and self.item_kind not in ITEM_KINDS:
+            raise ValueError(tr("Invalid item kind: %r") % self.item_kind)
         unknown = set(self.field_caps) - set(FIELD_CAPS)
         if unknown:
             raise ValueError(tr("Invalid field capability: %r") % sorted(unknown)[0])
@@ -104,6 +112,36 @@ CONDITIONS = {
     "label_classes_on": (
         ("label_classes",), lambda s: s.label_classes,
         tr("The active layer labels by class (rule-based labeling).")),
+    "layout_items_selected": (
+        ("selected_items",), lambda s: s.selected_items >= 1,
+        tr("At least one item is selected in the layout.")),
+    "layout_item_is_map": (
+        ("item_kind",), lambda s: s.item_kind == "map",
+        tr("Exactly one map is selected in the layout.")),
+    "layout_item_is_label": (
+        ("item_kind",), lambda s: s.item_kind == "label",
+        tr("Exactly one text label is selected in the layout.")),
+    "layout_item_is_legend": (
+        ("item_kind",), lambda s: s.item_kind == "legend",
+        tr("Exactly one legend is selected in the layout.")),
+    "layout_item_is_scalebar": (
+        ("item_kind",), lambda s: s.item_kind == "scalebar",
+        tr("Exactly one scale bar is selected in the layout.")),
+    "layout_item_is_picture": (
+        ("item_kind",), lambda s: s.item_kind == "picture",
+        tr("Exactly one picture or north arrow is selected in the layout.")),
+    "layout_item_is_shape": (
+        ("item_kind",), lambda s: s.item_kind == "shape",
+        tr("Exactly one shape, arrow, marker or node item is selected in the layout.")),
+    "layout_item_is_table": (
+        ("item_kind",), lambda s: s.item_kind == "table",
+        tr("Exactly one attribute table or fixed table is selected in the layout.")),
+    "layout_is_report": (
+        ("layout_report",), lambda s: s.layout_report,
+        tr("The layout window shows a report.")),
+    "layout_is_print": (
+        ("layout_report",), lambda s: not s.layout_report,
+        tr("The layout window shows a print layout.")),
 }
 
 EVENTS = {

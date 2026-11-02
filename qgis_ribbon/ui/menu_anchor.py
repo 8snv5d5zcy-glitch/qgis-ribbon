@@ -23,6 +23,8 @@ from qgis.PyQt.QtCore import QEvent, QObject, QPoint, QRect, Qt
 from qgis.PyQt.QtGui import QCursor, QGuiApplication
 from qgis.PyQt.QtWidgets import QApplication, QMenu, QToolButton
 
+from .qt_compat import action_widgets
+
 # Quelltypen, hinter denen Code anderer Plugins steckt
 FOREIGN_SOURCES = ("extension", "plugin_action")
 SPLIT_TOP = "ribbon_split_top"   # oberer Teil eines großen Split-Buttons (buttons.LargeSplitButton)
@@ -89,7 +91,7 @@ def anchored(widget):
 
 def trigger_widget(action):
     """Knopf, über den ``action`` gerade ausgelöst wurde (unter dem Mauszeiger, gedrückt, sonst sichtbar)."""
-    buttons = [w for w in action.associatedWidgets()
+    buttons = [w for w in action_widgets(action)
                if isinstance(w, QToolButton) and w.isVisible()]
     pos = QCursor.pos()
     found = None

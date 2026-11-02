@@ -78,3 +78,5 @@ The submenu **Arrangements** in the ▾ menu and in the right-click menu manages
 - **Export …** writes the current arrangement to a JSON file, for example to share it with colleagues. **Import …** loads such a file.
 
 If an arrangement names commands that are missing in this QGIS installation (for example of a plugin that is not installed), they appear grayed out, or are skipped with a message when importing.
+
+An arrangement also contains the [ribbon in the layout window](layout.md). If you load an older arrangement without this part, the layout window stays as it is.

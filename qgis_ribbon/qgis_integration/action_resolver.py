@@ -5,18 +5,30 @@ gespiegelt. Der Ribbon-Button löst die QGIS-Aktion aus und übernimmt deren
 Zustand (aktiv, abgehakt). Fehlt eine Quelle, liefert der Resolver einen
 nicht verfügbaren Eintrag mit Begründung; der Button wird ausgegraut statt
 abzustürzen.
+
+Layout-Fenster: Mit ``window`` sucht der Resolver Aktionen, Menüs und Docks dort
+statt im Hauptfenster. ``designer_action`` ist eine Aktion dieses Fensters,
+``designer_item`` ein Element-Werkzeug (``_item_action``), ``designer_edit`` eine
+der fünf Bearbeiten-Aktionen ohne objectName (``_edit_action``).
 """
 
-from qgis.core import Qgis, QgsApplication, QgsMessageLog
+from qgis.core import Qgis, QgsApplication, QgsLayoutItemRegistry, QgsMessageLog
+from qgis.gui import QgsGui
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QCursor, QIcon, QKeySequence
 from qgis.PyQt.QtWidgets import QAction, QDockWidget, QMenu, QToolBar
 
 from . import custom_commands
 from ..core.i18n import tr
+from ..core.inventory import DESIGNER_EDIT_ROLES
 
 LOG_TAG = "QGIS Ribbon"
 ACTIVE_LAYER = "@aktiver_layer"
+ITEM_MENU = "mItemMenu"   # Menü „Element hinzufügen“ des Layout-Fensters
+EDIT_MENU = "menuEdit"    # Menü „Bearbeiten“ des Layout-Fensters
+EDIT_KEYS = {"undo": QKeySequence.StandardKey.Undo, "redo": QKeySequence.StandardKey.Redo,
+             "cut": QKeySequence.StandardKey.Cut, "copy": QKeySequence.StandardKey.Copy,
+             "paste": QKeySequence.StandardKey.Paste}
 
 
 def clean_text(text):
@@ -50,8 +62,9 @@ def unavailable(reason, icon=None):
 
 
 class ActionResolver(object):
-    def __init__(self, iface, env=None):
+    def __init__(self, iface, env=None, window=None):
         self.iface = iface
+        self._window = window     # Layout-Fenster; None: Hauptfenster
         # Umgebung der eigenen Befehle (iface, Layer-Beobachter)
         self.env = env if env is not None else custom_commands.CommandEnv(iface)
         # Aktionen anderer Plugins (qgis_integration.extensions.ExtensionCatalog)
@@ -61,7 +74,11 @@ class ActionResolver(object):
         self._cache = {}
         self._icons = {}
 
-    # Index der QActions des Hauptfensters
+    @property
+    def window(self):
+        return self._window if self._window is not None else self.iface.mainWindow()
+
+    # Index der QActions des Fensters
     def refresh(self):
         """Fehlgriffe vergessen, damit inzwischen entstandene Aktionen (Plugins) gefunden werden."""
         self._missing.clear()
@@ -69,7 +86,7 @@ class ActionResolver(object):
     def _build_index(self):
         # Die meisten Aktionen sind direkte Kinder des Hauptfensters.
         index = {}
-        for act in self.iface.mainWindow().findChildren(QAction, options=Qt.FindChildOption.FindDirectChildrenOnly):
+        for act in self.window.findChildren(QAction, options=Qt.FindChildOption.FindDirectChildrenOnly):
             name = act.objectName()
             if name and name not in index:
                 index[name] = act
@@ -96,7 +113,7 @@ class ActionResolver(object):
         Topologisch bearbeiten) oder in Menüs. Dort zuerst suchen: rekursiv über
         das ganze Hauptfenster kostete im echten QGIS 9 ms je Aktion.
         """
-        mw = self.iface.mainWindow()
+        mw = self.window
         scopes = mw.findChildren(QToolBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
         if hasattr(mw, "menuBar"):
             scopes.append(mw.menuBar())
@@ -151,6 +168,29 @@ class ActionResolver(object):
             return unavailable(tr("QGIS action %s not found") % name)
         return self._from_action(act)
 
+    _resolve_designer_action = _resolve_qgis_action
+
+    def _resolve_designer_item(self, command):
+        found = _item_action(self.window, command.source)
+        if found is None:
+            return unavailable(tr("Layout item %s not available") % command.source.get("item"))
+        menu, act = found
+        if not command.source.get("submenu"):
+            return self._from_action(act)
+        # Untermenü direkt hinter dem Werkzeug (Dynamischer Text hinter Beschriftung)
+        actions = menu.actions()
+        following = actions[actions.index(act) + 1] if act is not actions[-1] else None
+        if following is None or following.menu() is None:
+            return unavailable(tr("Layout item %s not available") % command.source.get("item"))
+        sub = following.menu()
+        return Resolved(menu=sub, icon=sub.icon(), qgis_text=clean_text(sub.title()))
+
+    def _resolve_designer_edit(self, command):
+        act = _edit_action(self.window, command.source.get("role"))
+        if act is None:
+            return unavailable(tr("QGIS action %s not found") % command.source.get("role"))
+        return self._from_action(act)
+
     def _resolve_plugin_action(self, command):
         name = command.source.get("object_name")
         plugin = command.source.get("plugin")
@@ -170,7 +210,7 @@ class ActionResolver(object):
 
     def _resolve_qgis_menu(self, command):
         name = command.source.get("object_name")
-        mw = self.iface.mainWindow()
+        mw = self.window
         # Erst in der Menüleiste suchen: rekursiv über das ganze Hauptfenster
         # kostete im echten QGIS 6 ms je Menü
         bar = mw.menuBar() if hasattr(mw, "menuBar") else None
@@ -183,7 +223,7 @@ class ActionResolver(object):
 
     def _resolve_dock(self, command):
         name = command.source.get("object_name")
-        mw = self.iface.mainWindow()
+        mw = self.window
         dock = (mw.findChild(QDockWidget, name, options=Qt.FindChildOption.FindDirectChildrenOnly)
                 or mw.findChild(QDockWidget, name))
         if dock is None:
@@ -316,6 +356,86 @@ class ActionResolver(object):
         self.iface.messageBar().pushMessage(
             LOG_TAG, tr("“%s” failed: %s") % (command.label, exc),
             level=Qgis.MessageLevel.Critical, duration=6)
+
+
+def _item_registry():
+    return QgsGui.layoutItemGuiRegistry()
+
+
+def _item_ids(source):
+    """IDs der Registry zu einem Element-Werkzeug, in der Reihenfolge von QGIS.
+
+    Die Texte der Registry sind übersetzt, und manche Elemente teilen sich Typ und
+    Gruppe (Bild und Nordpfeil). Eindeutig sind nur Typ, Gruppe und Nummer darin.
+    """
+    value = getattr(QgsLayoutItemRegistry.ItemType, source.get("item") or "", None)
+    if value is None:
+        return []
+    wanted = int(getattr(value, "value", value))
+    group = source.get("group") or ""
+    registry = _item_registry()
+    return [i for i in registry.itemMetadataIds()
+            if registry.itemMetadata(i).type() == wanted and registry.itemMetadata(i).groupId() == group]
+
+
+def core_item_tool(action):
+    """Werkzeug eines Elements von QGIS (``action.data()``: ID der Registry, Typ unter ``PluginItem``)."""
+    item_id = action.data()
+    if not isinstance(item_id, int) or item_id not in _item_registry().itemMetadataIds():
+        return False
+    first = QgsLayoutItemRegistry.ItemType.PluginItem
+    return _item_registry().itemMetadata(item_id).type() < int(getattr(first, "value", first))
+
+
+def _walk_menu(menu):
+    for act in menu.actions():
+        yield menu, act
+        if act.menu() is not None:
+            yield from _walk_menu(act.menu())
+
+
+def _window_menu(window, name):
+    # Über die Menüleiste: findChild über das ganze Fenster kostet je Aufruf einige Millisekunden
+    menu = window.menuBar().findChild(QMenu, name)
+    return menu if menu is not None else window.findChild(QMenu, name)
+
+
+def edit_actions(window):
+    """Aktionen im Menü „Bearbeiten“ des Layout-Fensters."""
+    menu = _window_menu(window, EDIT_MENU)
+    return menu.actions() if menu is not None else []
+
+
+def _item_action(window, source):
+    """(Menü, Aktion) des Element-Werkzeugs oder None; ``action.data()`` ist die ID der Registry."""
+    ids = _item_ids(source)
+    index = source.get("index") or 0
+    menu = _window_menu(window, ITEM_MENU)
+    if menu is None or index >= len(ids):
+        return None
+    for owner, act in _walk_menu(menu):
+        if act.data() == ids[index]:
+            return owner, act
+    return None
+
+
+def _edit_action(window, role):
+    """Bearbeiten-Aktion ohne objectName: nach Standard-Kürzel, sonst nach Lage im Menü.
+
+    Der Nutzer kann die Kürzel ändern. Das Menü hat genau fünf Aktionen ohne Namen,
+    in der Reihenfolge von ``DESIGNER_EDIT_ROLES``.
+    """
+    menu = _window_menu(window, EDIT_MENU)
+    if menu is None or role not in EDIT_KEYS:
+        return None
+    unnamed = [a for a in menu.actions() if not a.objectName() and not a.isSeparator() and a.menu() is None]
+    bindings = QKeySequence.keyBindings(EDIT_KEYS[role])
+    for act in unnamed:
+        if any(key in bindings for key in act.shortcuts()):
+            return act
+    if len(unnamed) == len(DESIGNER_EDIT_ROLES):
+        return unnamed[DESIGNER_EDIT_ROLES.index(role)]
+    return None
 
 
 def _plugin_attribute_action(plugin, name):

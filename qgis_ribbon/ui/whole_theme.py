@@ -1,9 +1,9 @@
 """„Kontur für ganz QGIS“ (abschaltbar, Standard aus).
 
-Legt ein Stylesheet über das QGIS-Hauptfenster: Menüleiste, Statusleiste,
-Docks (Layerbaum, Browser, Verarbeitung …), verbleibende Werkzeugleisten
-und Trenner im selben Stil wie der Ribbon. Die Kartenansicht bleibt
-unberührt.
+Legt ein Stylesheet über das QGIS-Hauptfenster und die Layout-Fenster: Menüleiste,
+Statusleiste, Docks (Layerbaum, Browser, Verarbeitung …), verbleibende
+Werkzeugleisten und Trenner im selben Stil wie der Ribbon. Die Kartenansicht und
+die Seite im Layout bleiben unberührt.
 
 Dazu kommt eine Anwendungspalette aus den Tokens: Viele QGIS-Ansichten
 (Layerbaum, Browser) zeichnen ihre Schrift über eigene Modelle mit der
@@ -124,34 +124,67 @@ def whole_palette(t, base):
     return pal
 
 
+class WindowSheet(object):
+    """Stylesheet des Gesamtbilds an einem Fenster setzen und exakt zurücknehmen."""
+
+    def __init__(self, window):
+        self.window = window
+        self.active = False
+        self._before = None
+        self._applied = None
+
+    def apply(self, tokens=None):
+        t = tokens or theme.current()
+        if not self.active:
+            self._before = self.window.styleSheet()
+            self.active = True
+        elif self.window.styleSheet() != self._applied:
+            # Jemand anderes hat das Stylesheet inzwischen geändert: dessen Stand übernehmen
+            current = self.window.styleSheet()
+            self._before = current.split(MARKER)[0][:-1] if MARKER in current else current
+        sheet = whole_qss(t)
+        self._applied = (self._before + "\n" + sheet) if self._before else sheet
+        self.window.setStyleSheet(self._applied)
+
+    def restore(self):
+        if not self.active:
+            return
+        self.active = False
+        if self.window.styleSheet() == self._applied:
+            self.window.setStyleSheet(self._before)
+        self._before = None
+        self._applied = None
+
+    def update(self, on, tokens=None):
+        if on:
+            self.apply(tokens)
+        else:
+            self.restore()
+
+
 class WholeTheme(object):
-    """Stylesheet am Hauptfenster und Anwendungspalette setzen und exakt zurücknehmen."""
+    """Stylesheet am Hauptfenster und Anwendungspalette setzen und exakt zurücknehmen.
+
+    Die Palette gilt für die ganze Anwendung und liegt nur hier; Layout-Fenster
+    bekommen dazu je ein eigenes ``WindowSheet``, weil sie keine Kinder des Hauptfensters sind.
+    """
 
     def __init__(self, main_window):
         self.mw = main_window
         self.app = QApplication.instance()
+        self.sheet = WindowSheet(main_window)
         self.active = False
-        self._before = None
-        self._applied = None
         self._palette_before = None
         self._palette_applied = None
 
     def apply(self, tokens=None):
         t = tokens or theme.current()
         if not self.active:
-            self._before = self.mw.styleSheet()
             self._palette_before = QPalette(self.app.palette())
             self.active = True
-        else:
-            if self.mw.styleSheet() != self._applied:
-                # Jemand anderes hat das Stylesheet inzwischen geändert: dessen Stand übernehmen
-                current = self.mw.styleSheet()
-                self._before = current.split(MARKER)[0][:-1] if MARKER in current else current
-            if self._foreign_palette():
-                self._palette_before = QPalette(self.app.palette())
-        sheet = whole_qss(t)
-        self._applied = (self._before + "\n" + sheet) if self._before else sheet
-        self.mw.setStyleSheet(self._applied)
+        elif self._foreign_palette():
+            self._palette_before = QPalette(self.app.palette())
+        self.sheet.apply(t)
         pal = whole_palette(t, self._palette_before)
         self._palette_applied = pal
         if self.app.palette() != pal:
@@ -170,12 +203,9 @@ class WholeTheme(object):
         if not self.active:
             return
         self.active = False
-        if self.mw.styleSheet() == self._applied:
-            self.mw.setStyleSheet(self._before)
+        self.sheet.restore()
         if self.app.palette() == self._palette_applied:
             self.app.setPalette(self._palette_before)
-        self._before = None
-        self._applied = None
         self._palette_before = None
         self._palette_applied = None
 

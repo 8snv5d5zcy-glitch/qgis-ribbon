@@ -52,7 +52,8 @@ class ContextLogic(object):
         self.stay_on = set(own_tabs(ribbon) if stay_on is None else stay_on)
         self.snapshot = snapshot or Snapshot()
         self._commands = {}                 # ID -> Command mit Bedingungen
-        self._tabs = {t.id: t for t in ribbon.tabs if t.contextual}
+        self._tabs = {t.id: t for t in ribbon.tabs if t.visible_when}   # auch Haupt-Tabs mit Bedingung
+        self._contextual = {t.id for t in ribbon.tabs if t.contextual}
         self._by_condition = {}             # Bedingung -> ({Befehls-IDs}, {Tab-IDs})
         self._by_event = {}                 # Ereignis -> [Tab-IDs] in Ribbon-Reihenfolge
         commands = dict(ribbon.commands)
@@ -107,7 +108,7 @@ class ContextLogic(object):
     def tab_selected(self, tab_id):
         """Die Oberfläche meldet den gewählten Tab (Klick oder programmatisch)."""
         self.current_tab = tab_id
-        if tab_id not in self._tabs:
+        if tab_id not in self._contextual:
             self._last_main = tab_id
 
     # Aktualisierung

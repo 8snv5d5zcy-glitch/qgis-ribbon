@@ -18,7 +18,8 @@ def ribbon():
 
 @pytest.fixture(scope="module")
 def shipped(ribbon):
-    return icons.load(command_ids=set(ribbon.commands))
+    # Die Motive gelten auch für den Ribbon im Layout-Fenster
+    return icons.load(command_ids=set(ribbon.commands) | set(config_loader.load(config_loader.LAYOUT_CONFIG).commands))
 
 
 def test_every_command_has_a_motif(ribbon, shipped):

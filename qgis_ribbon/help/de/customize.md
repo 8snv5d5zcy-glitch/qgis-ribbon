@@ -78,3 +78,5 @@ Das Untermenü **Anordnungen** im Menü ▾ und im Rechtsklick-Menü verwaltet d
 - **Exportieren …** schreibt die aktuelle Anordnung in eine JSON-Datei, zum Beispiel zum Weitergeben an Kolleginnen und Kollegen. **Importieren …** lädt eine solche Datei.
 
 Nennt eine Anordnung Befehle, die es in dieser QGIS-Installation nicht gibt (zum Beispiel von einem nicht installierten Plugin), erscheinen sie ausgegraut oder werden beim Import mit einem Hinweis übergangen.
+
+Eine Anordnung enthält auch das [Ribbon im Layout-Fenster](layout.md). Laden Sie eine ältere Anordnung ohne diesen Teil, bleibt das Layout-Fenster, wie es ist.

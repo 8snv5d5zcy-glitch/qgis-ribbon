@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.7.0 (2026-11-02)
+
+- QGIS 4: the plugin now loads and runs on QGIS 4.2 as well as on QGIS 3.44 (`qgisMaximumVersion=4.99`, one code base). Fixed on QGIS 4: the plugin did not load (`QUndoCommand` moved), the font style field of the Labeling tab, plugin menus opening under their button, switching Identifiable layers, and the appearance Automatic following a palette change of QGIS. Tested on Windows; the automated tests also run on Linux.
+- QGIS 4: new commands in the ribbon editor and the command search, offered only on QGIS 4: Digitize with Bézier Curve, Digitize with NURBS Curve, Chamfer / Fillet, Copy Features in an Array, Manage Elevation Profiles, Select Annotations and six commands for editing meshes. The default ribbon is the same on both versions. A saved arrangement with such a command still loads on QGIS 3.44, without that command and with a note.
+- macOS: KeyTips continue into the expanded ribbon and into collapsed groups. On the Mac these open as the active window, which ended the KeyTips before (found in an automated test run, not yet checked on a real Mac).
+- New in the ribbon editor on both versions: Digitize with Segments. It switches back from curve digitizing while the toolbars are hidden.
+- New: ribbon in the print layout window, on by default. It replaces the toolbars of that window with the tabs Layout, Insert, Atlas, View and Share. **Ribbon in Layout Window** in the Quick Access menu switches it off and on, also for open windows. The menu bar and panels stay; the plugins' own toolbars stay as a second row.
+- Tabs for the selected item: Format for any selection, and Map, Text, Legend, Scale Bar, Picture, Shape or Table for exactly one item. Values are edited right in the ribbon, the Item Properties panel follows along, and every change is one undo step.
+- Atlas tab: a Feature field jumps to a feature during the preview.
+- Reports get the ribbon too, with a Report tab (settings, Report Organizer, export, print) instead of Atlas and Share. The tabs work with the section you are editing.
+- KeyTips, command search, the ribbon editor, galleries and Quick Access work in the layout window, with settings of their own. The editor there changes only the layout window.
+- Saved arrangements and arrangement files now contain both windows (format version 5). Older arrangements still load and leave the layout window as it is.
+- Extensions tab in the layout window, only when plugins put their own commands into its toolbars. It updates when a plugin adds or removes one, in that window only.
+- New Layout in the layout window has the page sizes A4 and A3. New button **Layout from Template** in the layout window and on the Share tab of the main window: choose a template from the QGIS template folders or any .qpt file.
+- New menu **Page Size** on the Layout tab: A4 to A0, landscape or portrait, for the page shown, as one undo step.
+- Appearance, whole interface and Hide QGIS Menu Bar apply to all windows. Classic QGIS Interface also brings back the toolbars of the layout window.
+- Closing the window, Classic QGIS Interface and deactivating the plugin restore the layout window exactly.
+- Guide: new page Ribbon in the Layout Window.
+
 ## 1.6.1 (2026-10-30)
 
 - Fixed: on macOS the ribbon failed to load with `AttributeError: 'RibbonTabBar' object has no attribute '_metrics'`. On macOS Qt lays out the tab bar while it is still being created; the tab bar, the tab pages and the guide now set up their state first.

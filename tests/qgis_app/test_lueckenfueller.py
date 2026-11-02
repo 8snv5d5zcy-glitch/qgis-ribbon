@@ -7,7 +7,7 @@ from qgis.core import (Qgis, QgsCoordinateReferenceSystem, QgsCoordinateTransfor
                        QgsPointXY, QgsProject, QgsRasterLayer, QgsRuleBasedLabeling, QgsVectorFileWriter,
                        QgsVectorLayer, QgsVectorLayerSimpleLabeling, QgsWkbTypes)
 from qgis.PyQt.QtCore import QVariant
-from qgis.PyQt.QtWidgets import QApplication, QDialogButtonBox, QToolButton, QWidget
+from qgis.PyQt.QtWidgets import QApplication, QDialog, QDialogButtonBox, QToolButton, QWidget
 
 from qgis_ribbon.core import config_loader
 from qgis_ribbon.core import domains as dm
@@ -228,10 +228,10 @@ def test_label_class_commands_update_class_list(ribbon, fake_iface, layers, monk
     assert klasse.editor.currentText() == "Groß"
     delete = builtin_commands.beschriftung_regel_loeschen(env, SimpleNamespace(label="Klasse löschen"))
     assert delete.isEnabled()
-    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.No)
+    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.StandardButton.No)
     delete.trigger()
     assert len(layer_ops.label_classes(v)) == 2                            # abgelehnt
-    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.Yes)
+    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.StandardButton.Yes)
     delete.trigger()
     settle()
     assert [klasse.editor.itemText(i) for i in range(klasse.editor.count())] == ["Standard"]
@@ -256,10 +256,10 @@ def test_discard_edits_of_active_layer_only(ribbon, fake_iface, layers, monkeypa
         layer.addFeature(f)
     settle()
     assert discard.isEnabled()                                             # über layerModified
-    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.No)
+    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.StandardButton.No)
     discard.trigger()
     assert v.isModified()                                                  # abgelehnt
-    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.Yes)
+    monkeypatch.setattr(builtin_commands.QMessageBox, "question", lambda *a, **k: builtin_commands.QMessageBox.StandardButton.Yes)
     discard.trigger()
     settle()
     assert v.featureCount() == 3 and v.isEditable() and not v.isModified()
@@ -488,6 +488,7 @@ def test_gallery_size_toggles_ribbon_gallery_and_is_saved(ribbon, settings):
     w, _watch, _env = ribbon
     gallery = w.findChild(RibbonGallery)
     tiles = gallery.grid.tiles
+    gallery.set_visible(gallery.ideal_count())     # die adaptive Breite hängt von den Schriftmaßen ab
     assert [t.isHidden() for t in tiles] == [False, True]
     assert tiles[0].width() == TILE_WIDTH
     act = button(w, "Galeriegröße").defaultAction()
@@ -498,7 +499,7 @@ def test_gallery_size_toggles_ribbon_gallery_and_is_saved(ribbon, settings):
     assert str(settings.value(builtin_commands.GALLERY_COMPACT_KEY)).lower() == "true"
     act.trigger()
     settle()
-    assert tiles[1].isHidden() and not act.isChecked()
+    assert tiles[0].width() == TILE_WIDTH and not act.isChecked()
 
 
 def test_copy_path(ribbon, fake_iface, gpkg):
@@ -512,7 +513,7 @@ def test_copy_path(ribbon, fake_iface, gpkg):
 
 def gallery_actions(w, label):
     btn = [b for b in w.findChildren(QToolButton) if b.objectName().startswith("ribbon_gallery_btn_")
-           and b.text().replace("\n", " ") == label][0]
+           and b.property("ribbon_text") == label][0]   # der Text ändert sich mit der Fassung der Gruppe
     btn.menu().aboutToShow.emit()
     return {a.text(): a for a in btn.menu().actions() if a.text()}
 
@@ -685,7 +686,7 @@ def test_domain_dialog_creates_and_assigns(gpkg, fake_iface, monkeypatch):
     dlg.assign("art", "Arten")
     assert save.isEnabled()
     dlg.save()
-    assert dlg.result() == dlg.Accepted
+    assert dlg.result() == QDialog.DialogCode.Accepted
     assert layer.fields().field("art").constraints().domainName() == "Arten"
     # Erneut geöffnet: gespeicherte Domäne mit festem Namen, Art und Feldtyp
     dlg2 = domain_dialog.DomainDialog(layer, domains.store_for(layer), fake_iface.mainWindow())

@@ -21,6 +21,13 @@ und benötigte Werkzeuge erweiterte Definition (``set_base``) und für den
 Editor ``full_base`` (alle Werkzeuge des Werkzeugkastens). Laufzeit-IDs, die
 eine Datei oder gespeicherte Anordnung nennt, gehen beim Übernehmen nicht
 verloren: Sie stehen bis zum nächsten Aufbau als Platzhalter in der Definition.
+
+Layout-Fenster: ``LayoutArrangements`` ist die zweite Instanz mit eigener Definition
+und eigenen Einstellungen; der Editor dort ändert nur das Layout-Fenster. Gespeicherte
+Anordnungen und Dateien gibt es dagegen nur einmal, sie enthalten beide Fenster. Die
+Instanz des Layout-Fensters reicht deshalb alles dazu an die des Hauptfensters weiter
+(``partner``). Eine Anordnung ohne Teil für das Layout-Fenster (ältere Fassung) lässt
+dessen Anpassung unberührt.
 """
 
 import io
@@ -48,6 +55,7 @@ class Arrangements(QObject):
         self.user = user
         self.warnings = []   # Hinweise beim letzten Lesen der Anpassung
         self.full_base = None   # () -> Definition mit allen Werkzeugen (Editor), vom Plugin gesetzt
+        self.partner = None     # LayoutArrangements des Layout-Fensters
 
     def set_base(self, base):
         """Erweiterte Definition (Plugin-Aktionen, Werkzeuge) für den nächsten Aufbau."""
@@ -125,11 +133,15 @@ class Arrangements(QObject):
         self.set_current(arr)
 
     # Gespeicherte Anordnungen
+    def part(self):
+        """Anpassung dieses Fensters (``customization.window_part``)."""
+        return cz.window_part(self.user.layout(), self.quick_ids(), self.user.keytips())
+
     def bundle(self, name=None):
-        """Aktuelle Anordnung als dict (Tabs, Gruppen, Galerien, Schnellzugriff, Kürzel)."""
-        stored = self.user.quick_access()
-        qat = None if stored is None else quick_access.parse(stored)
-        return cz.make_bundle(self.user.layout(), qat, self.user.keytips(), name)
+        """Aktuelle Anordnung als dict (Tabs, Gruppen, Galerien, Schnellzugriff, Kürzel, Layout-Fenster)."""
+        part = self.part()
+        return cz.make_bundle(part["layout"], part["quick_access"], part["keytips"], name,
+                              self.partner.part() if self.partner is not None else None)
 
     def apply_bundle(self, data):
         """Anordnung übernehmen. Liefert Hinweise auf übergangene Einträge.
@@ -137,6 +149,13 @@ class Arrangements(QObject):
         Löst ``customization.BundleError`` aus, wenn ``data`` keine Anordnung ist.
         """
         bundle = cz.read_bundle(data)
+        warnings = self.apply_part(bundle)
+        if self.partner is not None and bundle.layout_window is not None:
+            warnings += self.partner.apply_part(bundle.layout_window)
+        return warnings
+
+    def apply_part(self, bundle):
+        """Anpassung dieses Fensters aus einem ``Bundle`` übernehmen. -> Hinweise."""
         self.base = ext.with_placeholders(self.base, ext.referenced_ids(bundle.layout, bundle.quick_access or []))
         arr, warnings = cz.from_dict(bundle.layout, self.base)
         if cz.problems(arr):
@@ -205,7 +224,8 @@ class Arrangements(QObject):
         return None
 
     def is_standard(self):
-        return self.bundle() == cz.make_bundle(None)
+        standard = cz.window_part() if self.partner is not None else None
+        return self.bundle() == cz.make_bundle(None, layout_window=standard)
 
     def is_unsaved(self):
         """Angepasst, aber unter keinem Namen gespeichert (Laden würde die Anpassung verwerfen)."""
@@ -213,7 +233,8 @@ class Arrangements(QObject):
 
     def reset(self):
         """Standardanordnung: Tabs, Gruppen, Galerien, Schnellzugriff und Kürzel wie geliefert."""
-        warnings = self.apply_bundle(cz.make_bundle(None))
+        standard = cz.window_part() if self.partner is not None else None
+        warnings = self.apply_bundle(cz.make_bundle(None, layout_window=standard))
         self.user.set_current_name(None)
         return warnings
 
@@ -245,3 +266,81 @@ class Arrangements(QObject):
         # Bereinigt speichern (ohne übergangene Einträge), damit sie als aktiv erkannt wird
         self.save_as(name)
         return name, warnings
+
+
+class LayoutArrangements(Arrangements):
+    """Anordnung des Layout-Fensters: eigene Anpassung, gespeicherte Anordnungen beim Hauptfenster.
+
+    ``load_base`` lädt die Definition erst bei Bedarf, ``main`` ist die Instanz des Hauptfensters.
+    """
+
+    def __init__(self, load_base, user, main, parent=None):
+        self._load_base = load_base
+        self._base = None
+        Arrangements.__init__(self, None, user, parent)
+        self.main = main
+        main.partner = self
+
+    @property
+    def base(self):
+        if self._base is None:
+            self._base = self._load_base()
+        return self._base
+
+    @base.setter
+    def base(self, value):
+        self._base = value
+
+    def apply_part(self, bundle):
+        if self.base is None:     # Definition fehlerhaft: gemeldet beim Laden
+            return []
+        return Arrangements.apply_part(self, bundle)
+
+    # Gespeicherte Anordnungen und Dateien
+    def bundle(self, name=None):
+        return self.main.bundle(name)
+
+    def apply_bundle(self, data):
+        return self.main.apply_bundle(data)
+
+    def names(self):
+        return self.main.names()
+
+    def save_as(self, name):
+        return self.main.save_as(name)
+
+    def save(self):
+        return self.main.save()
+
+    def current_name(self):
+        return self.main.current_name()
+
+    def is_modified(self):
+        return self.main.is_modified()
+
+    def load(self, name):
+        return self.main.load(name)
+
+    def delete(self, name):
+        self.main.delete(name)
+
+    def active_name(self):
+        return self.main.active_name()
+
+    def is_standard(self):
+        return self.main.is_standard()
+
+    def is_unsaved(self):
+        return self.main.is_unsaved()
+
+    def reset(self):
+        return self.main.reset()
+
+    def export(self, path, name=None):
+        self.main.export(path, name)
+
+    def unique_name(self, name):
+        return self.main.unique_name(name)
+
+    def import_file(self, path):
+        return self.main.import_file(path)

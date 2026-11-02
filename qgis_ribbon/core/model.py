@@ -66,6 +66,8 @@ class Command:
     # Beschreibung für den Tooltip (Rich-Tooltip: Titel, Beschreibung, Tastenkürzel)
     description: Optional[str] = None
     gallery: Optional[Gallery] = None
+    # Erste QGIS-Version mit dieser Quelle (wie Qgis.QGIS_VERSION_INT); nur im Befehlsvorrat
+    qgis_min: Optional[int] = None
 
     def __post_init__(self):
         if self.kind not in COMMAND_KINDS:

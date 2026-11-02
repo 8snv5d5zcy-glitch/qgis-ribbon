@@ -53,19 +53,21 @@ def test_unplaced_commands_are_editor_offers(ribbon):
 
 
 # Wörter, in denen ae/oe/ue/ss richtig geschrieben sind (keine Ersatzschreibweise)
-ALLOWED_ASCII = {"ausschneiden", "messen", "messwerkzeuge", "neue", "neues", "neuer", "aktueller",
+ALLOWED_ASCII = {"aussehen", "webadresse", "ausschneiden", "messen", "messwerkzeuge", "neue", "neues", "neuer", "aktueller",
                  "processing", "quelle", "anpassen", "ausschnitt", "klasse",
                  "beschriftungsklasse", "beschriftungsklassen", "bildverbesserung", "virtueller", "aktuelles",
                  "kartenausschnitt", "neuen", "virtuellen", "zeitsteuerung", "zusammenfassung",
-                 "ausschalten", "datenquellen", "hilfsspeicher", "oberflächenanpassung"}
+                 "ausschalten", "datenquellen", "hilfsspeicher", "oberflächenanpassung", "quer", "lässt"}
 
 
 def test_labels_use_real_umlauts():
     # Die YAML ist englisch; die deutschen Texte stehen im Katalog
     import json
-    path = os.path.join(os.path.dirname(config_loader.DEFAULT_CONFIG), "..", "i18n", "de_ribbon.json")
-    with io.open(path, encoding="utf-8") as fh:
-        labels = [v for v in json.load(fh).values() if len(v) < 40]
+    labels = []
+    for name in ("de_ribbon.json", "de_ribbon_layout.json"):
+        path = os.path.join(os.path.dirname(config_loader.DEFAULT_CONFIG), "..", "i18n", name)
+        with io.open(path, encoding="utf-8") as fh:
+            labels += [v for v in json.load(fh).values() if len(v) < 40]
     assert labels
     words = {w.lower() for text in labels for w in re.findall(r"\w+", text)}
     suspicious = {w for w in words if re.search(r"ae|oe|ue|ss", w)} - ALLOWED_ASCII
@@ -91,6 +93,8 @@ def test_all_sources_exist_in_inventory(ribbon):
     index = InventoryIndex(merged)
     problems = []
     for cmd in ribbon.commands.values():
+        if cmd.qgis_min:
+            continue  # Inventare stammen aus 3.44; geprüft im echten QGIS 4 vom Klicklauf
         src = dict(cmd.source.params, type=cmd.source.type)
         result, msg = check_source(src, index)
         if result in (MISSING, INVALID):

@@ -17,6 +17,7 @@ A ribbon interface for [QGIS](https://qgis.org): commands sorted into tabs and g
 - **Extensions tab:** commands of installed plugins, your own Processing scripts and models, every toolbox tool.
 - **Extra tools** where QGIS has no single command, for example a dialog for attribute domains.
 - **English and German** user interface, following the QGIS language, with a built-in illustrated **guide** (Help › Plugins › QGIS Ribbon Guide).
+- The print layout window has its own ribbon: tabs for the selected item, reports, templates and page sizes. It can be switched off separately.
 - The ribbon only calls existing QGIS functions. The menu bar and panels stay unchanged. Deactivating the plugin, or **Classic QGIS Interface**, restores the QGIS toolbars and window layout exactly.
 
 | | |
@@ -29,7 +30,7 @@ In QGIS: **Plugins › Manage and Install Plugins …**, search for *QGIS Ribbon
 
 Manual installation: download the ZIP of a release and use **Install from ZIP** in the same dialog.
 
-Requirements: QGIS 3.44 or later (QGIS 3.x, Qt 5). Developed and tested on Windows. No extra Python packages (PyYAML ships with QGIS).
+Requirements: QGIS 3.44 or later, including QGIS 4. Developed and tested on Windows with QGIS 3.44.15 and QGIS 4.2.3. The automated tests also run on Linux with the same versions; on macOS they have only had a trial run. Older 4.x versions are not tested. No extra Python packages (PyYAML ships with QGIS).
 
 ## Documentation
 
@@ -63,7 +64,7 @@ tools/                  ZIP build, icon builder, guide screenshots, test runner 
 - Tests without QGIS: `python -m pytest` (Python 3, pytest, PyYAML; tests that need QGIS are left out).
 - All tests in QGIS Python (Windows): `tools\qgis_pytest.cmd`.
 - Build the plugin ZIP: `python tools/build_zip.py` (writes `dist/qgis_ribbon-<version>.zip`).
-- English is the source language. German texts are in `qgis_ribbon/i18n/de.json` (texts in the code) and `de_ribbon.json` (texts of the ribbon definition). Other languages can be added as `<lang>.json` and `<lang>_ribbon.json`.
+- English is the source language. German texts are in `qgis_ribbon/i18n/de.json` (texts in the code) and `de_ribbon.json` and `de_ribbon_layout.json` (texts of the ribbon definitions). Other languages can be added as `<lang>.json`, `<lang>_ribbon.json` and `<lang>_ribbon_layout.json`.
 - The ribbon definition `qgis_ribbon/config/ribbon_arcgis.yaml` describes tabs, groups, commands (with the QGIS action, menu, dialog or Processing tool they call), conditions and galleries; `core/config_loader.py` checks it on load.
 - Icons are drawn at runtime from `config/icons/kontur.yaml`, which `tools/kontur_icons.py` generates.
 - Screenshots of the guide: `tools/guide_screenshots.py` (runs inside QGIS, uses the Natural Earth world map shipped with QGIS).

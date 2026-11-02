@@ -628,8 +628,158 @@ MOTIFS.update({
     "hoehenfilter": badge(PROFILE, M(a=[P("M14.5 15h8l-3 3.5v3.5l-2-1v-2.5z")])),
 })
 
+# Ribbon im Layout-Fenster
+PIN_M = M(k=[P("M12 21.5s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z")], a=[C(12, 10.5, 2.2)],
+          f=[P("M12 21.5s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z")])
+MOTIFS.update({
+    "blaettern_erstes": M(k=[P("M16.5 5.5L10 12l6.5 6.5")], a=[P("M6.5 5.5v13")]),
+    "blaettern_zurueck": M(k=[P("M14.5 5.5L8 12l6.5 6.5")]),
+    "blaettern_weiter": M(k=[P("M9.5 5.5L16 12l-6.5 6.5")]),
+    "blaettern_letztes": M(k=[P("M7.5 5.5L14 12l-6.5 6.5")], a=[P("M17.5 5.5v13")]),
+    "zoom_100": add(MAGNIFIER, M(a=[P("M9.2 8v5"), P("M11.8 8v5")])),
+    "zoom_breite": M(k=[R(3, 5, 18, 14, 2)], a=[P("M7 12h10M9.5 9.5L7 12l2.5 2.5M14.5 9.5L17 12l-2.5 2.5")]),
+    "seite_neu": badge(PAGE, PLUS),
+    "seite_eigenschaften": badge(PAGE, GEAR_MARK),
+    "vorlage_einfuegen": badge(PAGE, IN_ARROW),
+    "vorlage_speichern": badge(PAGE, DOWN_ARROW),
+    "dreieck": M(k=[P("M12 4L21 20H3z")], f=[P("M12 4L21 20H3z")]),
+    "pfeil": M(k=[P("M4 19L19.5 5.5")], a=[P("M12.5 5h7.5v7.5")]),
+    "markierung": PIN_M,
+})
+
+# Format im Layout-Fenster
+FRONT = M(k=[R(3, 3, 12, 12, 1.5), R(9, 9, 12, 12, 1.5)], f=[R(9, 9, 12, 12, 1.5)])
+BACK = M(k=[R(3, 3, 12, 12, 1.5), R(9, 9, 12, 12, 1.5)], f=[R(3, 3, 12, 12, 1.5)])
+LOCK_BODY = [R(5, 10.5, 14, 10, 2)]
+
+
+def _bars(horizontal, spans):
+    """Balken als Rechtecke; ``spans`` = [(Anfang, Länge, Quer-Anfang, Quer-Länge)]."""
+    out = []
+    for a, length, b, thick in spans:
+        out.append(R(a, b, length, thick, 0.8) if horizontal else R(b, a, thick, length, 0.8))
+    return out
+
+
+def _line(horizontal, pos, a=3, b=21):
+    return P("M%s %sL%s %s" % (a, pos, b, pos) if horizontal else "M%s %sL%s %s" % (pos, a, pos, b))
+
+
+def align(edge):
+    """Zwei Balken an einer Linie: left, hcenter, right, top, vcenter, bottom."""
+    horizontal_axis = edge in ("top", "vcenter", "bottom")   # Linie waagerecht
+    pos = {"left": 4, "hcenter": 12, "right": 20, "top": 4, "vcenter": 12, "bottom": 20}[edge]
+    long_, short = 12, 7
+    spans = []
+    for n, (length, cross) in enumerate(((long_, 6.5), (short, 13.5))):
+        if edge in ("left", "top"):
+            start = pos + 3
+        elif edge in ("right", "bottom"):
+            start = pos - 3 - length
+        else:
+            start = pos - length / 2.0
+        spans.append((start, length, cross, 4))
+    bars = _bars(not horizontal_axis, spans)
+    return M(k=[_line(not horizontal_axis, pos)], a=bars, f=bars)
+
+
+def distribute(kind, vertical=False):
+    """Drei Balken mit gleichen Abständen; Marken an Kanten, Mitten oder in den Lücken."""
+    thick = 4
+    pos = (3.5, 10, 16.5)
+    spans = [(p, thick, 4, 16) for p in pos]
+    bars = _bars(not vertical, spans)
+    ticks = []
+    if kind == "gap":
+        for a, b in ((pos[0] + thick, pos[1]), (pos[1] + thick, pos[2])):
+            ticks.append(P("M%s 12h%s" % (a + 0.6, b - a - 1.2) if not vertical else "M12 %sv%s" % (a + 0.6, b - a - 1.2)))
+    else:
+        off = {"first": 0, "center": thick / 2.0, "last": thick}[kind]
+        for p in pos:
+            ticks.append(P("M%s 2.5v1.5" % (p + off) if not vertical else "M2.5 %sh1.5" % (p + off)))
+    return M(k=bars, a=ticks, f=[])
+
+
+def match(kind):
+    """Zwei Rechtecke, das zweite wird auf das Maß des ersten gebracht."""
+    if kind in ("widest", "narrowest"):
+        big, small = (R(3, 4, 18, 6, 1), R(3, 14, 9, 6, 1))
+        arrow = P("M13.5 17h6M17 14.5L19.5 17 17 19.5")
+        if kind == "narrowest":
+            big, small = (R(3, 4, 9, 6, 1), R(3, 14, 18, 6, 1))
+            arrow = P("M13.5 7h6M17 4.5L19.5 7 17 9.5")
+            return M(k=[big, small], a=[arrow])
+        return M(k=[big, small], a=[arrow])
+    if kind in ("tallest", "shortest"):
+        if kind == "tallest":
+            return M(k=[R(4, 3, 6, 18, 1), R(14, 12, 6, 9, 1)], a=[P("M17 10.5v-6M14.5 7L17 4.5 19.5 7")])
+        return M(k=[R(4, 12, 6, 9, 1), R(14, 3, 6, 18, 1)], a=[P("M7 10.5v-6M4.5 7L7 4.5 9.5 7")])
+    return M(k=[R(4, 4, 16, 16, 1.5)], a=[P("M4 9h5V4M20 15h-5v5")])
+
+
+MOTIFS.update({
+    "ebene_vorn": FRONT,
+    "ebene_hinten": BACK,
+    "ebene_hoeher": badge(FRONT, UP_SMALL),
+    "ebene_tiefer": badge(BACK, DOWN_SMALL),
+    "gruppieren": M(k=[R(3, 3, 8, 8, 1), R(13, 13, 8, 8, 1)], a=[R(1.8, 1.8, 20.4, 20.4, 2.5, DASH)]),
+    "gruppe_aufloesen": M(k=[R(3, 3, 8, 8, 1), R(13, 13, 8, 8, 1)], a=[P("M14 8h6M17.5 5.5L20 8l-2.5 2.5")]),
+    "fixieren": M(k=LOCK_BODY + [P("M8 10.5V7.5a4 4 0 0 1 8 0v3")], f=LOCK_BODY, a=[P("M12 14.5v2.5")]),
+    "loesen_alle": M(k=LOCK_BODY + [P("M8 10.5V7.5a4 4 0 0 1 7.6-1.8")], f=LOCK_BODY, a=[P("M12 14.5v2.5")]),
+    "element_x": M(k=[P("M4 4v16")], a=[P("M8 12h12M16.5 8.5L20 12l-3.5 3.5")]),
+    "element_y": M(k=[P("M4 4h16")], a=[P("M12 8v12M8.5 16.5L12 20l3.5-3.5")]),
+    "element_breite": M(k=[P("M4 4v16M20 4v16")], a=[P("M7 12h10M9.5 9.5L7 12l2.5 2.5M14.5 9.5L17 12l-2.5 2.5")]),
+    "element_hoehe": M(k=[P("M4 4h16M4 20h16")], a=[P("M12 7v10M9.5 9.5L12 7l2.5 2.5M9.5 14.5L12 17l2.5-2.5")]),
+    "bezugspunkt": M(k=[R(4, 4, 16, 16, 1.5)],
+                     a=[C(8, 8, 1), C(12, 8, 1), C(16, 8, 1), C(8, 12, 1), C(16, 12, 1), C(8, 16, 1),
+                        C(12, 16, 1), C(16, 16, 1), C(12, 12, 2.2)], f=[C(12, 12, 2.2)]),
+    "rahmen_an": M(k=[R(6, 6, 12, 12, 1.5)], a=[R(2.8, 2.8, 18.4, 18.4, 2, ' stroke-width="2.2"')]),
+    "rahmenstaerke": M(k=[P("M4 6h16")], a=[P("M4 12h16", ' stroke-width="2.4"'), P("M4 18.5h16", ' stroke-width="3.6"')]),
+    "hintergrund_an": M(k=[R(3, 5, 18, 14, 2)], f=[R(3, 5, 18, 14, 2)], a=[P("M7 15l3-4 3 3 2-2 3 3")]),
+})
+for _edge in ("left", "hcenter", "right", "top", "vcenter", "bottom"):
+    MOTIFS["ausrichten_" + _edge] = align(_edge)
+for _vertical, _suffix in ((False, "h"), (True, "v")):
+    for _kind in ("first", "center", "last", "gap"):
+        MOTIFS["verteilen_%s_%s" % (_kind, _suffix)] = distribute(_kind, _vertical)
+for _kind in ("widest", "narrowest", "tallest", "shortest", "square"):
+    MOTIFS["angleichen_" + _kind] = match(_kind)
+
 # Befehls-ID -> Motiv
 COMMANDS = {
+    # Ribbon im Layout-Fenster
+    "neues_layout_a4_quer": "layout_neu", "neues_layout_a4_hoch": "layout_neu", "neues_layout_a3_quer": "layout_neu",
+    "neues_layout_a3_hoch": "layout_neu", "an_ort_einfuegen": "einfuegen_als", "element_loeschen": "loeschen",
+    "layout_verschieben": "verschieben", "zoom_werkzeug": "lupe", "ganze_seite": "volle_ausdehnung",
+    "zoom_100": "zoom_100", "auf_breite": "zoom_breite", "layout_hineinzoomen": "zoom_in",
+    "layout_herauszoomen": "zoom_out", "ansicht_aktualisieren": "aktualisieren", "element_auswaehlen": "auswahl_rechteck",
+    "inhalt_verschieben": "zur_auswahl_verschieben", "knoten_bearbeiten": "stuetzpunkte",
+    "alle_auswaehlen": "alle_auswaehlen", "auswahl_aufheben": "auswahl_aufheben", "auswahl_umkehren": "auswahl_umkehren",
+    "naechstes_darunter": "nach_unten", "naechstes_darueber": "nach_oben", "seiten_hinzufuegen": "seite_neu",
+    "seiteneigenschaften": "seite_eigenschaften", "layouteigenschaften": "optionen", "druckseite": "drucken",
+    "layout_umbenennen": "umbenennen", "layout_duplizieren": "layer_duplizieren", "layout_loeschen": "loeschen",
+    "fenster_schliessen": "projekt_schliessen", "layout_neu": "layout_neu", "aus_vorlage": "vorlage_einfuegen",
+    "element_karte": "kartenansicht_neu", "element_karte_3d": "kartenansicht_3d", "element_legende": "legende",
+    "element_massstab": "massstabsleiste", "element_nordpfeil": "nordpfeil", "element_hoehenprofil": "hoehenprofil",
+    "element_attributtabelle": "tabelle", "element_feste_tabelle": "tabelle_bearbeitet", "element_html": "webseite",
+    "element_text": "titel", "element_dynamischer_text": "ausdruck", "element_bild": "bild",
+    "element_rechteck": "auswahl_rechteck", "element_ellipse": "auswahl_kreis", "element_dreieck": "dreieck",
+    "element_polygon": "auswahl_polygon", "element_polylinie": "auswahl_linie", "element_markierung": "markierung",
+    "element_pfeil": "pfeil", "atlas_einstellungen": "atlas", "atlas_vorschau": "layer_zeigen",
+    "atlas_erstes": "blaettern_erstes", "atlas_zurueck": "blaettern_zurueck", "atlas_weiter": "blaettern_weiter",
+    "atlas_letztes": "blaettern_letztes", "atlas_export_pdf": "pdf", "atlas_export_bilder": "bild",
+    "atlas_export_svg": "karte_exportieren", "atlas_drucken": "drucken", "panel_element": "layereigenschaften",
+    "panel_layout": "layoutverwaltung", "panel_elemente": "inhalt", "panel_fuehrungen": "panels", "panel_atlas": "atlas",
+    "panel_verlauf": "verlauf", "lineale": "messen", "gitter": "dekoration_gitter", "fuehrungen": "panels",
+    "rahmen": "auswahl_rechteck", "seiten": "bericht", "am_gitter": "einrasten", "an_fuehrungen": "einrasten",
+    "schlaue_fuehrungen": "selbsteinrasten", "fuehrungen_verwalten": "optionen", "fuehrungen_loeschen": "loeschen",
+    "vorschau": "farbsehen", "zum_hauptfenster": "kartenansicht_neu", "vollbild": "vollbild",
+    "panels_umschalten": "panels", "layoutoptionen": "optionen", "tastenkuerzel": "tastenkuerzel",
+    "export_pdf": "pdf", "export_bild": "bild", "export_svg": "karte_exportieren", "layout_drucken": "drucken",
+    "als_vorlage": "vorlage_speichern", "seitengroesse": "seite_eigenschaften",
+    "neu_aus_vorlage_layout": "vorlage_einfuegen", "bericht_einstellungen": "optionen", "panel_bericht": "bericht",
+    "bericht_export_pdf": "pdf", "bericht_export_bild": "bild", "bericht_export_svg": "karte_exportieren",
+    "bericht_drucken": "drucken",
     # Befehlslücken: Felder, Menüs, Layerliste, Eigenschaftsseiten
     "feld_hinzufuegen": "feld_hinzufuegen", "feld_loeschen": "feld_loeschen", "feld_umbenennen": "feld_umbenennen",
     "projekt_schliessen": "projekt_schliessen", "qgis_beenden": "beenden",
@@ -802,10 +952,114 @@ COMMANDS = {
 }
 
 # Menü-Elemente ohne eigenen Befehl (nach Beschriftung)
+COMMANDS.update({
+    "nach_vorn": "ebene_vorn", "eine_ebene_hoeher": "ebene_hoeher", "eine_ebene_tiefer": "ebene_tiefer",
+    "nach_hinten": "ebene_hinten", "gruppieren": "gruppieren", "gruppe_aufloesen": "gruppe_aufloesen",
+    "fixieren": "fixieren", "alle_loesen": "loesen_alle",
+    "ausrichten_links": "ausrichten_left", "ausrichten_mitte_h": "ausrichten_hcenter",
+    "ausrichten_rechts": "ausrichten_right", "ausrichten_oben": "ausrichten_top",
+    "ausrichten_mitte_v": "ausrichten_vcenter", "ausrichten_unten": "ausrichten_bottom",
+    "verteilen_links": "verteilen_first_h", "verteilen_mitte_h": "verteilen_center_h",
+    "verteilen_rechts": "verteilen_last_h", "verteilen_abstand_h": "verteilen_gap_h",
+    "verteilen_oben": "verteilen_first_v", "verteilen_mitte_v": "verteilen_center_v",
+    "verteilen_unten": "verteilen_last_v", "verteilen_abstand_v": "verteilen_gap_v",
+    "angleichen_breiteste": "angleichen_widest", "angleichen_schmalste": "angleichen_narrowest",
+    "angleichen_hoechste": "angleichen_tallest", "angleichen_niedrigste": "angleichen_shortest",
+    "angleichen_quadrat": "angleichen_square",
+    "item_optionen": "layereigenschaften", "item_x": "element_x", "item_y": "element_y",
+    "item_bezugspunkt": "bezugspunkt", "item_breite": "element_breite", "item_hoehe": "element_hoehe",
+    "item_drehung": "drehung", "item_rahmen": "rahmen_an", "item_rahmenfarbe": "randfarbe",
+    "item_rahmenstaerke": "rahmenstaerke", "item_hintergrund": "hintergrund_an",
+    "item_hintergrundfarbe": "fuellfarbe", "item_deckkraft": "deckkraft", "item_mischmodus": "mischmodus",
+})
+
+# Kontext-Tabs je Elementart im Layout-Fenster und Atlas-Objekt
+MOTIFS.update({
+    "atlas_objekt": badge(MAP, M(a=[P("M14.8 16.5h7.4M14.8 19.5h7.4"), P("M14.8 22h4.5")])),
+    "karte_massstab": badge(MAP, M(a=[P("M14.5 21h8M14.5 19v2M18.5 19.8V21M22.5 19v2")])),
+    "karte_von_hauptkarte": badge(MAP, IN_ARROW),
+    "karte_auf_hauptkarte": badge(MAP, OUT_ARROW),
+    "karte_thema": badge(MAP, EYE_SMALL),
+    "karte_layer_sperren": add(shrink(LAYERS), M(a=[R(15, 17.5, 7, 5, 1), P("M16.5 17.5v-1.5a2 2 0 0 1 4 0v1.5")])),
+    "karte_stile_sperren": add(shrink(M(k=[C(12, 12, 8.5)], a=[C(8.5, 9.5, 1.2), C(13, 7.8, 1.2), C(16, 11.5, 1.2)])),
+                               M(a=[R(15, 17.5, 7, 5, 1), P("M16.5 17.5v-1.5a2 2 0 0 1 4 0v1.5")])),
+    "text_inhalt": M(k=[R(3, 6, 18, 12, 2)], a=[P("M7 10h6M10 10v5")]),
+    "text_horizontal": M(k=[P("M4 5.5h16M4 18.5h16")], a=[P("M7 10h10M9.5 14h5")]),
+    "text_vertikal": M(k=[P("M5.5 4v16M18.5 4v16")], a=[P("M9 8h6M9 12h6M9 16h6")]),
+    "legende_auto": badge(M(k=[R(4, 3.5, 16, 17, 2)], a=[P("M7.5 8.5h3M13 8.5h3.5M7.5 13h3M13 13h3.5")]), LOOP),
+    "legende_filter": badge(M(k=[R(4, 3.5, 16, 17, 2)], a=[P("M7.5 8.5h3M13 8.5h3.5M7.5 13h3M13 13h3.5")]),
+                            M(a=[P("M14.5 15h8l-3.2 3.6v3.4l-1.6-.8v-2.6z")])),
+    "spalten": M(k=[R(3.5, 4, 17, 16, 2), P("M12 4v16")], a=[P("M6.5 8.5h3M6.5 12h3M14.5 8.5h3M14.5 12h3")]),
+    "groesse_anpassen": M(k=[R(4, 4, 16, 16, 2, DASH)], a=[P("M8 12h8M10 9.5L7.5 12l2.5 2.5M14 9.5l2.5 2.5-2.5 2.5")]),
+    "massstab_einheit": M(k=[R(3, 9, 18, 7, 1)], a=[P("M7 9v3M11 9v3M15 9v3M19 9v3"), P("M7 20h10")]),
+    "massstab_segmente": M(k=[R(3, 9, 18, 6, 1)], f=[R(3, 9, 4.5, 6), R(12, 9, 4.5, 6)], a=[P("M7.5 9v6M12 9v6M16.5 9v6")]),
+    "massstab_laenge": M(k=[R(3, 6, 18, 5, 1)], f=[R(3, 6, 9, 5)], a=[P("M3 17h9M5.5 14.8L3 17l2.5 2.2M9.5 14.8L12 17l-2.5 2.2")]),
+    "bild_modus": add(shrink(M(k=[R(3, 4, 18, 16, 2)], a=[P("M6.5 16l3.5-4.5 3 3.2 2-2.2 3 3.5")])), MOVE),
+    "bild_anker": M(k=[R(3.5, 3.5, 17, 17, 2)], f=[R(6.5, 6.5, 6.5, 6.5, 1)], a=[R(6.5, 6.5, 6.5, 6.5, 1)]),
+    "bild_drehen": badge(M(k=[R(3, 4, 18, 16, 2)], a=[P("M6.5 16l3.5-4.5 3 3.2 2-2.2 3 3.5")]), TURN),
+    "form_stil": M(k=[R(3.5, 6, 11, 11, 1.5)], f=[R(3.5, 6, 11, 11, 1.5)], a=[P("M19.5 3.5l1.5 1.5-5.5 7h-1.5v-1.5z")]),
+    "form_typ": M(k=[R(3.5, 3.5, 8, 8, 1), C(16.5, 7.5, 4)], a=[P("M12 13.5l5.5 8h-11z")]),
+    "eckenradius": M(k=[P("M4 20v-8a8 8 0 0 1 8-8h8")], a=[P("M4 12h8V4")]),
+    "tabelle_zeilen": M(k=[R(3, 4, 18, 16, 2), P("M3 9.5h18M3 14.8h18")], a=[P("M6.5 12.2h6M6.5 17.5h6")]),
+    "tabelle_nur_karte": badge(TABLE, M(a=[P(MAP_D, ' transform="translate(13.5 13.5) scale(0.42)"')])),
+})
+COMMANDS.update({
+    "atlas_objekt": "atlas_objekt",
+    "item_karte_massstab": "karte_massstab", "item_karte_drehung": "drehung",
+    "item_karte_von_hauptkarte": "karte_von_hauptkarte", "item_karte_auf_hauptkarte": "karte_auf_hauptkarte",
+    "item_karte_lesezeichen": "lesezeichen", "item_karte_thema": "karte_thema",
+    "item_karte_layer_sperren": "karte_layer_sperren", "item_karte_stile_sperren": "karte_stile_sperren",
+    "item_karte_aktualisieren": "aktualisieren", "item_karte_gitter": "dekoration_gitter",
+    "item_text_inhalt": "text_inhalt", "item_text_dynamisch": "ausdruck", "item_text_schrift": "schriftart",
+    "item_text_groesse": "schriftgroesse", "item_text_farbe": "schriftfarbe",
+    "item_text_horizontal": "text_horizontal", "item_text_vertikal": "text_vertikal",
+    "item_legende_karte": "verknuepfung", "item_legende_auto": "legende_auto", "item_legende_filter": "legende_filter",
+    "item_legende_titel": "titel", "item_legende_spalten": "spalten", "item_legende_anpassen": "groesse_anpassen",
+    "item_massstab_karte": "verknuepfung", "item_massstab_stil": "massstabsleiste",
+    "item_massstab_einheit": "massstab_einheit", "item_massstab_segmente": "massstab_segmente",
+    "item_massstab_laenge": "massstab_laenge", "item_massstab_schrift": "schriftart",
+    "item_bild_quelle": "bild", "item_bild_modus": "bild_modus", "item_bild_anker": "bild_anker",
+    "item_bild_karte": "bild_drehen",
+    "item_form_symbol": "form_stil", "item_form_typ": "form_typ", "item_form_radius": "eckenradius",
+    "item_tabelle_layer": "vektorlayer", "item_tabelle_attribute": "attribute", "item_tabelle_zeilen": "tabelle_zeilen",
+    "item_tabelle_filter": "filter", "item_tabelle_nur_karte": "tabelle_nur_karte",
+})
+
+# Befehle aus QGIS 4: Technik beim Zeichnen, Geometrie, Netz
+MOTIFS.update({
+    "digitalisieren_segment": M(k=[P("M4 18l5.5-10 5 6.5L20 6")],
+                                a=[R(2.5, 16.5, 3, 3, .6), R(8, 6.5, 3, 3, .6), R(13, 13, 3, 3, .6), R(18.5, 4.5, 3, 3, .6)]),
+    "digitalisieren_bezier": M(k=[P("M4 19C6 9 12 6 20 6")],
+                               a=[P("M4 19l3-8.5M20 6h-6.5"), C(7, 10.5, 1.3), C(13.5, 6, 1.3), R(2.5, 17.5, 3, 3, .6), R(18.5, 4.5, 3, 3, .6)]),
+    "digitalisieren_nurbs": M(k=[P("M4 18c2.5-8 5-11 8-6s5.5 2 8-6")],
+                              a=[R(2.5, 16.5, 3, 3, .6), R(7, 5.5, 3, 3, .6), R(14, 15.5, 3, 3, .6), R(18.5, 4.5, 3, 3, .6)]),
+    "fasen_runden": M(k=[P("M4 3.5V14a6.5 6.5 0 0 0 6.5 6.5h10")], a=[P("M4 14l6.5 6.5", DASH)]),
+    "objekte_als_array": M(k=[R(3, 15, 5, 5, 1), R(9.5, 9.5, 5, 5, 1), R(16, 4, 5, 5, 1)], a=[P("M5.5 12.5L13 5")],
+                           f=[R(3, 15, 5, 5, 1)]),
+    "hoehenprofile_verwalten": badge(PROFILE, PEN),
+    "annotationen_waehlen": badge(BUBBLE, CURSOR),
+    "netz_digitalisieren": badge(MESH, PEN),
+    "netz_erzwingen": badge(MESH, M(a=[P("M14.5 22.5l8-8"), C(14.5, 22.5, 1), C(22.5, 14.5, 1)])),
+    "netz_reindizieren": badge(MESH, LOOP),
+    "netz_alle_stuetzpunkte": badge(MESH, CHECK),
+    "netz_isolierte_stuetzpunkte": badge(MESH, M(a=[C(18.5, 18.5, 2)])),
+    "netz_transformieren": badge(MESH, MOVE),
+})
+COMMANDS.update({
+    "digitalisieren_segment": "digitalisieren_segment", "digitalisieren_bezier": "digitalisieren_bezier",
+    "digitalisieren_nurbs": "digitalisieren_nurbs", "fasen_runden": "fasen_runden",
+    "objekte_als_array": "objekte_als_array", "hoehenprofile_verwalten": "hoehenprofile_verwalten",
+    "annotationen_waehlen": "annotationen_waehlen", "netz_digitalisieren": "netz_digitalisieren",
+    "netz_erzwingen": "netz_erzwingen", "netz_reindizieren": "netz_reindizieren",
+    "netz_alle_stuetzpunkte": "netz_alle_stuetzpunkte", "netz_isolierte_stuetzpunkte": "netz_isolierte_stuetzpunkte",
+    "netz_transformieren": "netz_transformieren",
+})
+
 MENUS = {
     "Lesezeichen": "lesezeichen", "Verbindungen": "verbindungen", "Datenbank": "datenbank", "Server": "server",
     "Analysewerkzeuge": "werkzeugkasten", "Editorwerkzeuge": "stuetzpunkte", "Textformat": "textformat",
-    "Aus Tabelle": "punkte_aus_tabelle", "Kanalkombination": "kanaele",
+    "Aus Tabelle": "punkte_aus_tabelle", "Kanalkombination": "kanaele", "Form": "auswahl_rechteck",
+    "Knotenelement": "auswahl_polygon",
 }
 
 UI = {
@@ -815,6 +1069,10 @@ UI = {
     "rueckgaengig": "rueckgaengig", "wiederholen": "wiederholen", "entfernen": "loeschen", "hilfe": "ui_hilfe",
     "menue": "menue",
 }
+
+
+MENUS.update({"Ausrichten": "ausrichten_left", "Verteilen": "verteilen_gap_h",
+              "Groesse angleichen": "angleichen_widest"})
 
 
 def q(s):

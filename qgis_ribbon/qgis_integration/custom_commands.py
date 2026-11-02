@@ -75,15 +75,20 @@ class CommandEnv(object):
     Signale von QGIS-Objekten (Karte, Projekt) verbinden Befehle über ``hub``;
     der Hub wird beim Entladen zentral getrennt. ``host`` ist die Anordnung des
     Ribbons (``arrangements.Arrangements``) für Befehle, die den Ribbon selbst
-    anpassen (Galerie anpassen); ohne Plugin None.
+    anpassen (Galerie anpassen); ohne Plugin None. ``designer`` ist das
+    Layout-Fenster (``QgsLayoutDesignerInterface``), zu dem der Ribbon gehört;
+    im Hauptfenster None. ``items`` ist die Auswahl dieses Fensters
+    (``layout_state.LayoutSelection``), im Hauptfenster None.
     """
 
-    def __init__(self, iface, layers=None, settings=None, hub=None, host=None):
+    def __init__(self, iface, layers=None, settings=None, hub=None, host=None, designer=None, items=None):
         self.iface = iface
         self.layers = layers        # LayerWatch oder None
         self.settings = settings    # QgsSettings (None: QGIS-Einstellungen; Tests: eigene Datei)
         self.hub = hub              # zentraler SignalHub (None: Befehle verbinden nichts)
         self.host = host            # Arrangements oder None
+        self.designer = designer    # QgsLayoutDesignerInterface oder None
+        self.items = items          # LayoutSelection des Layout-Fensters oder None
         self._owned = []
         self._shared = {}
 

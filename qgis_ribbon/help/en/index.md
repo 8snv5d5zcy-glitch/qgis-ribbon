@@ -7,12 +7,13 @@ QGIS Ribbon replaces the QGIS toolbars with a ribbon: commands sorted into tabs 
 ## Contents
 
 1. [Working with the ribbon](ribbon.md): tabs, contextual tabs, buttons, menus, galleries, Quick Access, minimizing
-2. [Keyboard: KeyTips and search](keyboard.md): Alt, Alt+Q, your own KeyTips
-3. [Customizing the ribbon](customize.md): the editor, galleries, arrangements
-4. [Appearance](appearance.md): light and dark, accent colors, icons, the classic QGIS interface
-5. [Extensions](extensions.md): plugin commands, your own scripts and models
-6. [Additional tools](tools.md): domains and other commands of the ribbon
-7. [Settings, reset and troubleshooting](troubleshooting.md)
+2. [Ribbon in the layout window](layout.md): tabs, items, templates, page sizes, reports
+3. [Keyboard: KeyTips and search](keyboard.md): Alt, Alt+Q, your own KeyTips
+4. [Customizing the ribbon](customize.md): the editor, galleries, arrangements
+5. [Appearance](appearance.md): light and dark, accent colors, icons, the classic QGIS interface
+6. [Extensions](extensions.md): plugin commands, your own scripts and models
+7. [Additional tools](tools.md): domains and other commands of the ribbon
+8. [Settings, reset and troubleshooting](troubleshooting.md)
 
 ## Opening this guide
 

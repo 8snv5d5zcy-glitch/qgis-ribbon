@@ -17,7 +17,8 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import (QAction, QActionGroup, QApplication, QDialog, QDockWidget, QFileDialog,
                                  QInputDialog, QMenu, QMessageBox)
 
-from . import compare, context_state, custom_commands, kontext_ops, layer_ops, menu_bar, raster_ops, symbol_ops
+from . import (compare, context_state, custom_commands, kontext_ops, layer_ops, layout_ops, menu_bar, raster_ops,
+               symbol_ops)
 from .custom_commands import GalleryEntry
 from .map_tools import SelectByLineTool
 from ..core import layer_pages
@@ -1009,6 +1010,17 @@ BUTTONS = {
     "ribbon.grundkarte": grundkarte,
     "ribbon.processing_optionen": processing_optionen,
     "ribbon.qgis_menues": qgis_menues,
+    "ribbon.neues_layout_seite": layout_ops.new_layout_command,
+    "ribbon.layout_aus_vorlage": layout_ops.new_from_template_menu,
+    "ribbon.seite_groesse": layout_ops.page_size_menu,
+    "ribbon.zum_hauptfenster": layout_ops.main_window_command,
+    "ribbon.item_optionen": layout_ops.item_options_command,
+    "ribbon.item_karte_von_hauptkarte": layout_ops.map_from_canvas_command,
+    "ribbon.item_karte_auf_hauptkarte": layout_ops.canvas_from_map_command,
+    "ribbon.item_karte_aktualisieren": layout_ops.refresh_map_command,
+    "ribbon.item_karte_lesezeichen": layout_ops.map_bookmarks_menu,
+    "ribbon.item_karte_thema": layout_ops.map_theme_menu,
+    "ribbon.item_text_dynamisch": layout_ops.dynamic_text_menu,
     "ribbon.galerie_groesse": galerie_groesse,
     "ribbon.layerpfad_kopieren": layerpfad_kopieren,
     "ribbon.beschriftung_ausdruck": beschriftung_ausdruck,

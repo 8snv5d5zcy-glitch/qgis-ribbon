@@ -1,6 +1,7 @@
 """Übersetzung: Sprachwahl, Kataloge und Vollständigkeit."""
 import ast
 import io
+import itertools
 import json
 import os
 import re
@@ -80,8 +81,11 @@ def test_german_catalog():
 def test_load_catalog_ignores_empty_entries(tmp_path):
     (tmp_path / "fr.json").write_text(json.dumps({"Save": "Enregistrer", "Cancel": ""}), encoding="utf-8")
     (tmp_path / "fr_ribbon.json").write_text(json.dumps({"Map": "Carte"}), encoding="utf-8")
-    assert i18n.load_catalog("fr", str(tmp_path)) == {"Save": "Enregistrer", "Map": "Carte"}
+    (tmp_path / "fr_ribbon_layout.json").write_text(json.dumps({"Page": "Page"}), encoding="utf-8")
+    assert i18n.load_catalog("fr", str(tmp_path)) == {"Save": "Enregistrer", "Map": "Carte", "Page": "Page"}
     assert i18n.load_catalog("en", str(tmp_path)) == {}
+    (tmp_path / "es_ribbon_layout.json").write_text(json.dumps({"Page": "Página"}), encoding="utf-8")
+    assert i18n.available_languages(str(tmp_path)) == ["en", "es", "fr"]
 
 
 def test_definition_follows_language(english):
@@ -102,10 +106,11 @@ def test_menu_keys_do_not_depend_on_language(english):
 
 
 def test_catalogs_agree_and_keep_placeholders():
-    code, ribbon = _catalog("de.json"), _catalog("de_ribbon.json")
-    for key in set(code) & set(ribbon):
-        assert code[key] == ribbon[key], key
-    for catalog in (code, ribbon):
+    catalogs = [_catalog(name) for name in ("de.json", "de_ribbon.json", "de_ribbon_layout.json")]
+    for one, other in itertools.combinations(catalogs, 2):
+        for key in set(one) & set(other):
+            assert one[key] == other[key], key
+    for catalog in catalogs:
         for en, de in catalog.items():
             assert i18n.placeholders(en) == i18n.placeholders(de), en
 

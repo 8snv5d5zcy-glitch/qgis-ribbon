@@ -118,8 +118,8 @@ def test_format1_layout_reads_unchanged(base):
     assert all(g.items is None for t in arr.tabs for g in t.groups if g.ref)
 
 
-def test_bundle_version_1_is_read_and_4_is_written(base):
-    assert cz.make_bundle(None)["version"] == 4
+def test_bundle_version_1_is_read_and_5_is_written(base):
+    assert cz.make_bundle(None)["version"] == 5
     old = {"format": cz.FORMAT, "version": 1, "layout": {"tabs": [{"tab": "karte", "visible": False},
                                                                    {"tab": "analyse"}, {"tab": "vektor"}]},
            "quick_access": None, "keytips": {}}
@@ -130,7 +130,7 @@ def test_bundle_version_1_is_read_and_4_is_written(base):
     assert cz.read_bundle(dict(old, version=2)).layout == old["layout"]
     assert cz.read_bundle(dict(old, version=3)).layout == old["layout"]
     with pytest.raises(cz.BundleError):
-        cz.read_bundle(dict(old, version=5))
+        cz.read_bundle(dict(old, version=cz.VERSION + 1))
 
 
 def test_personal_version_of_definition_group(base):

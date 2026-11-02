@@ -18,7 +18,7 @@ from qgis.core import QgsSymbolLayerUtils
 from qgis.gui import (QgsBlendModeComboBox, QgsColorButton, QgsDoubleSpinBox,
                       QgsFieldExpressionWidget, QgsOpacityWidget, QgsScaleWidget, QgsSpinBox)
 from qgis.PyQt.QtCore import QSize, Qt
-from qgis.PyQt.QtGui import QFontDatabase, QIcon, QPainter
+from qgis.PyQt.QtGui import QIcon, QPainter
 from qgis.PyQt.QtWidgets import (QCheckBox, QComboBox, QFontComboBox, QHBoxLayout, QLabel,
                                  QSizePolicy, QSlider, QWidget)
 
@@ -26,6 +26,7 @@ from ...qgis_integration import (builtin_commands, compare, custom_commands, kon
                                  raster_ops, symbol_ops)
 from .. import icons, theme
 from ..html_text import escape
+from ..qt_compat import font_style_string, font_styles
 from ...core.i18n import tr
 
 EDITOR_WIDTHS = {"scale": 110, "opacity": 200, "blend": 120, "font": 140, "size": 52,
@@ -83,8 +84,9 @@ class LayerControl(QWidget):
         self.setFixedHeight(theme.ROW_HEIGHT)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setToolTip(self._tooltip())
-        if env.layers is not None:
-            env.layers.subscribe(self.refresh)
+        watch = self.watcher()
+        if watch is not None:
+            watch.subscribe(self.refresh)
         ctx.register(self)
         ctx.add_target(self, command.label, self.focus_editor, command)
         self.refresh(self.layer())
@@ -116,6 +118,10 @@ class LayerControl(QWidget):
         """Gruppe ohne Gruppenebene: Editor auf den QGIS-Standardwert setzen."""
 
     # Ablauf
+    def watcher(self):
+        """Beobachter, der dem Steuerelement Änderungen meldet (``subscribe``)."""
+        return self.env.layers
+
     def layer(self):
         if self.env.layers is not None:
             return self.env.layers.active_layer()
@@ -378,8 +384,8 @@ class FontStyleControl(LabelControl):
     def read(self, layer):
         fmt = layer_ops.text_format(layer, self.key(layer))
         family = fmt.font().family()
-        styles = QFontDatabase().styles(family) or ["Regular"]
-        current = fmt.namedStyle() or QFontDatabase().styleString(fmt.font())
+        styles = font_styles(family) or ["Regular"]
+        current = fmt.namedStyle() or font_style_string(fmt.font())
         self.editor.clear()
         self.editor.addItems(styles)
         index = self.editor.findText(current)

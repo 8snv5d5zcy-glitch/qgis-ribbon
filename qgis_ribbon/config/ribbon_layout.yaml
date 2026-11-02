@@ -1,0 +1,1268 @@
+# QGIS Ribbon: ribbon definition of the print layout window.
+# Same format as ribbon_arcgis.yaml. Labels and descriptions in English; German texts in
+# qgis_ribbon/i18n/de_ribbon_layout.json. Read and checked by qgis_ribbon/core/config_loader.py.
+
+version: 1
+
+hide_toolbars: ["mLayoutToolbar", "mToolsToolbar", "mNavigationToolbar", "mActionsToolbar", "mAtlasToolbar", "mReportToolbar"]
+
+quick_access: ["projekt_speichern", "rueckgaengig", "wiederholen"]
+
+tabs:
+  - id: "layout"
+    label: "Layout"
+    groups:
+      - id: "zwischenablage"
+        label: "Clipboard"
+        items:
+          - {command: "einfuegen", size: "large"}
+          - {command: "an_ort_einfuegen", size: "medium"}
+          - {command: "ausschneiden", size: "medium"}
+          - {command: "kopieren", size: "medium"}
+          - {command: "element_loeschen", size: "large"}
+      - id: "navigieren"
+        label: "Navigate"
+        items:
+          - {command: "layout_verschieben", size: "large"}
+          - {command: "zoom_werkzeug", size: "large"}
+          - {command: "ganze_seite", size: "medium"}
+          - {command: "zoom_100", size: "medium"}
+          - {command: "auf_breite", size: "medium"}
+          - {command: "layout_hineinzoomen", size: "medium"}
+          - {command: "layout_herauszoomen", size: "medium"}
+          - {command: "ansicht_aktualisieren", size: "medium"}
+      - id: "auswahl"
+        label: "Selection"
+        items:
+          - {command: "element_auswaehlen", size: "large"}
+          - {command: "inhalt_verschieben", size: "medium"}
+          - {command: "knoten_bearbeiten", size: "medium"}
+          - {command: "alle_auswaehlen", size: "medium"}
+          - {command: "auswahl_aufheben", size: "medium"}
+          - {command: "auswahl_umkehren", size: "medium"}
+          - {command: "naechstes_darunter", size: "medium"}
+          - {command: "naechstes_darueber", size: "medium"}
+      - id: "seite"
+        label: "Page"
+        items:
+          - {command: "seiten_hinzufuegen", size: "large"}
+          - {command: "seitengroesse", size: "large"}
+          - {command: "seiteneigenschaften", size: "medium"}
+          - {command: "layouteigenschaften", size: "medium"}
+          - {command: "druckseite", size: "medium"}
+      - id: "verwalten"
+        label: "Layout"
+        items:
+          - {command: "layout_oeffnen", size: "large"}
+          - {command: "layout_umbenennen", size: "medium"}
+          - {command: "layout_duplizieren", size: "medium"}
+          - {command: "layout_loeschen", size: "medium"}
+          - {command: "layoutverwaltung", size: "medium"}
+          - {command: "fenster_schliessen", size: "medium"}
+  - id: "einfuegen"
+    label: "Insert"
+    groups:
+      - id: "layout"
+        label: "Layout"
+        items:
+          - split: "layout_neu"
+            items: ["neues_layout_a4_quer", "neues_layout_a4_hoch", "neues_layout_a3_quer", "neues_layout_a3_hoch"]
+            size: "large"
+          - {command: "neu_aus_vorlage_layout", size: "large"}
+          - {command: "aus_vorlage", size: "large"}
+      - id: "kartenrahmen"
+        label: "Map Frame"
+        items:
+          - {command: "element_karte", size: "large"}
+          - {command: "element_karte_3d", size: "large"}
+      - id: "kartenelemente"
+        label: "Map Elements"
+        items:
+          - {command: "element_legende", size: "large"}
+          - {command: "element_massstab", size: "large"}
+          - {command: "element_nordpfeil", size: "large"}
+          - {command: "element_hoehenprofil", size: "large"}
+      - id: "tabellen"
+        label: "Tables"
+        items:
+          - {command: "element_attributtabelle", size: "large"}
+          - {command: "element_feste_tabelle", size: "medium"}
+          - {command: "element_html", size: "medium"}
+      - id: "grafik_text"
+        label: "Graphics and Text"
+        items:
+          - {command: "element_text", size: "large"}
+          - {command: "element_dynamischer_text", size: "large"}
+          - {command: "element_bild", size: "large"}
+          - menu: "Shape"
+            key: "Form"
+            icon: "/mActionAddBasicShape.svg"
+            items: ["element_rechteck", "element_ellipse", "element_dreieck"]
+            size: "large"
+          - menu: "Node Item"
+            key: "Knotenelement"
+            icon: "/mActionAddNodesItem.svg"
+            items: ["element_polygon", "element_polylinie"]
+            size: "large"
+          - {command: "element_markierung", size: "medium"}
+          - {command: "element_pfeil", size: "medium"}
+  - id: "atlas"
+    label: "Atlas"
+    visible_when: ["layout_is_print"]
+    groups:
+      - id: "atlas"
+        label: "Atlas"
+        items:
+          - {command: "atlas_einstellungen", size: "large"}
+          - {command: "atlas_vorschau", size: "large"}
+      - id: "blaettern"
+        label: "Browse"
+        items:
+          - {command: "atlas_erstes", size: "medium"}
+          - {command: "atlas_zurueck", size: "medium"}
+          - {command: "atlas_objekt", size: "medium"}
+          - {command: "atlas_weiter", size: "medium"}
+          - {command: "atlas_letztes", size: "medium"}
+      - id: "ausgabe"
+        label: "Output"
+        items:
+          - {command: "atlas_export_pdf", size: "large"}
+          - {command: "atlas_export_bilder", size: "medium"}
+          - {command: "atlas_export_svg", size: "medium"}
+          - {command: "atlas_drucken", size: "medium"}
+  - id: "bericht"
+    label: "Report"
+    visible_when: ["layout_is_report"]
+    groups:
+      - id: "aufbau"
+        label: "Report"
+        items:
+          - {command: "bericht_einstellungen", size: "large"}
+          - {command: "panel_bericht", size: "large"}
+      - id: "ausgabe"
+        label: "Output"
+        items:
+          - {command: "bericht_export_pdf", size: "large"}
+          - {command: "bericht_export_bild", size: "medium"}
+          - {command: "bericht_export_svg", size: "medium"}
+          - {command: "bericht_drucken", size: "medium"}
+  - id: "ansicht"
+    label: "View"
+    groups:
+      - id: "bedienfelder"
+        label: "Panels"
+        items:
+          - {command: "panel_element", size: "large"}
+          - {command: "panel_layout", size: "medium"}
+          - {command: "panel_elemente", size: "medium"}
+          - {command: "panel_fuehrungen", size: "medium"}
+          - {command: "panel_atlas", size: "medium"}
+          - {command: "panel_verlauf", size: "medium"}
+      - id: "anzeigen"
+        label: "Display"
+        items:
+          - {command: "lineale", size: "medium"}
+          - {command: "gitter", size: "medium"}
+          - {command: "fuehrungen", size: "medium"}
+          - {command: "rahmen", size: "medium"}
+          - {command: "seiten", size: "medium"}
+      - id: "einrasten"
+        label: "Snapping"
+        items:
+          - {command: "am_gitter", size: "medium"}
+          - {command: "an_fuehrungen", size: "medium"}
+          - {command: "schlaue_fuehrungen", size: "medium"}
+          - {command: "fuehrungen_verwalten", size: "medium"}
+          - {command: "fuehrungen_loeschen", size: "medium"}
+      - id: "vorschau"
+        label: "Preview"
+        items:
+          - {command: "vorschau", size: "large"}
+      - id: "fenster"
+        label: "Window"
+        items:
+          - {command: "zum_hauptfenster", size: "large"}
+          - {command: "vollbild", size: "medium"}
+          - {command: "panels_umschalten", size: "medium"}
+      - id: "einstellungen"
+        label: "Settings"
+        items:
+          - {command: "layoutoptionen", size: "medium"}
+          - {command: "tastenkuerzel", size: "medium"}
+  - id: "teilen"
+    label: "Share"
+    visible_when: ["layout_is_print"]
+    groups:
+      - id: "exportieren"
+        label: "Export"
+        items:
+          - {command: "export_pdf", size: "large"}
+          - {command: "export_bild", size: "large"}
+          - {command: "export_svg", size: "large"}
+      - id: "drucken"
+        label: "Print"
+        items:
+          - {command: "layout_drucken", size: "large"}
+          - {command: "druckseite", size: "medium"}
+      - id: "vorlage"
+        label: "Template"
+        items:
+          - {command: "als_vorlage", size: "large"}
+  - {id: "erweiterungen", label: "Extensions", dynamic: "erweiterungen"}
+
+contextual_tabs:
+  - id: "layout_format"
+    label: "Format"
+    context: "Item"
+    visible_when: ["layout_items_selected"]
+    groups:
+      - id: "anordnen"
+        label: "Arrange"
+        launcher: "item_optionen"
+        items:
+          - {command: "nach_vorn", size: "medium"}
+          - {command: "eine_ebene_hoeher", size: "medium"}
+          - {command: "eine_ebene_tiefer", size: "medium"}
+          - {command: "nach_hinten", size: "medium"}
+          - {command: "gruppieren", size: "medium"}
+          - {command: "gruppe_aufloesen", size: "medium"}
+          - {command: "fixieren", size: "medium"}
+          - {command: "alle_loesen", size: "medium"}
+      - id: "ausrichten"
+        label: "Align"
+        items:
+          - menu: "Align"
+            key: "Ausrichten"
+            icon: "/mActionAlignLeft.svg"
+            items: ["ausrichten_links", "ausrichten_mitte_h", "ausrichten_rechts", "ausrichten_oben", "ausrichten_mitte_v", "ausrichten_unten"]
+            size: "large"
+          - menu: "Distribute"
+            key: "Verteilen"
+            icon: "/mActionDistributeHSpace.svg"
+            items: ["verteilen_links", "verteilen_mitte_h", "verteilen_rechts", "verteilen_abstand_h", "verteilen_oben", "verteilen_mitte_v", "verteilen_unten", "verteilen_abstand_v"]
+            size: "large"
+          - menu: "Match Size"
+            key: "Groesse angleichen"
+            icon: "/mActionResizeWidest.svg"
+            items: ["angleichen_breiteste", "angleichen_schmalste", "angleichen_hoechste", "angleichen_niedrigste", "angleichen_quadrat"]
+            size: "large"
+      - id: "groesse_position"
+        label: "Size and Position"
+        items:
+          - {command: "item_x", size: "medium"}
+          - {command: "item_y", size: "medium"}
+          - {command: "item_bezugspunkt", size: "medium"}
+          - {command: "item_breite", size: "medium"}
+          - {command: "item_hoehe", size: "medium"}
+          - {command: "item_drehung", size: "medium"}
+      - id: "rahmen"
+        label: "Frame"
+        items:
+          - {command: "item_rahmen", size: "medium"}
+          - {command: "item_rahmenfarbe", size: "medium"}
+          - {command: "item_rahmenstaerke", size: "medium"}
+      - id: "hintergrund"
+        label: "Background"
+        items:
+          - {command: "item_hintergrund", size: "medium"}
+          - {command: "item_hintergrundfarbe", size: "medium"}
+      - id: "darstellung"
+        label: "Appearance"
+        items:
+          - {command: "item_deckkraft", size: "medium"}
+          - {command: "item_mischmodus", size: "medium"}
+  - id: "layout_karte"
+    label: "Map"
+    context: "Item"
+    visible_when: ["layout_item_is_map"]
+    groups:
+      - id: "massstab"
+        label: "Scale and Rotation"
+        launcher: "item_optionen"
+        items:
+          - {command: "item_karte_massstab", size: "medium"}
+          - {command: "item_karte_drehung", size: "medium"}
+      - id: "ausdehnung"
+        label: "Extent"
+        items:
+          - {command: "item_karte_von_hauptkarte", size: "large"}
+          - {command: "item_karte_auf_hauptkarte", size: "medium"}
+          - {command: "item_karte_lesezeichen", size: "medium"}
+          - {command: "inhalt_verschieben", size: "medium"}
+      - id: "layer"
+        label: "Layers"
+        items:
+          - {command: "item_karte_thema", size: "large"}
+          - {command: "item_karte_layer_sperren", size: "medium"}
+          - {command: "item_karte_stile_sperren", size: "medium"}
+      - id: "weiteres"
+        label: "More"
+        items:
+          - {command: "item_karte_aktualisieren", size: "large"}
+          - {command: "item_karte_gitter", size: "large"}
+  - id: "layout_text"
+    label: "Text"
+    context: "Item"
+    visible_when: ["layout_item_is_label"]
+    groups:
+      - id: "inhalt"
+        label: "Content"
+        launcher: "item_optionen"
+        items:
+          - {command: "item_text_dynamisch", size: "large"}
+          - {command: "item_text_inhalt", size: "medium"}
+      - id: "schrift"
+        label: "Font"
+        items:
+          - {command: "item_text_schrift", size: "medium"}
+          - {command: "item_text_groesse", size: "medium"}
+          - {command: "item_text_farbe", size: "medium"}
+      - id: "ausrichtung"
+        label: "Alignment"
+        items:
+          - {command: "item_text_horizontal", size: "medium"}
+          - {command: "item_text_vertikal", size: "medium"}
+  - id: "layout_legende"
+    label: "Legend"
+    context: "Item"
+    visible_when: ["layout_item_is_legend"]
+    groups:
+      - id: "karte"
+        label: "Map"
+        launcher: "item_optionen"
+        items:
+          - {command: "item_legende_karte", size: "medium"}
+          - {command: "item_legende_auto", size: "medium"}
+          - {command: "item_legende_filter", size: "medium"}
+      - id: "aufbau"
+        label: "Layout"
+        items:
+          - {command: "item_legende_titel", size: "medium"}
+          - {command: "item_legende_spalten", size: "medium"}
+          - {command: "item_legende_anpassen", size: "medium"}
+  - id: "layout_massstab"
+    label: "Scale Bar"
+    context: "Item"
+    visible_when: ["layout_item_is_scalebar"]
+    groups:
+      - id: "karte"
+        label: "Map"
+        launcher: "item_optionen"
+        items:
+          - {command: "item_massstab_karte", size: "medium"}
+          - {command: "item_massstab_stil", size: "medium"}
+      - id: "einteilung"
+        label: "Segments"
+        items:
+          - {command: "item_massstab_einheit", size: "medium"}
+          - {command: "item_massstab_segmente", size: "medium"}
+          - {command: "item_massstab_laenge", size: "medium"}
+      - id: "schrift"
+        label: "Font"
+        items:
+          - {command: "item_massstab_schrift", size: "medium"}
+  - id: "layout_bild"
+    label: "Picture"
+    context: "Item"
+    visible_when: ["layout_item_is_picture"]
+    groups:
+      - id: "quelle"
+        label: "Source"
+        launcher: "item_optionen"
+        items:
+          - {command: "item_bild_quelle", size: "medium"}
+      - id: "groesse"
+        label: "Size"
+        items:
+          - {command: "item_bild_modus", size: "medium"}
+          - {command: "item_bild_anker", size: "medium"}
+      - id: "drehung"
+        label: "Rotation"
+        items:
+          - {command: "item_bild_karte", size: "medium"}
+  - id: "layout_form"
+    label: "Shape"
+    context: "Item"
+    visible_when: ["layout_item_is_shape"]
+    groups:
+      - id: "stil"
+        label: "Style"
+        launcher: "item_optionen"
+        items:
+          - {command: "item_form_symbol", size: "medium"}
+      - id: "form"
+        label: "Shape"
+        items:
+          - {command: "item_form_typ", size: "medium"}
+          - {command: "item_form_radius", size: "medium"}
+          - {command: "knoten_bearbeiten", size: "medium"}
+  - id: "layout_tabelle"
+    label: "Table"
+    context: "Item"
+    visible_when: ["layout_item_is_table"]
+    groups:
+      - id: "daten"
+        label: "Data"
+        launcher: "item_optionen"
+        items:
+          - {command: "item_tabelle_attribute", size: "large"}
+          - {command: "item_tabelle_layer", size: "medium"}
+      - id: "zeilen"
+        label: "Rows"
+        items:
+          - {command: "item_tabelle_zeilen", size: "medium"}
+          - {command: "item_tabelle_filter", size: "medium"}
+          - {command: "item_tabelle_nur_karte", size: "medium"}
+
+commands:
+  projekt_speichern:
+    label: "Save Project"
+    source: {type: "designer_action", object_name: "mActionSaveProject"}
+    description: "Save the project with all its layouts."
+  rueckgaengig:
+    label: "Undo"
+    source: {type: "designer_edit", role: "undo"}
+    description: "Undo the last change in this layout."
+  wiederholen:
+    label: "Redo"
+    source: {type: "designer_edit", role: "redo"}
+    description: "Redo the change that was undone last."
+  einfuegen:
+    label: "Paste"
+    source: {type: "designer_edit", role: "paste"}
+    description: "Paste the copied items at the mouse position."
+  an_ort_einfuegen:
+    label: "Paste in Place"
+    source: {type: "designer_action", object_name: "mActionPasteInPlace"}
+    description: "Paste the copied items at their original position."
+  ausschneiden:
+    label: "Cut"
+    source: {type: "designer_edit", role: "cut"}
+    description: "Cut the selected items."
+  kopieren:
+    label: "Copy"
+    source: {type: "designer_edit", role: "copy"}
+    description: "Copy the selected items."
+  element_loeschen:
+    label: "Delete"
+    source: {type: "designer_action", object_name: "mActionDeleteSelection"}
+    description: "Delete the selected items."
+  layout_verschieben:
+    label: "Pan"
+    source: {type: "designer_action", object_name: "mActionPan"}
+    description: "Move the view of the layout with the mouse."
+  zoom_werkzeug:
+    label: "Zoom"
+    source: {type: "designer_action", object_name: "mActionZoomTool"}
+    description: "Zoom to an area drawn with the mouse."
+  ganze_seite:
+    label: "Full Page"
+    source: {type: "designer_action", object_name: "mActionZoomAll"}
+    description: "Zoom to the whole layout."
+  zoom_100:
+    label: "100%"
+    source: {type: "designer_action", object_name: "mActionZoomActual"}
+    description: "Show the layout at its actual size."
+  auf_breite:
+    label: "Page Width"
+    source: {type: "designer_action", object_name: "mActionZoomToWidth"}
+    description: "Zoom so that the page fills the width of the window."
+  layout_hineinzoomen:
+    label: "Zoom In"
+    source: {type: "designer_action", object_name: "mActionZoomIn"}
+    description: "Zoom in one step."
+  layout_herauszoomen:
+    label: "Zoom Out"
+    source: {type: "designer_action", object_name: "mActionZoomOut"}
+    description: "Zoom out one step."
+  ansicht_aktualisieren:
+    label: "Refresh"
+    source: {type: "designer_action", object_name: "mActionRefreshView"}
+    description: "Redraw the layout with its current data."
+  element_auswaehlen:
+    label: "Select"
+    source: {type: "designer_action", object_name: "mActionSelectMoveItem"}
+    description: "Select items and move or resize them with the mouse."
+  inhalt_verschieben:
+    label: "Move Content"
+    source: {type: "designer_action", object_name: "mActionMoveItemContent"}
+    description: "Move the content of an item, e.g. the map inside its frame."
+  knoten_bearbeiten:
+    label: "Edit Nodes"
+    source: {type: "designer_action", object_name: "mActionEditNodesItem"}
+    description: "Move, add or delete the nodes of a polygon or polyline."
+  alle_auswaehlen:
+    label: "Select All"
+    source: {type: "designer_action", object_name: "mActionSelectAll"}
+    description: "Select all items of the layout."
+  auswahl_aufheben:
+    label: "Deselect All"
+    source: {type: "designer_action", object_name: "mActionDeselectAll"}
+    description: "Clear the selection."
+  auswahl_umkehren:
+    label: "Invert Selection"
+    source: {type: "designer_action", object_name: "mActionInvertSelection"}
+    description: "Select the items that are not selected, and deselect the others."
+  naechstes_darunter:
+    label: "Next Below"
+    source: {type: "designer_action", object_name: "mActionSelectNextBelow"}
+    description: "Select the next item below the current one."
+  naechstes_darueber:
+    label: "Next Above"
+    source: {type: "designer_action", object_name: "mActionSelectNextAbove"}
+    description: "Select the next item above the current one."
+  seiten_hinzufuegen:
+    label: "Add Pages"
+    source: {type: "designer_action", object_name: "mActionAddPages"}
+    description: "Add pages to the layout."
+  seitengroesse:
+    label: "Page Size"
+    source: {type: "custom", id: "ribbon.seite_groesse"}
+    description: "Set the size and orientation of the current page."
+  seiteneigenschaften:
+    label: "Page Properties"
+    source: {type: "designer_action", object_name: "mActionPageProperties"}
+    description: "Set the size and the background of the current page."
+  layouteigenschaften:
+    label: "Layout Properties"
+    source: {type: "designer_action", object_name: "mActionLayoutProperties"}
+    description: "Show the general settings of the layout, such as resolution and grid."
+  druckseite:
+    label: "Page Setup"
+    source: {type: "designer_action", object_name: "mActionPageSetup"}
+    description: "Set the paper and the margins for printing."
+  layout_oeffnen:
+    label: "Layouts"
+    source: {type: "qgis_menu", object_name: "mLayoutsMenu"}
+    description: "Open one of the print layouts of the project."
+  layout_umbenennen:
+    label: "Rename"
+    source: {type: "designer_action", object_name: "mActionRenameLayout"}
+    description: "Rename this layout."
+  layout_duplizieren:
+    label: "Duplicate"
+    source: {type: "designer_action", object_name: "mActionDuplicateLayout"}
+    description: "Create a copy of this layout."
+  layout_loeschen:
+    label: "Delete Layout"
+    source: {type: "designer_action", object_name: "mActionRemoveLayout"}
+    description: "Delete this layout from the project."
+  layoutverwaltung:
+    label: "Layout Manager"
+    source: {type: "designer_action", object_name: "mActionLayoutManager"}
+    description: "Open the layout manager: create layouts from templates (.qpt), open and manage them."
+  fenster_schliessen:
+    label: "Close Window"
+    source: {type: "designer_action", object_name: "mActionClose"}
+    description: "Close this window. The layout stays in the project."
+  layout_neu:
+    label: "New Layout"
+    source: {type: "designer_action", object_name: "mActionNewLayout"}
+    description: "Create a new print layout."
+  neues_layout_a4_quer:
+    label: "A4 Landscape"
+    source: {type: "custom", id: "ribbon.neues_layout_seite", args: ["A4", "landscape"]}
+    description: "Create a new print layout with a landscape A4 page."
+  neues_layout_a4_hoch:
+    label: "A4 Portrait"
+    source: {type: "custom", id: "ribbon.neues_layout_seite", args: ["A4", "portrait"]}
+    description: "Create a new print layout with a portrait A4 page."
+  neues_layout_a3_quer:
+    label: "A3 Landscape"
+    source: {type: "custom", id: "ribbon.neues_layout_seite", args: ["A3", "landscape"]}
+    description: "Create a new print layout with a landscape A3 page."
+  neues_layout_a3_hoch:
+    label: "A3 Portrait"
+    source: {type: "custom", id: "ribbon.neues_layout_seite", args: ["A3", "portrait"]}
+    description: "Create a new print layout with a portrait A3 page."
+  neu_aus_vorlage_layout:
+    label: "Layout from Template"
+    source: {type: "custom", id: "ribbon.layout_aus_vorlage"}
+    description: "Create a new print layout from a template (.qpt)."
+  aus_vorlage:
+    label: "Add from Template"
+    source: {type: "designer_action", object_name: "mActionLoadFromTemplate"}
+    description: "Add the items of a layout template (.qpt) to this layout."
+  element_karte:
+    label: "Map"
+    source: {type: "designer_item", item: "LayoutMap"}
+    description: "Draw a new map frame."
+  element_karte_3d:
+    label: "3D Map"
+    source: {type: "designer_item", item: "Layout3DMap"}
+    description: "Draw a new 3D map frame."
+  element_legende:
+    label: "Legend"
+    source: {type: "designer_item", item: "LayoutLegend"}
+    description: "Draw a new legend."
+  element_massstab:
+    label: "Scale Bar"
+    source: {type: "designer_item", item: "LayoutScaleBar"}
+    description: "Draw a new scale bar."
+  element_nordpfeil:
+    label: "North Arrow"
+    source: {type: "designer_item", item: "LayoutPicture", index: 1}
+    description: "Draw a new north arrow."
+  element_hoehenprofil:
+    label: "Elevation Profile"
+    source: {type: "designer_item", item: "LayoutElevationProfile"}
+    description: "Draw a new elevation profile."
+  element_attributtabelle:
+    label: "Attribute Table"
+    source: {type: "designer_item", item: "LayoutAttributeTable"}
+    description: "Draw a new table with the attributes of a layer."
+  element_feste_tabelle:
+    label: "Fixed Table"
+    source: {type: "designer_item", item: "LayoutManualTable"}
+    description: "Draw a new table with text you enter yourself."
+  element_html:
+    label: "HTML"
+    source: {type: "designer_item", item: "LayoutHtml"}
+    description: "Draw a new frame with HTML content."
+  element_text:
+    label: "Text Label"
+    source: {type: "designer_item", item: "LayoutLabel"}
+    description: "Draw a new text label."
+  element_dynamischer_text:
+    label: "Dynamic Text"
+    source: {type: "designer_item", item: "LayoutLabel", submenu: true}
+    description: "Add a label with text QGIS fills in, such as date, page number or scale."
+  element_bild:
+    label: "Picture"
+    source: {type: "designer_item", item: "LayoutPicture"}
+    description: "Draw a new picture."
+  element_rechteck:
+    label: "Rectangle"
+    source: {type: "designer_item", item: "LayoutShape", group: "shapes", index: 0}
+    description: "Draw a new rectangle."
+  element_ellipse:
+    label: "Ellipse"
+    source: {type: "designer_item", item: "LayoutShape", group: "shapes", index: 1}
+    description: "Draw a new ellipse."
+  element_dreieck:
+    label: "Triangle"
+    source: {type: "designer_item", item: "LayoutShape", group: "shapes", index: 2}
+    description: "Draw a new triangle."
+  element_polygon:
+    label: "Polygon"
+    source: {type: "designer_item", item: "LayoutPolygon", group: "nodes"}
+    description: "Draw a new polygon node by node."
+  element_polylinie:
+    label: "Polyline"
+    source: {type: "designer_item", item: "LayoutPolyline", group: "nodes"}
+    description: "Draw a new polyline node by node."
+  element_markierung:
+    label: "Marker"
+    source: {type: "designer_item", item: "LayoutMarker"}
+    description: "Place a new marker."
+  element_pfeil:
+    label: "Arrow"
+    source: {type: "designer_item", item: "LayoutPolyline"}
+    description: "Draw a new arrow."
+  atlas_einstellungen:
+    label: "Atlas Settings"
+    source: {type: "designer_action", object_name: "mActionAtlasSettings"}
+    description: "Show the panel with the atlas settings."
+  atlas_vorschau:
+    label: "Preview Atlas"
+    source: {type: "designer_action", object_name: "mActionAtlasPreview"}
+    description: "Show the layout with the data of one atlas feature."
+  atlas_erstes:
+    label: "First Feature"
+    source: {type: "designer_action", object_name: "mActionAtlasFirst"}
+    description: "Go to the first atlas feature."
+  atlas_zurueck:
+    label: "Previous Feature"
+    source: {type: "designer_action", object_name: "mActionAtlasPrev"}
+    description: "Go to the previous atlas feature."
+  atlas_weiter:
+    label: "Next Feature"
+    source: {type: "designer_action", object_name: "mActionAtlasNext"}
+    description: "Go to the next atlas feature."
+  atlas_letztes:
+    label: "Last Feature"
+    source: {type: "designer_action", object_name: "mActionAtlasLast"}
+    description: "Go to the last atlas feature."
+  atlas_export_pdf:
+    label: "Atlas as PDF"
+    source: {type: "designer_action", object_name: "mActionExportAtlasAsPDF"}
+    description: "Export the atlas as PDF."
+  atlas_export_bilder:
+    label: "Atlas as Images"
+    source: {type: "designer_action", object_name: "mActionExportAtlasAsImage"}
+    description: "Export the atlas as images, one per feature and page."
+  atlas_export_svg:
+    label: "Atlas as SVG"
+    source: {type: "designer_action", object_name: "mActionExportAtlasAsSVG"}
+    description: "Export the atlas as SVG files."
+  atlas_drucken:
+    label: "Print Atlas"
+    source: {type: "designer_action", object_name: "mActionPrintAtlas"}
+    description: "Print the atlas."
+  bericht_einstellungen:
+    label: "Report Settings"
+    source: {type: "designer_action", object_name: "mActionReportSettings"}
+    description: "Show the panel with the settings of the report."
+  panel_bericht:
+    label: "Report Organizer"
+    source: {type: "dock", object_name: "ReportDock"}
+    description: "Show or hide the panel with the sections of the report."
+  bericht_export_pdf:
+    label: "Report as PDF"
+    source: {type: "designer_action", object_name: "mActionExportReportAsPDF"}
+    description: "Export the report as PDF."
+  bericht_export_bild:
+    label: "Report as Images"
+    source: {type: "designer_action", object_name: "mActionExportReportAsImage"}
+    description: "Export the report as images."
+  bericht_export_svg:
+    label: "Report as SVG"
+    source: {type: "designer_action", object_name: "mActionExportReportAsSVG"}
+    description: "Export the report as SVG files."
+  bericht_drucken:
+    label: "Print Report"
+    source: {type: "designer_action", object_name: "mActionPrintReport"}
+    description: "Print the report."
+  panel_element:
+    label: "Item Properties"
+    source: {type: "dock", object_name: "ItemDock"}
+    description: "Show or hide the panel with the properties of the selected item."
+  panel_layout:
+    label: "Layout Panel"
+    source: {type: "dock", object_name: "LayoutDock"}
+    description: "Show or hide the panel with the general settings of the layout."
+  panel_elemente:
+    label: "Items"
+    source: {type: "dock", object_name: "ItemsDock"}
+    description: "Show or hide the panel with the list of all items."
+  panel_fuehrungen:
+    label: "Guides Panel"
+    source: {type: "dock", object_name: "GuideDock"}
+    description: "Show or hide the panel with the guides of the page."
+  panel_atlas:
+    label: "Atlas Panel"
+    source: {type: "dock", object_name: "AtlasDock"}
+    description: "Show or hide the panel with the atlas settings."
+    enabled_when: ["layout_is_print"]
+  panel_verlauf:
+    label: "Undo History"
+    source: {type: "dock", object_name: "UndoDock"}
+    description: "Show or hide the panel with the undo history of the layout."
+  lineale:
+    label: "Rulers"
+    source: {type: "designer_action", object_name: "mActionShowRulers"}
+    description: "Show or hide the rulers."
+  gitter:
+    label: "Grid"
+    source: {type: "designer_action", object_name: "mActionShowGrid"}
+    description: "Show or hide the grid."
+  fuehrungen:
+    label: "Guides"
+    source: {type: "designer_action", object_name: "mActionShowGuides"}
+    description: "Show or hide the guides."
+  rahmen:
+    label: "Bounding Boxes"
+    source: {type: "designer_action", object_name: "mActionShowBoxes"}
+    description: "Show or hide the boxes around the selected items."
+  seiten:
+    label: "Pages"
+    source: {type: "designer_action", object_name: "mActionShowPage"}
+    description: "Show or hide the pages."
+  am_gitter:
+    label: "Snap to Grid"
+    source: {type: "designer_action", object_name: "mActionSnapGrid"}
+    description: "Snap items to the grid."
+  an_fuehrungen:
+    label: "Snap to Guides"
+    source: {type: "designer_action", object_name: "mActionSnapGuides"}
+    description: "Snap items to the guides."
+  schlaue_fuehrungen:
+    label: "Smart Guides"
+    source: {type: "designer_action", object_name: "mActionSmartGuides"}
+    description: "Snap items to the edges and centers of other items."
+  fuehrungen_verwalten:
+    label: "Manage Guides"
+    source: {type: "designer_action", object_name: "mActionManageGuides"}
+    description: "Show the panel with the guides of the page."
+  fuehrungen_loeschen:
+    label: "Clear Guides"
+    source: {type: "designer_action", object_name: "mActionClearGuides"}
+    description: "Delete all guides of the layout."
+  vorschau:
+    label: "Preview"
+    source: {type: "qgis_menu", object_name: "menuPreview"}
+    description: "Show the layout in monochrome or as seen with a color vision deficiency."
+  zum_hauptfenster:
+    label: "Main Window"
+    source: {type: "custom", id: "ribbon.zum_hauptfenster"}
+    description: "Bring the QGIS main window to the front."
+  vollbild:
+    label: "Full Screen"
+    source: {type: "designer_action", object_name: "mActionToggleFullScreen"}
+    description: "Show this window on the full screen, or end full screen."
+  panels_umschalten:
+    label: "Toggle Panels"
+    source: {type: "designer_action", object_name: "mActionHidePanels"}
+    description: "Hide all panels of this window, or show them again."
+  layoutoptionen:
+    label: "Layout Options"
+    source: {type: "designer_action", object_name: "mActionOptions"}
+    description: "Set defaults for print layouts: font, grid, guides, template paths."
+  tastenkuerzel:
+    label: "Keyboard Shortcuts"
+    source: {type: "designer_action", object_name: "mActionKeyboardShortcuts"}
+    description: "Show and change the keyboard shortcuts of this window."
+  export_pdf:
+    label: "Export as PDF"
+    source: {type: "designer_action", object_name: "mActionExportAsPDF"}
+    description: "Export the layout as PDF."
+  export_bild:
+    label: "Export as Image"
+    source: {type: "designer_action", object_name: "mActionExportAsImage"}
+    description: "Export the layout as an image."
+  export_svg:
+    label: "Export as SVG"
+    source: {type: "designer_action", object_name: "mActionExportAsSVG"}
+    description: "Export the layout as SVG."
+  layout_drucken:
+    label: "Print"
+    source: {type: "designer_action", object_name: "mActionPrint"}
+    description: "Print the layout."
+  als_vorlage:
+    label: "Save as Template"
+    source: {type: "designer_action", object_name: "mActionSaveAsTemplate"}
+    description: "Save the layout as a template (.qpt) for other projects."
+  nach_vorn:
+    label: "Bring to Front"
+    source: {type: "designer_action", object_name: "mActionMoveItemsToTop"}
+    description: "Move the selected items in front of all others."
+  eine_ebene_hoeher:
+    label: "Raise"
+    source: {type: "designer_action", object_name: "mActionRaiseItems"}
+    description: "Move the selected items one level up."
+  eine_ebene_tiefer:
+    label: "Lower"
+    source: {type: "designer_action", object_name: "mActionLowerItems"}
+    description: "Move the selected items one level down."
+  nach_hinten:
+    label: "Send to Back"
+    source: {type: "designer_action", object_name: "mActionMoveItemsToBottom"}
+    description: "Move the selected items behind all others."
+  gruppieren:
+    label: "Group"
+    source: {type: "designer_action", object_name: "mActionGroupItems"}
+    description: "Combine the selected items into a group."
+  gruppe_aufloesen:
+    label: "Ungroup"
+    source: {type: "designer_action", object_name: "mActionUngroupItems"}
+    description: "Split the selected group into its items."
+  fixieren:
+    label: "Lock"
+    source: {type: "designer_action", object_name: "mActionLockItems"}
+    description: "Lock the selected items so they cannot be moved by mistake."
+  alle_loesen:
+    label: "Unlock All"
+    source: {type: "designer_action", object_name: "mActionUnlockAll"}
+    description: "Unlock all locked items of the layout."
+  ausrichten_links:
+    label: "Align Left"
+    source: {type: "designer_action", object_name: "mActionAlignLeft"}
+    description: "Align the selected items to the left edge."
+  ausrichten_mitte_h:
+    label: "Align Center"
+    source: {type: "designer_action", object_name: "mActionAlignHCenter"}
+    description: "Center the selected items horizontally."
+  ausrichten_rechts:
+    label: "Align Right"
+    source: {type: "designer_action", object_name: "mActionAlignRight"}
+    description: "Align the selected items to the right edge."
+  ausrichten_oben:
+    label: "Align Top"
+    source: {type: "designer_action", object_name: "mActionAlignTop"}
+    description: "Align the selected items to the top edge."
+  ausrichten_mitte_v:
+    label: "Align Middle"
+    source: {type: "designer_action", object_name: "mActionAlignVCenter"}
+    description: "Center the selected items vertically."
+  ausrichten_unten:
+    label: "Align Bottom"
+    source: {type: "designer_action", object_name: "mActionAlignBottom"}
+    description: "Align the selected items to the bottom edge."
+  verteilen_links:
+    label: "Distribute Left Edges"
+    source: {type: "designer_action", object_name: "mActionDistributeLeft"}
+    description: "Space the left edges of the selected items evenly."
+  verteilen_mitte_h:
+    label: "Distribute Horizontal Centers"
+    source: {type: "designer_action", object_name: "mActionDistributeHCenter"}
+    description: "Space the horizontal centers of the selected items evenly."
+  verteilen_rechts:
+    label: "Distribute Right Edges"
+    source: {type: "designer_action", object_name: "mActionDistributeRight"}
+    description: "Space the right edges of the selected items evenly."
+  verteilen_abstand_h:
+    label: "Distribute Horizontal Gaps"
+    source: {type: "designer_action", object_name: "mActionDistributeHSpace"}
+    description: "Make the horizontal gaps between the selected items equal."
+  verteilen_oben:
+    label: "Distribute Top Edges"
+    source: {type: "designer_action", object_name: "mActionDistributeTop"}
+    description: "Space the top edges of the selected items evenly."
+  verteilen_mitte_v:
+    label: "Distribute Vertical Centers"
+    source: {type: "designer_action", object_name: "mActionDistributeVCenter"}
+    description: "Space the vertical centers of the selected items evenly."
+  verteilen_unten:
+    label: "Distribute Bottom Edges"
+    source: {type: "designer_action", object_name: "mActionDistributeBottom"}
+    description: "Space the bottom edges of the selected items evenly."
+  verteilen_abstand_v:
+    label: "Distribute Vertical Gaps"
+    source: {type: "designer_action", object_name: "mActionDistributeVSpace"}
+    description: "Make the vertical gaps between the selected items equal."
+  angleichen_breiteste:
+    label: "Resize to Widest"
+    source: {type: "designer_action", object_name: "mActionResizeWidest"}
+    description: "Give the selected items the width of the widest one."
+  angleichen_schmalste:
+    label: "Resize to Narrowest"
+    source: {type: "designer_action", object_name: "mActionResizeNarrowest"}
+    description: "Give the selected items the width of the narrowest one."
+  angleichen_hoechste:
+    label: "Resize to Tallest"
+    source: {type: "designer_action", object_name: "mActionResizeTallest"}
+    description: "Give the selected items the height of the tallest one."
+  angleichen_niedrigste:
+    label: "Resize to Shortest"
+    source: {type: "designer_action", object_name: "mActionResizeShortest"}
+    description: "Give the selected items the height of the shortest one."
+  angleichen_quadrat:
+    label: "Resize to Square"
+    source: {type: "designer_action", object_name: "mActionResizeToSquare"}
+    description: "Make the selected items square."
+  item_optionen:
+    label: "Item Properties"
+    source: {type: "custom", id: "ribbon.item_optionen"}
+    description: "Show all properties of the selected item in the Item Properties panel."
+    enabled_when: ["layout_items_selected"]
+  item_x:
+    label: "X"
+    source: {type: "custom", id: "ribbon.item_x"}
+    kind: "control"
+    description: "Horizontal position of the selected items, measured at the reference point."
+    enabled_when: ["layout_items_selected"]
+  item_y:
+    label: "Y"
+    source: {type: "custom", id: "ribbon.item_y"}
+    kind: "control"
+    description: "Vertical position of the selected items, measured at the reference point."
+    enabled_when: ["layout_items_selected"]
+  item_bezugspunkt:
+    label: "Reference"
+    source: {type: "custom", id: "ribbon.item_bezugspunkt"}
+    kind: "control"
+    description: "Point of the item that X and Y refer to."
+    enabled_when: ["layout_items_selected"]
+  item_breite:
+    label: "Width"
+    source: {type: "custom", id: "ribbon.item_breite"}
+    kind: "control"
+    description: "Width of the selected items."
+    enabled_when: ["layout_items_selected"]
+  item_hoehe:
+    label: "Height"
+    source: {type: "custom", id: "ribbon.item_hoehe"}
+    kind: "control"
+    description: "Height of the selected items."
+    enabled_when: ["layout_items_selected"]
+  item_drehung:
+    label: "Rotation"
+    source: {type: "custom", id: "ribbon.item_drehung"}
+    kind: "control"
+    description: "Rotation of the selected items in degrees."
+    enabled_when: ["layout_items_selected"]
+  item_rahmen:
+    label: "Frame"
+    source: {type: "custom", id: "ribbon.item_rahmen"}
+    kind: "control"
+    description: "Draw a frame around the selected items."
+    enabled_when: ["layout_items_selected"]
+  item_rahmenfarbe:
+    label: "Frame Color"
+    source: {type: "custom", id: "ribbon.item_rahmenfarbe"}
+    kind: "control"
+    description: "Color of the frame."
+    enabled_when: ["layout_items_selected"]
+  item_rahmenstaerke:
+    label: "Frame Width"
+    source: {type: "custom", id: "ribbon.item_rahmenstaerke"}
+    kind: "control"
+    description: "Line width of the frame."
+    enabled_when: ["layout_items_selected"]
+  item_hintergrund:
+    label: "Background"
+    source: {type: "custom", id: "ribbon.item_hintergrund"}
+    kind: "control"
+    description: "Fill the background of the selected items."
+    enabled_when: ["layout_items_selected"]
+  item_hintergrundfarbe:
+    label: "Background Color"
+    source: {type: "custom", id: "ribbon.item_hintergrundfarbe"}
+    kind: "control"
+    description: "Color of the background."
+    enabled_when: ["layout_items_selected"]
+  item_deckkraft:
+    label: "Opacity"
+    source: {type: "custom", id: "ribbon.item_deckkraft"}
+    kind: "control"
+    description: "Opacity of the selected items."
+    enabled_when: ["layout_items_selected"]
+  item_mischmodus:
+    label: "Blending Mode"
+    source: {type: "custom", id: "ribbon.item_mischmodus"}
+    kind: "control"
+    description: "How the selected items are blended with what lies below."
+    enabled_when: ["layout_items_selected"]
+  atlas_objekt:
+    label: "Feature"
+    source: {type: "custom", id: "ribbon.atlas_objekt"}
+    kind: "control"
+    description: "Choose the atlas feature to show. Available while the atlas preview is on."
+  item_karte_massstab:
+    label: "Map Scale"
+    source: {type: "custom", id: "ribbon.item_karte_massstab"}
+    kind: "control"
+    description: "Scale of the selected map."
+    enabled_when: ["layout_item_is_map"]
+  item_karte_drehung:
+    label: "Map Rotation"
+    source: {type: "custom", id: "ribbon.item_karte_drehung"}
+    kind: "control"
+    description: "Rotation of the map content inside its frame, in degrees."
+    enabled_when: ["layout_item_is_map"]
+  item_karte_von_hauptkarte:
+    label: "Extent from Main Map"
+    source: {type: "custom", id: "ribbon.item_karte_von_hauptkarte"}
+    description: "Set the selected map to the extent of the QGIS main map."
+    enabled_when: ["layout_item_is_map"]
+  item_karte_auf_hauptkarte:
+    label: "Show in Main Map"
+    source: {type: "custom", id: "ribbon.item_karte_auf_hauptkarte"}
+    description: "Set the QGIS main map to the extent of the selected map."
+    enabled_when: ["layout_item_is_map"]
+  item_karte_lesezeichen:
+    label: "Bookmarks"
+    source: {type: "custom", id: "ribbon.item_karte_lesezeichen"}
+    description: "Set the selected map to the extent of a spatial bookmark."
+    enabled_when: ["layout_item_is_map"]
+  item_karte_thema:
+    label: "Map Theme"
+    source: {type: "custom", id: "ribbon.item_karte_thema"}
+    description: "Make the selected map follow a map theme of the project."
+    enabled_when: ["layout_item_is_map"]
+  item_karte_layer_sperren:
+    label: "Lock Layers"
+    source: {type: "custom", id: "ribbon.item_karte_layer_sperren"}
+    kind: "control"
+    description: "Keep the layers currently shown in the main map for this map."
+    enabled_when: ["layout_item_is_map"]
+  item_karte_stile_sperren:
+    label: "Lock Styles"
+    source: {type: "custom", id: "ribbon.item_karte_stile_sperren"}
+    kind: "control"
+    description: "Keep the current layer styles for this map. Requires locked layers."
+    enabled_when: ["layout_item_is_map"]
+  item_karte_aktualisieren:
+    label: "Update Preview"
+    source: {type: "custom", id: "ribbon.item_karte_aktualisieren"}
+    description: "Redraw the selected map."
+    enabled_when: ["layout_item_is_map"]
+  item_karte_gitter:
+    label: "Grids and Overviews"
+    source: {type: "custom", id: "ribbon.item_optionen"}
+    description: "Open the Item Properties panel, where the grids and overviews of the map are set."
+    enabled_when: ["layout_item_is_map"]
+  item_text_inhalt:
+    label: "Text"
+    source: {type: "custom", id: "ribbon.item_text_inhalt"}
+    kind: "control"
+    description: "Text of the selected label. Text with several lines is edited in the Item Properties panel."
+    enabled_when: ["layout_item_is_label"]
+  item_text_dynamisch:
+    label: "Dynamic Text"
+    source: {type: "custom", id: "ribbon.item_text_dynamisch"}
+    description: "Add text QGIS fills in to the end of the label, such as date, page number or scale."
+    enabled_when: ["layout_item_is_label"]
+  item_text_schrift:
+    label: "Font"
+    source: {type: "custom", id: "ribbon.item_text_schrift"}
+    kind: "control"
+    description: "Font of the selected label."
+    enabled_when: ["layout_item_is_label"]
+  item_text_groesse:
+    label: "Size"
+    source: {type: "custom", id: "ribbon.item_text_groesse"}
+    kind: "control"
+    description: "Font size of the selected label."
+    enabled_when: ["layout_item_is_label"]
+  item_text_farbe:
+    label: "Color"
+    source: {type: "custom", id: "ribbon.item_text_farbe"}
+    kind: "control"
+    description: "Text color of the selected label."
+    enabled_when: ["layout_item_is_label"]
+  item_text_horizontal:
+    label: "Horizontal"
+    source: {type: "custom", id: "ribbon.item_text_horizontal"}
+    kind: "control"
+    description: "Horizontal alignment of the text inside the label."
+    enabled_when: ["layout_item_is_label"]
+  item_text_vertikal:
+    label: "Vertical"
+    source: {type: "custom", id: "ribbon.item_text_vertikal"}
+    kind: "control"
+    description: "Vertical alignment of the text inside the label."
+    enabled_when: ["layout_item_is_label"]
+  item_legende_karte:
+    label: "Linked Map"
+    source: {type: "custom", id: "ribbon.item_legende_karte"}
+    kind: "control"
+    description: "Map the legend belongs to."
+    enabled_when: ["layout_item_is_legend"]
+  item_legende_auto:
+    label: "Auto Update"
+    source: {type: "custom", id: "ribbon.item_legende_auto"}
+    kind: "control"
+    description: "Keep the legend entries in step with the layers of the project."
+    enabled_when: ["layout_item_is_legend"]
+  item_legende_filter:
+    label: "Only Layers in Frame"
+    source: {type: "custom", id: "ribbon.item_legende_filter"}
+    kind: "control"
+    description: "Show only the entries visible in the linked map."
+    enabled_when: ["layout_item_is_legend"]
+  item_legende_titel:
+    label: "Title"
+    source: {type: "custom", id: "ribbon.item_legende_titel"}
+    kind: "control"
+    description: "Title above the legend."
+    enabled_when: ["layout_item_is_legend"]
+  item_legende_spalten:
+    label: "Columns"
+    source: {type: "custom", id: "ribbon.item_legende_spalten"}
+    kind: "control"
+    description: "Number of columns of the legend."
+    enabled_when: ["layout_item_is_legend"]
+  item_legende_anpassen:
+    label: "Resize to Fit"
+    source: {type: "custom", id: "ribbon.item_legende_anpassen"}
+    kind: "control"
+    description: "Make the legend frame just large enough for its content."
+    enabled_when: ["layout_item_is_legend"]
+  item_massstab_karte:
+    label: "Linked Map"
+    source: {type: "custom", id: "ribbon.item_massstab_karte"}
+    kind: "control"
+    description: "Map whose scale the scale bar shows."
+    enabled_when: ["layout_item_is_scalebar"]
+  item_massstab_stil:
+    label: "Style"
+    source: {type: "custom", id: "ribbon.item_massstab_stil"}
+    kind: "control"
+    description: "Appearance of the scale bar."
+    enabled_when: ["layout_item_is_scalebar"]
+  item_massstab_einheit:
+    label: "Units"
+    source: {type: "custom", id: "ribbon.item_massstab_einheit"}
+    kind: "control"
+    description: "Units of the scale bar. Changing them also sets a suitable segment length."
+    enabled_when: ["layout_item_is_scalebar"]
+  item_massstab_segmente:
+    label: "Segments"
+    source: {type: "custom", id: "ribbon.item_massstab_segmente"}
+    kind: "control"
+    description: "Number of segments to the right of zero."
+    enabled_when: ["layout_item_is_scalebar"]
+  item_massstab_laenge:
+    label: "Segment Length"
+    source: {type: "custom", id: "ribbon.item_massstab_laenge"}
+    kind: "control"
+    description: "Length of a segment in the units of the scale bar. Not available when QGIS fits the segments itself."
+    enabled_when: ["layout_item_is_scalebar"]
+  item_massstab_schrift:
+    label: "Font"
+    source: {type: "custom", id: "ribbon.item_massstab_schrift"}
+    kind: "control"
+    description: "Font of the numbers and the unit."
+    enabled_when: ["layout_item_is_scalebar"]
+  item_bild_quelle:
+    label: "Source"
+    source: {type: "custom", id: "ribbon.item_bild_quelle"}
+    kind: "control"
+    description: "File or web address of the picture."
+    enabled_when: ["layout_item_is_picture"]
+  item_bild_modus:
+    label: "Size Mode"
+    source: {type: "custom", id: "ribbon.item_bild_modus"}
+    kind: "control"
+    description: "How the picture fills its frame."
+    enabled_when: ["layout_item_is_picture"]
+  item_bild_anker:
+    label: "Alignment in Frame"
+    source: {type: "custom", id: "ribbon.item_bild_anker"}
+    kind: "control"
+    description: "Where the picture sits in its frame."
+    enabled_when: ["layout_item_is_picture"]
+  item_bild_karte:
+    label: "Rotate with Map"
+    source: {type: "custom", id: "ribbon.item_bild_karte"}
+    kind: "control"
+    description: "Map whose rotation the picture follows, for example for a north arrow."
+    enabled_when: ["layout_item_is_picture"]
+  item_form_symbol:
+    label: "Style"
+    source: {type: "custom", id: "ribbon.item_form_symbol"}
+    kind: "control"
+    description: "Symbol of the selected shape, arrow, marker or node item."
+    enabled_when: ["layout_item_is_shape"]
+  item_form_typ:
+    label: "Shape Type"
+    source: {type: "custom", id: "ribbon.item_form_typ"}
+    kind: "control"
+    description: "Rectangle, ellipse or triangle. Only for shapes."
+    enabled_when: ["layout_item_is_shape"]
+  item_form_radius:
+    label: "Corner Radius"
+    source: {type: "custom", id: "ribbon.item_form_radius"}
+    kind: "control"
+    description: "Radius of the corners. Only for rectangles."
+    enabled_when: ["layout_item_is_shape"]
+  item_tabelle_layer:
+    label: "Layer"
+    source: {type: "custom", id: "ribbon.item_tabelle_layer"}
+    kind: "control"
+    description: "Layer shown in the attribute table."
+    enabled_when: ["layout_item_is_table"]
+  item_tabelle_attribute:
+    label: "Attributes"
+    source: {type: "custom", id: "ribbon.item_optionen"}
+    description: "Open the Item Properties panel, where the columns of the table or the content of a fixed table are set."
+    enabled_when: ["layout_item_is_table"]
+  item_tabelle_zeilen:
+    label: "Maximum Rows"
+    source: {type: "custom", id: "ribbon.item_tabelle_zeilen"}
+    kind: "control"
+    description: "Largest number of rows the attribute table shows."
+    enabled_when: ["layout_item_is_table"]
+  item_tabelle_filter:
+    label: "Filter"
+    source: {type: "custom", id: "ribbon.item_tabelle_filter"}
+    kind: "control"
+    description: "Expression that selects the rows of the attribute table. Empty: all rows."
+    enabled_when: ["layout_item_is_table"]
+  item_tabelle_nur_karte:
+    label: "Only Features in Map"
+    source: {type: "custom", id: "ribbon.item_tabelle_nur_karte"}
+    kind: "control"
+    description: "Show only the features visible in the map linked to the table."
+    enabled_when: ["layout_item_is_table"]
