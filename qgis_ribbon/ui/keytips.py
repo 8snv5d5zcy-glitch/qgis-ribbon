@@ -16,7 +16,8 @@
 Umsetzung: Ereignisfilter an der QApplication (läuft vor den Filtern der
 Menüleiste). Im Modus werden alle Tastenereignisse verbraucht, auch
 ``ShortcutOverride``, damit keine QGIS-Tastenkürzel mitlaufen. Der Filter
-wird beim Entladen entfernt. Die Buchstaben sind kleine Beschriftungen über
+wird beim Entladen entfernt; auf dem Mac mit QGIS 3 gibt es ihn nicht
+(``qt_compat.APP_FILTER``), dort keine KeyTips. Die Buchstaben sind kleine Beschriftungen über
 den Elementen (Kinder des Ribbons bzw. des aufgeklappten Ribbons oder der
 Gruppe); ihr Aussehen kommt aus dem Stylesheet des Ribbons
 (``QLabel#ribbon_keytip``, gesperrt über ``setEnabled(False)``).
@@ -28,6 +29,7 @@ from qgis.PyQt.QtWidgets import QApplication, QLabel
 from ..core import keytips
 from .controls.buttons import activate_button
 from ..core.i18n import tr
+from .qt_compat import APP_FILTER
 
 
 def tab_codes(rw, overrides=None):
@@ -93,7 +95,7 @@ class KeyTipController(QObject):
 
     # Lebenszyklus
     def install(self):
-        if not self._installed:
+        if not self._installed and APP_FILTER:   # macOS mit QGIS 3: kein app-weiter Filter (qt_compat)
             QApplication.instance().installEventFilter(self)
             self._installed = True
 

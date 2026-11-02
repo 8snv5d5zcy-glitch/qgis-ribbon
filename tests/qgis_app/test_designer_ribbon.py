@@ -25,6 +25,7 @@ from qgis_ribbon.qgis_integration.toolbar_manager import SETTINGS_KEY, ToolbarMa
 from qgis_ribbon.qgis_integration.user_settings import LAYOUT_SCOPE, UserSettings
 from qgis_ribbon.core.model import Command, Source
 from qgis_ribbon.ui.controls import layout_item as layout_item_controls
+from qgis_ribbon.ui.qt_compat import APP_FILTER
 
 BARS = ["mLayoutToolbar", "mNavigationToolbar", "mActionsToolbar", "mAtlasToolbar"]
 ALL_BARS = BARS + ["mToolsToolbar"]
@@ -499,7 +500,7 @@ def test_menu_offers_the_switch_and_the_editor(ribbons, designer):
     widget = ribbons.ribbons[designer.window()].widget
     menu = widget.context_menu(widget)
     texts = [a.text() for a in menu.actions()]
-    assert [t for t in texts if "KeyTips" in t or "Kürzel" in t]
+    assert bool([t for t in texts if "KeyTips" in t or "Kürzel" in t]) == APP_FILTER   # macOS mit QGIS 3: ohne
     assert [t for t in texts if "Customize the Ribbon" in t or "Ribbon anpassen" in t]
     switch = [a for a in menu.actions() if a.objectName() == "ribbon_designer_ribbon"]
     assert switch and switch[0].isChecked()

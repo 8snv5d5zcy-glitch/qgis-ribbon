@@ -15,8 +15,10 @@ from qgis_ribbon.qgis_integration.signals import SignalHub
 from qgis_ribbon.qgis_integration.user_settings import (KEY_MINIMIZED, KEY_QUICK_ACCESS,
                                                          UserSettings)
 from qgis_ribbon.ui.controls.gallery import GalleryGrid
+from qgis_ribbon.ui import keytips as keytips_ui, menu_anchor, quick_access, ribbon_widget
 from qgis_ribbon.ui.keys import MAC
 from qgis_ribbon.ui.keytips import KeyTipController
+from qgis_ribbon.ui.qt_compat import APP_FILTER
 from qgis_ribbon.ui.ribbon_widget import TEXT_ADD, TEXT_REMOVE, RibbonWidget
 
 
@@ -53,6 +55,9 @@ DEFINITION = {
                 {"menu": "Werkzeuge", "gallery": "werkzeuge", "items": ["zoomen"]}]}]},
     ],
 }
+
+
+NEEDS_FILTER = pytest.mark.skipif(not APP_FILTER, reason="macOS mit QGIS 3: keine KeyTips (kein app-weiter Filter)")
 
 
 def settle():
@@ -97,6 +102,7 @@ def visible_labels(w):
 
 # -- KeyTips --------------------------------------------------------------------
 
+@NEEDS_FILTER
 def test_alt_alone_shows_level0(setup):
     w, keys, mw = setup
     alt(mw)
@@ -111,6 +117,7 @@ def test_alt_alone_shows_level0(setup):
     assert visible_labels(w) == []
 
 
+@NEEDS_FILTER
 def test_alt_with_letter_stays_with_qgis(setup):
     _w, keys, mw = setup
     QTest.keyPress(mw, Qt.Key.Key_Alt, Qt.KeyboardModifier.AltModifier)
@@ -128,6 +135,7 @@ def test_alt_with_letter_stays_with_qgis(setup):
     sc.setParent(None)
 
 
+@NEEDS_FILTER
 def test_alt_with_arrows_of_another_plugin_wins(setup):
     """Ein anderes Plugin belegt Alt+↑/Alt+↓ (QAction am Hauptfenster): sein Kürzel gilt, keine KeyTips."""
     _w, keys, mw = setup
@@ -155,6 +163,7 @@ def test_alt_with_arrows_of_another_plugin_wins(setup):
         act.setParent(None)
 
 
+@NEEDS_FILTER
 def test_tab_then_element(setup, fake_iface):
     w, keys, mw = setup
     zoom = mw.findChild(QAction, "mActionZoomIn")
@@ -188,6 +197,7 @@ def test_tab_then_element(setup, fake_iface):
     assert not zoom.isChecked()
 
 
+@NEEDS_FILTER
 def test_shortcuts_do_not_fire_in_keytip_mode(setup):
     _w, keys, mw = setup
     fired = []
@@ -200,6 +210,7 @@ def test_shortcuts_do_not_fire_in_keytip_mode(setup):
     sc.setParent(None)
 
 
+@NEEDS_FILTER
 def test_quick_access_digit_and_search_key(setup, fake_iface):
     w, keys, mw = setup
     triggered = []
@@ -218,6 +229,23 @@ def test_uninstall_removes_filter(setup):
     keys.uninstall()
     alt(mw)
     assert not keys.active
+
+
+def test_without_app_filter_no_keytips_and_no_menu_anchor(setup, monkeypatch):
+    """macOS mit QGIS 3: kein app-weiter Ereignisfilter (Absturz in sip), dafür ohne KeyTips."""
+    w, keys, mw = setup
+    keys.uninstall()
+    for module in (keytips_ui, menu_anchor, quick_access, ribbon_widget):
+        monkeypatch.setattr(module, "APP_FILTER", False)
+    added = []
+    monkeypatch.setattr(QApplication.instance(), "installEventFilter", added.append, raising=False)
+    keys.install()
+    with menu_anchor.anchored(w) as watcher:
+        assert watcher is None
+    assert added == [] and not keys._installed
+    w.quick.menu.aboutToShow.emit()
+    texts = [a.text() for a in w.quick.menu.actions()] + [a.text() for a in w.context_menu(None).actions()]
+    assert "Kürzel anpassen …" not in texts
 
 
 # -- Schnellzugriffsleiste --------------------------------------------------------
@@ -297,6 +325,7 @@ def test_ctrl_f1_toggles(setup):
     assert not w.minimized
 
 
+@NEEDS_FILTER
 def test_keytips_open_tab_in_minimized_ribbon(setup):
     w, keys, mw = setup
     w.set_minimized(True)
@@ -311,6 +340,7 @@ def test_keytips_open_tab_in_minimized_ribbon(setup):
     QTest.keyClick(mw, Qt.Key.Key_Escape)
 
 
+@NEEDS_FILTER
 def test_keytips_survive_own_popup_becoming_active(setup, monkeypatch):
     # Auf dem Mac wird das aufgeklappte Ribbon selbst aktiv: das beendet die Kürzel nicht
     w, keys, mw = setup
@@ -403,6 +433,7 @@ def test_gallery_grid_keyboard(setup, fake_iface):
 
 # -- Eigene Kürzel ----------------------------------------------------------------------
 
+@NEEDS_FILTER
 def test_keytip_dialog_lists_and_saves_overrides(setup, settings):
     from qgis_ribbon.core import keytips
     from qgis_ribbon.qgis_integration.user_settings import KEY_KEYTIPS
@@ -446,6 +477,7 @@ def test_keytip_dialog_lists_and_saves_overrides(setup, settings):
     dlg.deleteLater()
 
 
+@NEEDS_FILTER
 def test_keytip_dialog_filter_and_menu_entries(setup):
     w, _keys, _mw = setup
     dlg = w.keytip_dialog()

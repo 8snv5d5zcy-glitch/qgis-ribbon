@@ -23,7 +23,7 @@ from qgis.PyQt.QtCore import QEvent, QObject, QPoint, QRect, Qt
 from qgis.PyQt.QtGui import QCursor, QGuiApplication
 from qgis.PyQt.QtWidgets import QApplication, QMenu, QToolButton
 
-from .qt_compat import action_widgets
+from .qt_compat import APP_FILTER, action_widgets
 
 # Quelltypen, hinter denen Code anderer Plugins steckt
 FOREIGN_SOURCES = ("extension", "plugin_action")
@@ -78,7 +78,7 @@ class _NextMenu(QObject):
 def anchored(widget):
     """Während des Blocks erscheint ein von fremdem Code geöffnetes Menü unter ``widget``."""
     app = QApplication.instance()
-    if app is None:
+    if app is None or not APP_FILTER:
         yield None
         return
     watcher = _NextMenu(anchor_rect(widget))

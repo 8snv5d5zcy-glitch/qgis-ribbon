@@ -5,7 +5,9 @@ kennt ``position()`` dort noch nicht. Ebenso sind ``QFontDatabase``-Methoden unt
 statisch, ``QAction.associatedWidgets`` heißt dort ``associatedObjects`` und
 ``QApplication.paletteChanged`` gibt es nicht mehr.
 """
-from qgis.PyQt.QtCore import QEvent
+import sys
+
+from qgis.PyQt.QtCore import QT_VERSION, QEvent
 from qgis.PyQt.QtGui import QFontDatabase
 
 
@@ -40,3 +42,8 @@ def action_widgets(action):
 
 
 PALETTE_CHANGE = QEvent.Type.ApplicationPaletteChange
+
+# macOS mit PyQt5 (QGIS 3): Ein app-weiter Ereignisfilter in Python bringt QGIS in sip zum Absturz, sobald Qt
+# ihm ein Objekt übergibt, dessen Typ sip nicht bestimmen kann (Zeitgeber-Ereignis, Objekt im Abbau). Dort
+# keine app-weiten Filter: ohne KeyTips und ohne Ausrichten fremder Menüs.
+APP_FILTER = not (sys.platform == "darwin" and QT_VERSION < 0x060000)

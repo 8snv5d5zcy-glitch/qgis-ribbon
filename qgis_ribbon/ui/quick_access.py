@@ -14,6 +14,7 @@ from qgis.PyQt.QtWidgets import QHBoxLayout, QMenu, QToolButton, QWidget
 from . import icons
 from .controls.buttons import MENU_ARROW, command_button
 from ..core.i18n import tr
+from .qt_compat import APP_FILTER
 
 CUSTOMIZE_TEXT = tr("Customize Quick Access Toolbar")
 
@@ -85,7 +86,8 @@ class QuickAccessBar(QWidget):
         hint.setEnabled(False)
         self.menu.addAction(tr("Restore Defaults"), self.resetRequested.emit)
         self.menu.addSeparator()
-        self.menu.addAction(tr("Customize KeyTips …"), self.keytipsRequested.emit)
+        if APP_FILTER:   # sonst keine KeyTips (macOS mit QGIS 3)
+            self.menu.addAction(tr("Customize KeyTips …"), self.keytipsRequested.emit)
         self.menu.addAction(tr("Pin the Ribbon") if self.minimized else tr("Minimize the Ribbon"),
                             self.minimizeToggled.emit)
         if self.extend_menu is not None:

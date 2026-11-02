@@ -30,7 +30,7 @@ In QGIS: **Plugins › Manage and Install Plugins …**, search for *QGIS Ribbon
 
 Manual installation: download the ZIP of a release and use **Install from ZIP** in the same dialog.
 
-Requirements: QGIS 3.44 or later, including QGIS 4. Developed and tested on Windows with QGIS 3.44.15 and QGIS 4.2.3. The automated tests also run on Linux with the same versions; on macOS they have only had a trial run. Older 4.x versions are not tested. No extra Python packages (PyYAML ships with QGIS).
+Requirements: QGIS 3.44 or later, including QGIS 4. Developed and tested on Windows with QGIS 3.44.15 and QGIS 4.2.3. The automated tests also run on Linux with the same versions; on macOS they have only had a trial run. On macOS with QGIS 3.44 there are no KeyTips (see Troubleshooting). Older 4.x versions are not tested. No extra Python packages (PyYAML ships with QGIS).
 
 ## Documentation
 
@@ -46,6 +46,24 @@ The layout follows the ribbon concept of ArcGIS Pro so that users switching from
 ## Reporting problems
 
 Please use the [issue tracker](https://github.com/8snv5d5zcy-glitch/qgis-ribbon/issues). Helpful details: QGIS version, operating system, steps to reproduce, and messages from the log panel (tab *QGIS Ribbon*).
+
+## Troubleshooting
+
+**QGIS crashes at every start.** Up to version 1.7.0, QGIS 3.44 on macOS could crash shortly after start with the plugin active; 1.7.1 fixes this. To get QGIS running again, start it once without plugins and update or uninstall QGIS Ribbon in the plugin manager:
+
+```
+open -a QGIS --args --noplugins
+```
+
+(Windows: `qgis-ltr-bin.exe --noplugins` or `qgis-bin.exe --noplugins` in the `bin` folder of QGIS.) If that does not help, quit QGIS and delete the plugin folder `qgis_ribbon` in the profile folder:
+
+- macOS: `~/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/`
+- Windows: `%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\`
+- Linux: `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/`
+
+For QGIS 4 the folder is `QGIS4` instead of `QGIS3`; for another profile, its name instead of `default`.
+
+**No KeyTips on macOS with QGIS 3.44.** There, the application-wide event filter the KeyTips need crashes QGIS (PyQt5 on macOS), so the plugin leaves them out. Menus that other plugins open from their own button then appear where that hidden toolbar button was. QGIS 4 on macOS is not affected.
 
 ## Development
 

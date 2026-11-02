@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.1 (2026-11-02)
+
+- macOS with QGIS 3.44: fixed QGIS crashing shortly after start, and then at every start, while the plugin is active. The cause was an application-wide event filter of the plugin, which PyQt5 on macOS cannot handle. On macOS with QGIS 3.44 the plugin therefore leaves out the KeyTips (Alt) and the entry Customize KeyTips; menus that other plugins open from their own button appear where that hidden toolbar button was. Everything else is unchanged. QGIS 4 on macOS, Windows and Linux are not affected.
+- README: new section Troubleshooting, how to start QGIS without plugins or remove the plugin folder if QGIS crashes at start.
+
 ## 1.7.0 (2026-11-02)
 
 - QGIS 4: the plugin now loads and runs on QGIS 4.2 as well as on QGIS 3.44 (`qgisMaximumVersion=4.99`, one code base). Fixed on QGIS 4: the plugin did not load (`QUndoCommand` moved), the font style field of the Labeling tab, plugin menus opening under their button, switching Identifiable layers, and the appearance Automatic following a palette change of QGIS. Tested on Windows with QGIS 3.44 and 4.2; the automated tests also run on Linux. macOS should work (the automated tests pass with QGIS 4.2), but nobody has tried it on a real Mac yet; feedback from Mac users is welcome.

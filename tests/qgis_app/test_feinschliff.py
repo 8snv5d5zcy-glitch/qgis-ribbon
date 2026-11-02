@@ -214,6 +214,7 @@ def ribbon_button(widget, tab, text):
     return None
 
 
+@pytest.mark.skipif(not menu_anchor.APP_FILTER, reason="macOS mit QGIS 3: kein app-weiter Filter")
 @pytest.mark.parametrize("blocking", [False, True])
 def test_plugin_menu_opens_under_ribbon_button(fake_iface, settings, blocking):
     mw = fake_iface.mainWindow()
@@ -239,6 +240,7 @@ def test_plugin_menu_opens_under_ribbon_button(fake_iface, settings, blocking):
         settle()
 
 
+@pytest.mark.skipif(not menu_anchor.APP_FILTER, reason="macOS mit QGIS 3: kein app-weiter Filter")
 def test_anchor_moves_only_a_menu_shown_first_and_only_once(qgis_app):
     from qgis.PyQt.QtWidgets import QDialog
     host = QWidget()

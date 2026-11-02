@@ -50,7 +50,7 @@ from ..qgis_integration.user_settings import MemoryStore, UserSettings
 from . import guide, icons, keys, theme
 from .controls.buttons import BuildContext
 from .quick_access import QuickAccessBar
-from .qt_compat import event_pos
+from .qt_compat import APP_FILTER, event_pos
 from .search_box import SearchBox
 from .tab_page import TabPage
 from ..core.i18n import tr
@@ -739,7 +739,8 @@ class RibbonWidget(QWidget):
             act = menu.addAction(TEXT_GALLERY % gallery.label, lambda: self.open_gallery_dialog(gallery.id))
             act.setObjectName("ribbon_customize_gallery")
             menu.addSeparator()
-        menu.addAction(TEXT_KEYTIPS, self.open_keytip_dialog)
+        if APP_FILTER:   # sonst keine KeyTips (macOS mit QGIS 3)
+            menu.addAction(TEXT_KEYTIPS, self.open_keytip_dialog)
         menu.addAction(TEXT_PIN if self.minimized else TEXT_MINIMIZE, self.toggle_minimized)
         menu.addSeparator()
         self.add_customize_actions(menu)
