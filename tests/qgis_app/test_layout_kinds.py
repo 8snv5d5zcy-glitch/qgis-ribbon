@@ -135,9 +135,11 @@ def test_kind_of_every_item_type(layout):
 
 def test_snapshot_names_the_kind_of_a_single_item_only(layout):
     a, b = add_map(layout), add(layout, QgsLayoutItemLabel(layout))
-    assert layout_state.snapshot([]) == Snapshot()
-    assert layout_state.snapshot([a]) == Snapshot(selected_items=1, item_kind="map")
-    assert layout_state.snapshot([a, b]) == Snapshot(selected_items=2)
+    pages = layout.pageCollection().pageCount()
+    assert layout_state.snapshot([], layout=layout) == Snapshot(layout_pages=pages)
+    assert layout_state.snapshot([a], layout=layout) == Snapshot(selected_items=1, item_kind="map", layout_pages=pages)
+    assert layout_state.snapshot([a, b], layout=layout) == Snapshot(selected_items=2, layout_pages=pages)
+    assert layout_state.snapshot([], report=True) == Snapshot(layout_report=True, layout_missing=True)
 
 
 def test_selection_reports_a_new_kind_with_the_same_count(layout):

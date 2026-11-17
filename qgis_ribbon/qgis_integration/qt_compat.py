@@ -10,7 +10,14 @@ try:
 except ImportError:
     from qgis.PyQt.QtWidgets import QUndoCommand  # Qt5
 
-__all__ = ["QUndoCommand", "legend_auto_update", "set_legend_auto_update"]
+__all__ = ["QUndoCommand", "action_widgets", "legend_auto_update", "set_legend_auto_update"]
+
+
+def action_widgets(action):
+    """Widgets, in denen ``action`` steht (Menüs, Leisten, Knöpfe); Qt6 kennt nur ``associatedObjects``."""
+    if hasattr(action, "associatedObjects"):
+        return [o for o in action.associatedObjects() if o.isWidgetType()]
+    return action.associatedWidgets()
 
 
 def legend_auto_update(item):

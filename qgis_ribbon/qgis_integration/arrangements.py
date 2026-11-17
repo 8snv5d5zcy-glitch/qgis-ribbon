@@ -44,6 +44,7 @@ from ..core.i18n import tr
 
 LOG_TAG = "QGIS Ribbon"
 FILE_SUFFIX = ".json"
+_LOGGED = set()   # Hinweise, die in dieser Sitzung schon im Protokoll stehen (der Editor zeigt sie weiter)
 
 
 class Arrangements(QObject):
@@ -77,7 +78,9 @@ class Arrangements(QObject):
             return self.base
         arr = self.current()
         for text in self.warnings:
-            QgsMessageLog.logMessage(tr("Arrangement: %s") % text, LOG_TAG, Qgis.MessageLevel.Warning)
+            if text not in _LOGGED:
+                _LOGGED.add(text)
+                QgsMessageLog.logMessage(tr("Arrangement: %s") % text, LOG_TAG, Qgis.MessageLevel.Warning)
         return cz.apply(self.base, arr)
 
     def set_current(self, arr):

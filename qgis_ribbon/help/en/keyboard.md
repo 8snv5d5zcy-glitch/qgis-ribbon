@@ -43,12 +43,16 @@ Your own KeyTips are part of the arrangement, see [Customizing the ribbon](custo
 
 ## Command search
 
-The field **Search commands** at the right of the header finds commands by their name, description or location in the ribbon, and also commands of the QGIS menus that are not in the ribbon.
+The field **Search commands** at the right of the header finds commands by their name, description or location in the ribbon, commands of the QGIS menus and toolbars (also from their dropdowns) that are not in the ribbon, the functions of the ribbon itself, and every tool of the Processing Toolbox including your own scripts and models.
 
 ![Command search](../images/en/search.png)
 
 - Open: click the field, or **Alt**, then **Q**.
-- Each result shows where the command is located (for example *Analysis › Tools*). Commands of the QGIS menus are marked with *QGIS:*, commands without a place in the ribbon (such as **Properties: Metadata** or **Project Properties: CRS**) with *Command pool*. A QGIS submenu such as **Recent Projects** opens below the search field.
+- In a narrow window the field becomes narrower and finally a magnifier button; clicking it or **Alt**, then **Q** opens the field over the tabs.
+- Each result shows where the command is located (for example *Analysis › Tools*). Commands of the QGIS menus are marked with *QGIS:*, commands without a place in the ribbon (such as **Properties: Metadata** or **Project Properties: CRS**) with *Command pool*. A QGIS submenu such as **Recent Projects** opens below the search field. The location is shown dimmed next to the name; if the list is too narrow, the location is shortened, never the name.
+- Functions of the ribbon have the location *Ribbon*: for example *customize* finds **Customize Ribbon**, *dark* the dark mode under *Ribbon › Appearance*, as well as arrangements, **Classic QGIS Interface** and the guide.
+- **New Script**, **New Model** and their neighbours (script from template, open, add to toolbox) are in the **Analysis** tab, group **Tools**, in the dropdown **Scripts and Models**, and can be found with the search.
+- Processing tools are listed with *Toolbox › provider › group*, after the commands of the ribbon and the QGIS menus; your own scripts and models come before the other tools. A result opens the tool's dialog. The internal name and the tags of a tool are searched too (for example *fix* finds **Fix Geometries**), also when the tool is in the ribbon. New and deleted scripts are found right away.
 - **Enter** runs the first result, the arrow keys choose another one.
 - **Esc** clears the field and returns to the map.
 - Upper and lower case do not matter. German umlauts can be typed as ae, oe, ue and ss.

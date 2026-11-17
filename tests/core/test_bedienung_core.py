@@ -8,7 +8,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from qgis_ribbon.core import keytips, quick_access  # noqa: E402
-from qgis_ribbon.core.model import Command, Gallery, Ribbon, Source, Tab  # noqa: E402
+from qgis_ribbon.core.model import Command, CommandRef, Gallery, Group, Ribbon, Source, Tab  # noqa: E402
 from qgis_ribbon.core.search import Entry, SearchIndex, fold  # noqa: E402
 
 
@@ -103,6 +103,88 @@ def test_search_budget():
             idx.search(text)
         runs.append((time.perf_counter() - start) / 6 * 1000)
     assert min(runs) < 10, runs
+
+
+def _tools():
+    from qgis_ribbon.core.extensions import Algorithm
+    return [
+        Algorithm("native:fixgeometries", "Geometrien reparieren", "native", "QGIS (native c++)",
+                  "Vektorgeometrie", "Repariert ungültige Geometrien.", "repair valid invalid fixgeometries"),
+        Algorithm("native:buffer", "Puffer", "native", "QGIS (native c++)", "Vektorgeometrie", "",
+                  "buffer grow variable distance"),
+        Algorithm("script:puffer_mein", "Puffer mit Stil", "script", "Skripte", "Meine", "", "puffer_mein"),
+        Algorithm("model:puffer_modell", "Puffer im Modell", "model", "Modelle", "", "", "puffer_modell"),
+    ]
+
+
+def test_tools_are_found_with_keywords_and_ranked_after_actions():
+    from qgis_ribbon.core.search import TIER_OWN_TOOL, TIER_TOOL, algorithm_entries
+    tools = algorithm_entries(_tools())
+    idx = SearchIndex(list(_index().entries) + tools)
+    # nur über Stichwörter (interner Name, Tags) zu finden
+    fix = idx.search("fix")
+    assert [e.label for e in fix] == ["Geometrien reparieren"]
+    assert idx.search("repair")[0].label == "Geometrien reparieren"
+    cmd, tab = fix[0].ref
+    assert cmd.id == "verarbeitung:native:fixgeometries" and cmd.source.type == "processing" and tab is None
+    assert fix[0].path.split(" › ")[1:] == ["QGIS (native c++)", "Vektorgeometrie"]
+    assert fix[0].description == "Repariert ungültige Geometrien."
+    # gleicher Rang (Beschriftung beginnt mit „puf“): Ribbon, QGIS-Aktion, eigene Skripte
+    # und Modelle, übrige Werkzeuge; innerhalb einer Stufe die kürzere Beschriftung zuerst
+    refs = [e.ref if isinstance(e.ref, str) else e.ref[0].id for e in idx.search("puf")]
+    assert refs == ["puffer", "qgis_puffer", "verarbeitung:script:puffer_mein",
+                    "verarbeitung:model:puffer_modell", "verarbeitung:native:buffer"]
+    assert {e.tier for e in tools} == {TIER_OWN_TOOL, TIER_TOOL}
+
+
+def test_tool_in_the_ribbon_is_listed_once():
+    from qgis_ribbon.core.search import algorithm_entries
+    entries = algorithm_entries(_tools(), placed={"verarbeitung:native:buffer"})
+    assert "verarbeitung:native:buffer" not in [e.ref[0].id for e in entries]
+    assert len(entries) == 3
+
+
+def test_placed_tool_found_by_keyword_and_internal_name_once():
+    """Liegt ein Werkzeug im Ribbon, finden Stichwort und interner Name den Ribbon-Eintrag, einmal."""
+    from qgis_ribbon.core import extensions as ext
+    from qgis_ribbon.core.search import algorithm_entries, placed_tools, ribbon_entries
+    alg = _tools()[0]
+    placed = ext.toolbox_command(alg)
+    yaml_cmd = Command(id="reparieren", label="Reparieren", source=Source("processing", {"algorithm": "native:buffer"}))
+    group = Group(id="eigene", label="Eigene", elements=(CommandRef(placed), CommandRef(yaml_cmd)))
+    ribbon = Ribbon(tabs=(Tab(id="analyse", label="Analyse", groups=(group,)),),
+                    commands={placed.id: placed, yaml_cmd.id: yaml_cmd})
+    entries = ribbon_entries(ribbon)
+    tools = algorithm_entries(_tools(), {e.ref[0].id for e in entries}, known=placed_tools(entries))
+    assert len(tools) == 2   # reparieren und Puffer stehen schon im Ribbon
+    idx = SearchIndex(entries + tools)
+    for text in ("fix", "fixgeometries", "repair"):
+        assert [e.ref[0].id for e in idx.search(text)] == [placed.id], text
+    assert [e.ref[0].id for e in idx.search("grow")] == ["reparieren"]
+    # zweimal ergänzen schreibt die Stichwörter nicht doppelt
+    algorithm_entries(_tools(), entries=entries)
+    assert idx.search("fixgeometries")[0]._all.count("fixgeometries") == 1
+
+
+def test_search_budget_with_all_tools():
+    from qgis_ribbon.core.extensions import Algorithm
+    from qgis_ribbon.core.search import algorithm_entries
+    algs = [Algorithm("native:alg%d" % i, "Werkzeug Nummer %d" % i, "native", "QGIS", "Gruppe %d" % (i % 30),
+                      "Beschreibung des Werkzeugs %d" % i, "tag%d name%d" % (i, i)) for i in range(1000)]
+    if sys.gettrace() is not None or "coverage" in sys.modules:
+        pytest.skip("Zeitmessung unter Abdeckungsmessung nicht aussagekräftig")
+    others = [Entry("Befehl Nummer %d Auswahl" % i, i, path="Tab › Gruppe") for i in range(1000)]
+    builds, keys = [], []
+    for _ in range(3):
+        start = time.perf_counter()
+        tools = algorithm_entries(algs)
+        builds.append((time.perf_counter() - start) * 1000)
+        idx = SearchIndex(others + tools)
+        start = time.perf_counter()
+        for text in ("w", "we", "wer", "werkzeug", "werkzeug 14", "gruppe 3"):
+            idx.search(text)
+        keys.append((time.perf_counter() - start) / 6 * 1000)
+    assert min(builds) < 30 and min(keys) < 10, (builds, keys)
 
 
 # -- Schnellzugriff -----------------------------------------------------------

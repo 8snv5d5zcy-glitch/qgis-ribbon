@@ -5,8 +5,8 @@ Die Farben kommen aus den Tokens (``core.theme_tokens``, Datei
 den Einstellungen des Nutzers (automatisch wie QGIS, hell, dunkel), hält die
 aktuellen Tokens (``current()``) und meldet Wechsel über ``changed``. Im
 automatischen Modus folgt er der QGIS-Palette (Signal ``paletteChanged``, unter Qt6
-Ereignis ``ApplicationPaletteChange`` der Anwendung, kein Polling). Im Hochkontrastmodus von Windows nimmt er die
-Systemfarben statt der Tokens.
+Ereignis ``ApplicationPaletteChange`` am beobachteten Fenster, kein Polling). Im
+Hochkontrastmodus von Windows nimmt er die Systemfarben statt der Tokens.
 
 Stylesheets entstehen aus den Tokens und werden einmal am Wurzel-Widget
 gesetzt (``ribbon_qss``), nicht je Button. Was QSS nicht kann (Schatten,
@@ -174,7 +174,7 @@ class ThemeManager(QObject):
 
     changed = pyqtSignal()
 
-    def __init__(self, user, parent=None):
+    def __init__(self, user, parent=None, watch=None):
         QObject.__init__(self, parent)
         self.user = user
         self.tokens = None
@@ -183,11 +183,14 @@ class ThemeManager(QObject):
         self.high_contrast = high_contrast()
         self._connected = False
         app = QApplication.instance()
+        # Qt6: Signal entfernt; Qt schickt ApplicationPaletteChange an jedes Widget. Beobachtet wird nur das
+        # Fenster des Ribbons (``watch``), kein Filter an der Anwendung (der sähe jedes Ereignis von QGIS).
+        self._watch = watch if watch is not None else app
         if app is not None:
             if hasattr(app, "paletteChanged"):       # Qt5
                 app.paletteChanged.connect(self._on_palette)
-            else:                                    # Qt6: Signal entfernt, Ereignis stattdessen
-                app.installEventFilter(self)
+            else:
+                self._watch.installEventFilter(self)
             self._connected = True
         self.refresh(emit=False)
 
@@ -227,7 +230,7 @@ class ThemeManager(QObject):
             self.refresh()
 
     def eventFilter(self, obj, event):
-        if event.type() == PALETTE_CHANGE and obj is QApplication.instance():
+        if event.type() == PALETTE_CHANGE and obj is self._watch:
             self._on_palette()
         return False
 
@@ -238,7 +241,7 @@ class ThemeManager(QObject):
                 if hasattr(app, "paletteChanged"):
                     app.paletteChanged.disconnect(self._on_palette)
                 else:
-                    app.removeEventFilter(self)
+                    self._watch.removeEventFilter(self)
             except (TypeError, RuntimeError):
                 pass
             self._connected = False

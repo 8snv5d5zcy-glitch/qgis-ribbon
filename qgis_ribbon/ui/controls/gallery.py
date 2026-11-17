@@ -26,7 +26,7 @@ from qgis.PyQt.QtWidgets import (QAction, QApplication, QGridLayout, QHBoxLayout
 
 from ...qgis_integration import builtin_commands, custom_commands
 from .. import icons, theme
-from ..html_text import escape
+from ..html_text import escape, multiline
 from .buttons import (MENU_ARROW, ProxyAction, _base_button, activate_button, apply_size,
                       build_menu, remember, tooltip)
 from ...core.i18n import tr
@@ -179,8 +179,9 @@ def add_gallery(menu, command, ctx, section=False):
                 dynamic.append(sec)
                 last_section = entry.section
             act = QAction(entry.label, menu)
-            if entry.icon is not None:
-                act.setIcon(entry.icon)
+            icon = icons.ui_icon(entry.motif, entry.icon) if entry.motif else entry.icon
+            if icon is not None:
+                act.setIcon(icon)
             if entry.tooltip:
                 act.setToolTip(entry.tooltip)
             if entry.checked is not None:
@@ -271,7 +272,7 @@ class RibbonGallery(QWidget):
         self.expand.setFixedSize(EXPAND_WIDTH, theme.CONTENT_HEIGHT)
         self.expand.setToolTip(tr("<b>%s</b>%s<br>Show all items") % (
             escape(command.label),
-            "<br>" + escape(command.description) if command.description else ""))
+            "<br>" + multiline(command.description) if command.description else ""))
         self.menu = build_menu(items, ctx, self.expand, gallery=command)
         self.expand.setMenu(self.menu)
         self.expand.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)

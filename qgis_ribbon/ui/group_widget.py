@@ -24,6 +24,7 @@ from qgis.PyQt.QtCore import QPoint, QSize, Qt
 from qgis.PyQt.QtWidgets import (QFrame, QGridLayout, QHBoxLayout, QLabel, QSizePolicy,
                                  QToolButton, QVBoxLayout, QWidget)
 
+from ..core import adaptive
 from ..core.model import CommandRef, Menu, Row, Split
 from . import icons, theme
 from .controls import buttons
@@ -34,6 +35,7 @@ COLLAPSED = "collapsed"
 DROPDOWN = "dropdown"
 SIZES = ("large", "medium", "small")
 LAUNCHER_SIZE = 16
+ROW_GAP = 2         # zwischen Icons in einer Zeile
 
 
 def element_widget(element, ctx, parent):
@@ -86,6 +88,8 @@ class ElementView(object):
             self.kind = "split"
         elif isinstance(self.widget, QToolButton) and self.widget.property("ribbon_size"):
             self.kind = "button"
+        elif getattr(self.widget, "compactable", lambda: False)():
+            self.kind = "control"     # Steuerelement mit Beschriftung (mittel), schmal ohne
         else:
             self.kind = "fixed"
         self.size = getattr(element, "size", None)
@@ -100,6 +104,8 @@ class ElementView(object):
             return self.widget.ideal_count()
         if self.kind in ("button", "split"):
             return self.size
+        if self.kind == "control":
+            return "medium"
         return "fixed"
 
     def smaller(self):
@@ -107,6 +113,10 @@ class ElementView(object):
         if self.kind not in ("button", "split"):
             return []
         return list(SIZES[SIZES.index(self.size) + 1:])
+
+    def icon_only(self, mode):
+        """Nur ein Icon (kleine Fassung eines Buttons, Split oder Menüs)."""
+        return self.kind in ("button", "split") and mode == "small"
 
     def is_column(self, mode):
         return mode in ("large", DROPDOWN) or isinstance(mode, int)
@@ -124,6 +134,8 @@ class ElementView(object):
         if self.kind == "button":
             return buttons.button_width(w, mode, w.property("ribbon_text"),
                                         bool(w.property("ribbon_menu")))
+        if self.kind == "control":
+            return w.width_for(mode == "small")
         if self._fixed_width is None:
             self._fixed_width = w.sizeHint().width()
         return self._fixed_width
@@ -144,6 +156,9 @@ class ElementView(object):
         w = self.widget
         if self.kind == "fixed":
             return [(w, "stack")]
+        if self.kind == "control":
+            w.set_compact(mode == "small")
+            return [(w, "stack")]
         if self.kind == "gallery":
             if mode == DROPDOWN:
                 drop = self._dropdown_button()
@@ -160,7 +175,7 @@ class ElementView(object):
             if mode == "large":
                 if self._compact is not None:
                     self._compact.hide()
-                self._retarget(w.target, w, lambda: buttons.keyboard_menu(w, w.action, w.menu))
+                self._retarget(w.target, w, lambda: buttons.keyboard_menu(w, w.action, w.menu, w.renew))
                 out.append((w, "col"))
             else:
                 compact = self._compact_button()
@@ -205,28 +220,6 @@ class ElementView(object):
         if isinstance(w, QToolButton):
             return w.icon()
         return None
-
-
-def _place(placements):
-    """Platzierungen -> Spalten [(Art, [Widgets])]; 'col' eigene Spalte, sonst je ROWS gestapelt."""
-    cols = []
-    stack = []
-
-    def flush():
-        if stack:
-            cols.append(("stack", list(stack)))
-            del stack[:]
-
-    for widget, how in placements:
-        if how == "col":
-            flush()
-            cols.append(("col", [widget]))
-        else:
-            stack.append(widget)
-            if len(stack) == theme.ROWS:
-                flush()
-    flush()
-    return cols
 
 
 class GroupPopup(QFrame):
@@ -327,7 +320,12 @@ class GroupWidget(QWidget):
             if nxt != cur:
                 cur = nxt
                 down.append(list(cur))
-        # 4. Galerien als Dropdown
+        # 4. Steuerelemente ohne Beschriftung
+        nxt = ["small" if v.kind == "control" else m for v, m in zip(views, cur)]
+        if nxt != cur:
+            cur = nxt
+            down.append(list(cur))
+        # 5. Galerien als Dropdown
         nxt = [DROPDOWN if v.kind == "gallery" else m for v, m in zip(views, cur)]
         if nxt != cur:
             down.append(nxt)
@@ -367,28 +365,27 @@ class GroupWidget(QWidget):
         return next(i for i, (m, _w) in enumerate(self.variants()) if m != COLLAPSED
                     and m == [v.ideal() for v in self.views])
 
+    def soft_index(self):
+        """Schmalste Fassung, die gegenüber der definierten nur Galerie-Kacheln abgibt (sonst die definierte)."""
+        ideal = [v.ideal() for v in self.views]
+        fixed = [m for v, m in zip(self.views, ideal) if v.kind != "gallery"]
+        for i, (modes, _w) in enumerate(self.variants()):
+            if modes == COLLAPSED or any(m == DROPDOWN for v, m in zip(self.views, modes) if v.kind == "gallery"):
+                continue
+            if [m for v, m in zip(self.views, modes) if v.kind != "gallery"] == fixed:
+                return i
+        return self.ideal_index()
+
     def widths(self):
         return [w for _m, w in self.variants()]
 
+    def _packed(self, modes, keys=None):
+        entries = [(v if keys is None else k, "col" if v.is_column(m) else "stack", v.width(m), v.icon_only(m))
+                   for v, m, k in zip(self.views, modes, keys or self.views)]
+        return adaptive.pack(entries, theme.ROWS, ROW_GAP)
+
     def width_for(self, modes):
-        cols = []
-        stack = []
-
-        def flush():
-            if stack:
-                cols.append(max(stack))
-                del stack[:]
-
-        for v, mode in zip(self.views, modes):
-            w = v.width(mode)
-            if v.is_column(mode):
-                flush()
-                cols.append(w)
-            else:
-                stack.append(w)
-                if len(stack) == theme.ROWS:
-                    flush()
-        flush()
+        cols = [w for _kind, _rows, w in self._packed(modes)]
         content = sum(cols) + theme.GROUP_SPACING * max(0, len(cols) - 1)
         return max(content, self.footer_width()) + 2 * theme.GROUP_PADDING
 
@@ -397,9 +394,17 @@ class GroupWidget(QWidget):
         return self.label.fontMetrics().horizontalAdvance(self.group.label) + 8 + extra
 
     def collapsed_width(self):
-        ref = self.label
-        label = theme.wrap_label(self.group.label) + " " + buttons.MENU_ARROW
-        return (max(theme.LARGE_MIN_WIDTH, buttons.text_width(ref, label) + theme.LARGE_PADDING)
+        """Breite der eingeklappten Gruppe: so breit wie die Beschriftung ihres Knopfs, nie gekürzt.
+
+        Gemessen in der Schrift des Knopfs selbst (nach dem Stylesheet); die Schrift
+        der Gruppenbeschriftung ist kleiner, mit ihr wurde der Text gekürzt („Einr…en“).
+        """
+        if self.collapse_button is None:
+            self.collapse_button = self._make_collapse_button()
+            self.collapse_button.hide()
+        btn = self.collapse_button
+        btn.ensurePolished()
+        return (max(theme.LARGE_MIN_WIDTH, buttons.text_width(btn, btn.text()) + theme.LARGE_PADDING + 6)
                 + 2 * theme.GROUP_PADDING)
 
     # Umstellen
@@ -440,20 +445,33 @@ class GroupWidget(QWidget):
         self.collapse_button.show()
 
     def _apply_modes(self, modes):
-        placements = []
-        for v, mode in zip(self.views, modes):
-            placements.extend(v.apply(mode))
+        placed = [v.apply(mode)[0][0] for v, mode in zip(self.views, modes)]
         while self.grid.count():
-            self.grid.takeAt(0)
-        for c, (kind, widgets) in enumerate(_place(placements)):
+            item = self.grid.takeAt(0)
+            row = item.layout()
+            if row is not None:     # Zeile mit mehreren Icons
+                while row.count():
+                    row.takeAt(0)
+                row.setParent(None)
+                row.deleteLater()
+        top_left = Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft
+        for c, (kind, rows, _w) in enumerate(self._packed(modes, placed)):
             if kind == "col":
-                self.grid.addWidget(widgets[0], 0, c, theme.ROWS, 1, Qt.AlignmentFlag.AlignTop
-                                    | Qt.AlignmentFlag.AlignLeft)
-            else:
-                for r, w in enumerate(widgets):
-                    self.grid.addWidget(w, r, c, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-            for w in widgets:
-                w.show()
+                self.grid.addWidget(rows[0][0], 0, c, theme.ROWS, 1, top_left)
+            for r, widgets in enumerate(rows if kind == "stack" else []):
+                if len(widgets) == 1:
+                    self.grid.addWidget(widgets[0], r, c, top_left)
+                    continue
+                line = QHBoxLayout()
+                line.setContentsMargins(0, 0, 0, 0)
+                line.setSpacing(ROW_GAP)
+                for w in widgets:
+                    line.addWidget(w)
+                line.addStretch(1)
+                self.grid.addLayout(line, r, c, top_left)
+            for widgets in rows:
+                for w in widgets:
+                    w.show()
         for r in range(theme.ROWS):
             self.grid.setRowMinimumHeight(r, theme.ROW_HEIGHT)
 

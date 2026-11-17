@@ -13,7 +13,7 @@ from qgis.PyQt.QtGui import (QColor, QContextMenuEvent, QDrag, QDragEnterEvent, 
                              QPainter, QPalette, QPixmap)
 from qgis.PyQt.QtTest import QTest
 from qgis.PyQt.QtWidgets import (QApplication, QSizePolicy, QStyle, QStyleFactory, QStyleOption, QStyleOptionSlider,
-                                 QStyleOptionViewItem)
+                                 QStyleOptionViewItem, QWidget)
 
 from qgis_ribbon.plugin import RibbonPlugin
 from qgis_ribbon.qgis_integration.map_tools import SelectByLineTool
@@ -395,3 +395,99 @@ def test_plugin_survives_a_real_context_menu_after_rebuild(fake_iface, settings)
     finally:
         plugin.unload()
         settle()
+
+
+# -- Tastenkürzel ausgeblendeter Leisten, gelöschte Quellen, Neuaufbau --------------------
+
+def _window_active(mw):
+    mw.show()
+    mw.activateWindow()
+    QApplication.setActiveWindow(mw)
+    settle()
+
+
+def test_shortcut_of_action_only_in_hidden_toolbar_still_fires(fake_iface, settings):
+    from qgis.PyQt.QtGui import QKeySequence
+    from qgis.PyQt.QtWidgets import QAction, QToolBar
+    mw = fake_iface.mainWindow()
+    tb = QToolBar("Kürzel", mw)
+    tb.setObjectName("KuerzelToolbar")
+    act = QAction("Messen", mw)
+    act.setShortcut(QKeySequence("Ctrl+Shift+F9"))
+    tb.addAction(act)
+    mw.addToolBar(tb)
+    settle()
+    before = [id(a) for a in mw.actions()]
+    fired = []
+    act.triggered.connect(lambda: fired.append("messen"))
+    p = RibbonPlugin(fake_iface, settings=settings)
+    p.initGui()
+    settle()
+    try:
+        assert tb.isHidden()
+        _window_active(mw)
+        QTest.keyClick(mw, Qt.Key.Key_F9, Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier)
+        assert fired == ["messen"]
+        # Später in die ausgeblendete Leiste gelegt: Kürzel wirkt auch
+        late = QAction("Später", mw)
+        late.setShortcut(QKeySequence("Ctrl+Shift+F10"))
+        late.triggered.connect(lambda: fired.append("später"))
+        tb.addAction(late)
+        settle()
+        QTest.keyClick(mw, Qt.Key.Key_F10, Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier)
+        assert fired == ["messen", "später"]
+    finally:
+        p.unload()
+        settle()
+    assert [id(a) for a in mw.actions()] == before
+    assert not tb.isHidden()
+
+
+def test_shortcuts_in_hidden_bars_of_a_layout_window(qgis_app):
+    """Wie im Layout-Fenster (ohne Merkliste): Kürzel wirken, danach ist das Fenster wie vorher."""
+    from qgis.PyQt.QtGui import QKeySequence
+    from qgis.PyQt.QtWidgets import QAction, QMainWindow, QToolBar
+    from qgis_ribbon.qgis_integration.toolbar_manager import ToolbarManager
+    win = QMainWindow()
+    tb = QToolBar("Layout", win)
+    tb.setObjectName("mLayoutToolbar")
+    act = QAction("Hinzufügen", win)
+    act.setShortcut(QKeySequence("Ctrl+Shift+F11"))
+    tb.addAction(act)
+    tb.addSeparator()
+    win.addToolBar(tb)
+    win.resize(400, 300)
+    before = [id(a) for a in win.actions()]
+    fired = []
+    act.triggered.connect(lambda: fired.append(1))
+    manager = ToolbarManager(win, remember=False)
+    manager.hide(["mLayoutToolbar"])
+    _window_active(win)
+    QTest.keyClick(win, Qt.Key.Key_F11, Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier)
+    assert fired == [1]
+    # Aus der Leiste genommen: auch vom Fenster
+    tb.removeAction(act)
+    assert act not in win.actions()
+    tb.addAction(act)
+    manager.restore()
+    assert [id(a) for a in win.actions()] == before
+    win.close()
+    win.deleteLater()
+    settle()
+
+
+def test_manager_follows_palette_through_its_window(plain_palette, settings):
+    """Kein Filter an der Anwendung: der Palettenwechsel kommt am beobachteten Fenster an."""
+    plain_palette.setPalette(_palette_with_window("#ffffff"))
+    settle()
+    window = QWidget()
+    manager = theme.ThemeManager(UserSettings(settings), watch=window)
+    try:
+        manager.set("mode", "auto")
+        assert manager.tokens["mode"] == "hell"
+        plain_palette.setPalette(_palette_with_window("#202020"))
+        settle()
+        assert manager.tokens["mode"] == "dunkel"
+    finally:
+        manager.stop()
+        window.deleteLater()

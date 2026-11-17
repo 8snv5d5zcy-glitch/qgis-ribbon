@@ -231,3 +231,145 @@ def test_deleted_plugin_group_stays_deleted():
     arr, _w = cz.from_dict(data, full)
     assert group.ref not in [g.ref for g in arr.tab("erweiterungen").groups]
     assert len(arr.tab("erweiterungen").groups) == len(full.tab("erweiterungen").groups) - 1
+
+
+def _orphaned_arrangement():
+    """Eigener Tab mit Skript und Plugin-Befehl, Galerie und Schnellzugriff; danach beide verschwunden."""
+    gal = {"label": "Grundkarte", "kind": "control", "source": {"type": "custom", "id": "ribbon.grundkarten"},
+           "gallery": {"display": "dropdown", "items": ["a"]}}
+    make = lambda: definition(commands={  # noqa: E731
+        "a": {"label": "Alpha", "source": {"type": "qgis_action", "object_name": "mA"}}, "grund": gal})
+    base = ext.extend(make(), FOUND, [SCRIPT])
+    arr = cz.standard(base)
+    tab = cz.new_tab(arr, base)
+    mixed = cz.new_group(arr, base, tab, label="Gemischt")
+    mixed.items += [cz.ItemEntry("verarbeitung:script:mein_werkzeug", "large"), cz.ItemEntry("a", "large")]
+    only = cz.new_group(arr, base, tab, label="Nur Plugin")
+    only.items.append(cz.ItemEntry(ext.plugin_id(FOUND[2].key), "medium"))
+    cz.set_gallery_ids(arr, base, "grund", ["a", ext.plugin_id(FOUND[2].key)])
+    data = cz.to_dict(arr, base)
+    qat = ["a", "verarbeitung:script:mein_werkzeug"]
+    later = ext.extend(make(), (), (), referenced=ext.referenced_ids(data, ",".join(qat)))
+    arr2, _warnings = cz.from_dict(data, later)
+    return later, arr2, tab.id, qat
+
+
+def test_placeholders_are_marked_and_hidden_in_the_ribbon():
+    later, arr, tab_id, _qat = _orphaned_arrangement()
+    placeholder = later.commands["verarbeitung:script:mein_werkzeug"]
+    assert ext.is_placeholder(placeholder) and not ext.is_placeholder(later.commands["a"])
+    eff = cz.apply(later, arr)
+    assert [g.label for g in eff.tab(tab_id).groups] == ["Gemischt", "Nur Plugin"]
+    shown = ext.visible(eff)
+    groups = shown.tab(tab_id).groups
+    assert [g.label for g in groups] == ["Gemischt"]          # leere Gruppe fällt weg
+    assert [e.command.id for e in groups[0].elements] == ["a"]
+    assert placeholder.id in shown.commands                    # Daten bleiben
+    # Galerie: der Platzhalter fehlt dort, wo sie in einer Gruppe steht
+    grund = eff.commands["grund"]
+    assert [c.id for c in grund.gallery.items] == ["a", ext.plugin_id(FOUND[2].key)]
+    assert [c.id for c in ext._command(grund).gallery.items] == ["a"]
+
+
+def test_quick_access_hides_placeholders_but_keeps_them_stored():
+    from qgis_ribbon.core import quick_access
+    later, arr, _tab_id, qat = _orphaned_arrangement()
+    eff = ext.visible(cz.apply(later, arr))
+    stored = ",".join(qat)
+    assert [c.id for c in quick_access.effective(eff, stored)] == ["a"]
+    keep = quick_access.hidden(eff, stored)
+    assert keep == ["verarbeitung:script:mein_werkzeug"]
+    # Ändern im Ribbon (hier: leeren) verliert den ausgeblendeten Eintrag nicht
+    assert quick_access.serialize((), keep) == "verarbeitung:script:mein_werkzeug"
+
+
+def test_without_placeholders_drops_emptied_custom_tab_but_keeps_a_main_tab():
+    base = ext.extend(definition(), (), (), referenced={"plugin:mPluginMenu/X/Y"})
+    arr = cz.standard(base)
+    tab = cz.new_tab(arr, base)
+    cz.new_group(arr, base, tab).items.append(cz.ItemEntry("plugin:mPluginMenu/X/Y", "large"))
+    eff = cz.apply(base, arr)
+    assert tab.id in [t.id for t in eff.tabs]
+    assert tab.id not in [t.id for t in ext.visible(eff).tabs]
+    assert ext.without_placeholders(definition()) is not None
+    clean = ext.extend(definition(), FOUND[:3])
+    assert ext.without_placeholders(clean) is clean
+
+
+def test_orphans_are_listed_and_removed_in_one_step():
+    from qgis_ribbon.core import editor as ed
+    later, arr, tab_id, qat = _orphaned_arrangement()
+    editor = ed.Editor(later, arr, qat)
+    orphans = editor.orphans()
+    assert orphans == ["verarbeitung:script:mein_werkzeug", ext.plugin_id(FOUND[2].key)]   # nach Beschriftung
+    assert editor.remove_orphans(["verarbeitung:script:mein_werkzeug", "a"]) == 1
+    assert editor.qat == ["a"]
+    groups = editor.arr.tab(tab_id).groups
+    assert [i.command for i in groups[0].items] == ["a"]
+    assert editor.orphans() == [ext.plugin_id(FOUND[2].key)]
+    assert editor.remove_orphans(editor.orphans()) == 1
+    assert groups[1].items == [] and cz.gallery_ids(editor.arr, later, "grund") == ["a"]
+    assert editor.orphans() == []
+    editor.undo()
+    editor.undo()
+    assert len(editor.orphans()) == 2 and editor.qat == qat
+
+
+def test_unique_keys_count_up_and_first_keeps_its_key():
+    taken = {}
+    keys = []
+    for _i in range(3):
+        k = ext.unique_key(ext.key("toolbar", "Clipper", "Clipper"), taken)
+        taken[k] = True
+        keys.append(k)
+    assert keys == ["toolbar/Clipper/Clipper", "toolbar/Clipper/Clipper#2", "toolbar/Clipper/Clipper#3"]
+    assert ext.unique_key("frei", taken) == "frei"
+
+
+def plugin_menu_found():
+    """Plugin mit eigenem Hauptmenü: Eintrag direkt, Untermenü mit Unteruntermenü."""
+    top = ("menubar", "HCM")
+    basemaps = ext.key(*top, "Grundkarten")
+    google = ext.key(*top, "Grundkarten", "Google")
+    return (
+        ext.FoundAction(key=ext.key(*top, "Über"), label="Über", group="HCM"),
+        ext.FoundAction(key=basemaps, label="Grundkarten", group="HCM", menu=True,
+                        items=(ext.key(*top, "Grundkarten", "OSM"), google)),
+        ext.FoundAction(key=ext.key(*top, "Grundkarten", "OSM"), label="OSM", group="HCM", parent=basemaps),
+        ext.FoundAction(key=google, label="Google", group="HCM", menu=True, parent=basemaps,
+                        items=(ext.key(*top, "Grundkarten", "Google", "Satellit"),
+                               ext.key(*top, "Grundkarten", "Google", "Straße"))),
+        ext.FoundAction(key=ext.key(*top, "Grundkarten", "Google", "Satellit"), label="Satellit", group="HCM",
+                        parent=google),
+        ext.FoundAction(key=ext.key(*top, "Grundkarten", "Google", "Straße"), label="Straße", group="HCM",
+                        parent=google),
+    )
+
+
+def test_plugin_submenu_becomes_dropdown_with_submenus():
+    from qgis_ribbon.core.model import CommandRef, Menu, SubMenu
+    found = plugin_menu_found()
+    out = ext.extend(definition(), found)
+    group = out.tab("erweiterungen").groups[0]
+    assert group.label == "HCM"
+    about, menu = group.elements
+    assert isinstance(about, CommandRef) and about.command.label == "Über"
+    assert isinstance(menu, Menu) and menu.label == "Grundkarten"
+    assert menu.key == ext.menu_id(found[1].key)
+    osm, google = menu.items
+    assert osm.id == ext.plugin_id(found[2].key)
+    assert isinstance(google, SubMenu) and [c.label for c in google.items] == ["Satellit", "Straße"]
+    # Jeder Eintrag bleibt ein eigener Befehl, das Menü ist keiner
+    for f in found:
+        assert (ext.plugin_id(f.key) in out.commands) != f.menu
+    # Schlüssel des Elements für Anpassungen ist sprachunabhängig und eindeutig
+    assert cz.element_key(menu, "erweiterungen/erw_hcm").endswith(ext.menu_id(found[1].key))
+
+
+def test_plugin_menu_entries_survive_arrangement_round_trip():
+    full = ext.extend(definition(), plugin_menu_found())
+    arr = cz.standard(full)
+    data = cz.to_dict(arr, full)
+    again, warnings = cz.from_dict(data, full)
+    assert not warnings
+    assert cz.to_dict(again, full) == data

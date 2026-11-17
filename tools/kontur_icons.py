@@ -83,6 +83,8 @@ MOVE = M(a=[P("M18.5 14.8v7.4M14.8 18.5h7.4"), P("M17.3 16l1.2-1.2 1.2 1.2M17.3 
 EYE_SMALL = M(a=[P("M14.3 18.5s1.7-3 4.2-3 4.2 3 4.2 3-1.7 3-4.2 3-4.2-3-4.2-3z"), C(18.5, 18.5, 1.1)])
 LOOP = M(a=[P("M15.4 19.6a3.4 3.4 0 1 0 1.2-4"), P("M15.2 13.6v2.6h2.6")])
 UP_SMALL = M(a=[P("M18.5 22v-7M15.5 18l3-3 3 3")])
+RUN_D = "M15.6 14.6v7.8l6.4-3.9z"
+RUN = M(a=[P(RUN_D)], f=[P(RUN_D)])
 DOWN_SMALL = M(a=[P("M18.5 15v7M15.5 19l3 3 3-3")])
 
 # Auswahl-Cursor (Pfeil unten rechts, gefüllt)
@@ -197,6 +199,8 @@ def text_a(*extra):
 
 # Motive
 MOTIFS = {
+    # Laufzeit: eigenes Skript-Werkzeug ohne eigenes Icon (Blatt mit Eselsohr, Codezeilen, Ausführen)
+    "skript_werkzeug": badge(add(DOC, M(k=[P("M7.5 11h5"), P("M9.5 14.5h5")])), RUN),
     # Oberfläche
     "ui_launcher": M(k=[P("M8.5 8.5l8 8")], a=[P("M17 10.5v6.5h-6.5")]),
     "ui_chevron_up": M(k=[P("M6.5 14.5l5.5-5.5 5.5 5.5")]),
@@ -435,6 +439,20 @@ MOTIFS = {
     "spurverfolgung": M(k=[P(POLY_D, DASH)], a=[P("M4 17.5L7.8 5.5l8 2.5"), P("M13.6 5.3l2.4 2.7-3.4 1.3")]),
     "selbsteinrasten": add(shrink(MAGNET), LOOP),
     "schnittpunkte_einrasten": M(k=[P("M3.5 19L20.5 5"), P("M3.5 5l17 14")], a=[C(12, 12, 3.2)], f=[C(12, 12, 3.2)]),
+    "einrasttyp_stuetzpunkt": M(k=[P("M3.5 18L10 7l10.5 5")], a=[R(7.8, 4.8, 4.4, 4.4, .6)], f=[R(7.8, 4.8, 4.4, 4.4, .6)]),
+    "einrasttyp_segment": M(k=[P("M3.5 18L10 7"), C(10, 7, 1.2)], a=[P("M10 7l10.5 5")]),
+    "einrasttyp_flaeche": M(k=[P(POLY_D)], a=[C(12, 13, 2)], f=[P(POLY_D)]),
+    "einrasttyp_schwerpunkt": M(k=[P(POLY_D)], a=[P("M12 10v6M9 13h6")]),
+    "einrasttyp_mittelpunkt": M(k=[P("M3.5 17.5l17-11")], a=[C(12, 12, 2.3)], f=[C(12, 12, 2.3)]),
+    "einrasttyp_endpunkt": M(k=[P("M5 18c3-9 9-3 14-12")], a=[R(2.8, 15.8, 4.4, 4.4, .6), R(16.8, 3.8, 4.4, 4.4, .6)]),
+    "einrasten_modus": badge(MAGNET, LAYER_STACK),
+    "einrasten_toleranz": badge(MAGNET, M(a=[C(18.5, 18.5, 3.8, DASH), P("M18.5 18.5h3.8")])),
+    "einrasten_einheit": badge(MAGNET, M(a=[P("M14.5 21h8M16.5 21v-2M18.5 21v-3.5M20.5 21v-2")])),
+    "einrasten_massstab": badge(MAGNET, M(a=[P("M14.5 19.5h8M14.5 17.5v4M22.5 17.5v4M18.5 19.5V17")])),
+    "einrasten_massstab_min": badge(MAGNET, M(a=[P("M14.5 18.5h8")])),
+    "einrasten_massstab_max": badge(MAGNET, PLUS),
+    "einrasten_erweitert": badge(MAGNET, M(a=[R(14.5, 14.5, 8, 8, 1), P("M14.5 18.5h8M18.5 14.5v8")])),
+    "ueberschneidungen": M(k=[R(3, 3, 11, 11, 1.5), R(10, 10, 11, 11, 1.5)], a=[P("M10 10h4v4h-4z")], f=[P("M10 10h4v4h-4z")]),
 
     # Beschriftungswerkzeuge
     "beschriftungen_ein_aus": add(shrink(M(k=[LETTER_A])), EYE_SMALL),
@@ -824,6 +842,14 @@ COMMANDS = {
     "erweiterte_digitalisierung": "erweiterte_digitalisierung", "konstruktionspanel": "konstruktionspanel",
     "spurverfolgung": "spurverfolgung", "selbsteinrasten": "selbsteinrasten",
     "schnittpunkte_einrasten": "schnittpunkte_einrasten", "beschriftungen_ein_aus": "beschriftungen_ein_aus",
+    "einrasten_modus": "einrasten_modus", "einrasten_toleranz": "einrasten_toleranz",
+    "einrasten_einheit": "einrasten_einheit", "einrasten_massstab_modus": "einrasten_massstab",
+    "einrasten_massstab_min": "einrasten_massstab_min", "einrasten_massstab_max": "einrasten_massstab_max",
+    "spurverfolgung_versatz": "linie_versetzen", "einrasten_ueberschneidungen": "ueberschneidungen",
+    "einrasten_erweitert": "einrasten_erweitert", "einrasten_stuetzpunkt": "einrasttyp_stuetzpunkt",
+    "einrasten_segment": "einrasttyp_segment", "einrasten_flaeche": "einrasttyp_flaeche",
+    "einrasten_schwerpunkt": "einrasttyp_schwerpunkt", "einrasten_mittelpunkt": "einrasttyp_mittelpunkt",
+    "einrasten_endpunkt": "einrasttyp_endpunkt",
     "beschriftung_verschieben": "beschriftung_verschieben", "beschriftung_drehen": "beschriftung_drehen",
     "beschriftung_aendern": "beschriftung_aendern", "beschriftungen_anpinnen": "beschriftung_anpinnen",
     "angepinnte_hervorheben": "angepinnte_hervorheben", "beschriftungsklasse_neu": "beschriftungsklasse_neu",
@@ -1055,12 +1081,68 @@ COMMANDS.update({
     "netz_transformieren": "netz_transformieren",
 })
 
+# Skripte und Modelle (Befehle der Verarbeitung)
+SCRIPT_DOC = add(DOC, M(k=[P("M7.5 11h5"), P("M9.5 14.5h5")]))
+MOTIFS.update({
+    "skript_neu": badge(SCRIPT_DOC, PLUS),
+    "skript_aus_vorlage": badge(SCRIPT_DOC, STAR),
+    "skript_oeffnen": badge(SCRIPT_DOC, OUT_ARROW),
+    "skript_hinzufuegen": badge(SCRIPT_DOC, IN_ARROW),
+    "modell_neu": badge(MOTIFS["modell"], PLUS),
+    "modell_oeffnen": badge(MOTIFS["modell"], OUT_ARROW),
+    "modell_hinzufuegen": badge(MOTIFS["modell"], IN_ARROW),
+})
+COMMANDS.update({k: k for k in ("skript_neu", "skript_aus_vorlage", "skript_oeffnen", "skript_hinzufuegen",
+                                "modell_neu", "modell_oeffnen", "modell_hinzufuegen")})
+# Georeferenzieren in der Karte (Tab Bilddaten und Kontext-Tab Georeferenzieren)
+IMAGE_FRAME = M(k=[R(3, 4, 18, 16, 2)], a=[P("M6.5 16l3.5-4.5 3 3.2 2-2.2 3 3.5")])
+CROSSHAIR = M(a=[C(18.5, 18.5, 2.8), P("M18.5 13.6v2.2M18.5 21.2v2.2M13.6 18.5h2.2M21.2 18.5h2.2")])
+MOTIFS.update({
+    "bild_georeferenzieren": badge(IMAGE_FRAME, PIN),
+    "bild_anpassen": M(k=[FRAME, R(7, 8, 10, 8, 1)], a=[P("M9 14l2-2.5 1.8 1.8 1.2-1.2 2 2")]),
+    "bild_skalieren": badge(IMAGE_FRAME, OUT_ARROW),
+    "drehen_links": M(k=[R(9.5, 9.5, 11, 11, 1.5)], a=[P("M15 4.5a10 10 0 0 0-11 10"), P("M2 12.5l2 2 2-2")],
+                      f=[R(9.5, 9.5, 11, 11, 1.5)]),
+    "drehen_rechts": M(k=[R(3.5, 9.5, 11, 11, 1.5)], a=[P("M9 4.5a10 10 0 0 1 11 10"), P("M18 12.5l2 2 2-2")],
+                       f=[R(3.5, 9.5, 11, 11, 1.5)]),
+    "spiegeln_waagerecht": M(k=[P("M12 3v18", DASH), P("M14 6.5L20 18h-6z")], a=[P("M10 6.5L4 18h6z")],
+                             f=[P("M14 6.5L20 18h-6z")]),
+    "spiegeln_senkrecht": M(k=[P("M3 12h18", DASH), P("M6.5 14L18 20v-6z")], a=[P("M6.5 10L18 4v6z")],
+                            f=[P("M6.5 14L18 20v-6z")]),
+    "bild_zeigen": badge(IMAGE_FRAME, EYE_SMALL),
+    "bild_abbrechen": badge(IMAGE_FRAME, CROSS),
+    "passpunkt": badge(IMAGE_FRAME, CROSSHAIR),
+    "passpunkte_tabelle": badge(TABLE, CROSSHAIR),
+    "passpunkte_laden": badge(FOLDER, CROSSHAIR),
+    "passpunkte_speichern": badge(DISK, CROSSHAIR),
+    "passpunkte_transformation": M(k=[R(3, 3, 8, 8, 1)], a=[P("M14.5 13.5l6.5 1.5-1.5 6.5-6.5-1.5z"),
+                                                          P("M11.5 7h3.5a3 3 0 0 1 3 3v1.5"), P("M16 10l2 2 2-2")]),
+    "georeferenz_speichern": badge(DISK, PIN),
+    "bild_entzerren": badge(IMAGE_FRAME, RUN),
+})
+COMMANDS.update({
+    "georef_starten": "bild_georeferenzieren", "georef_anpassen": "bild_anpassen",
+    "georef_verschieben": "bild_modus", "georef_skalieren": "bild_skalieren", "georef_drehen": "bild_drehen",
+    "georef_links": "drehen_links", "georef_rechts": "drehen_rechts",
+    "georef_waagerecht": "spiegeln_waagerecht", "georef_senkrecht": "spiegeln_senkrecht",
+    "georef_bild": "bild_zeigen", "georef_deckkraft": "deckkraft",
+    "georef_rueckgaengig": "rueckgaengig", "georef_wiederholen": "wiederholen", "georef_abbrechen": "bild_abbrechen",
+    "georef_passpunkt": "passpunkt", "georef_tabelle": "passpunkte_tabelle",
+    "georef_punkte_laden": "passpunkte_laden", "georef_punkte_speichern": "passpunkte_speichern",
+    "georef_verfahren": "passpunkte_transformation", "georef_speichern": "georeferenz_speichern",
+    "georef_entzerren": "bild_entzerren",
+})
+
 MENUS = {
     "Lesezeichen": "lesezeichen", "Verbindungen": "verbindungen", "Datenbank": "datenbank", "Server": "server",
     "Analysewerkzeuge": "werkzeugkasten", "Editorwerkzeuge": "stuetzpunkte", "Textformat": "textformat",
     "Aus Tabelle": "punkte_aus_tabelle", "Kanalkombination": "kanaele", "Form": "auswahl_rechteck",
-    "Knotenelement": "auswahl_polygon",
+    "Knotenelement": "auswahl_polygon", "Einrasttyp": "einrasttyp_stuetzpunkt",
+    "Skripte und Modelle": "skript_werkzeug",
 }
+
+# Anbieter des Werkzeugkastens -> Motiv für Werkzeuge ohne eigenes Icon
+RUNTIME = {"script": "skript_werkzeug"}
 
 UI = {
     "launcher": "ui_launcher", "suchen": "suchen", "minimieren": "ui_chevron_up", "anheften": "ui_chevron_down",
@@ -1075,12 +1157,66 @@ MENUS.update({"Ausrichten": "ausrichten_left", "Verteilen": "verteilen_gap_h",
               "Groesse angleichen": "angleichen_widest"})
 
 
+# Layout-Fenster: Seite, Einfügen, Ausgabe; nur anhängen, damit sich die Stränge zusammenführen lassen
+MOTIFS.update({
+    "seite_ausrichtung": badge(PAGE, TURN),
+    "seite_loeschen": badge(PAGE, CROSS),
+    "seite_raender": M(k=[R(4, 2.8, 16, 18.4, 2)], a=[R(7, 6, 10, 12.4, 0.5, DASH)], f=[R(7, 6, 10, 12.4, 0.5)]),
+    "zu_seite": badge(PAGE, M(a=[P("M14.5 18.5h7.5M19 15.5l3 3-3 3")])),
+})
+COMMANDS.update({
+    "seite_ausrichtung": "seite_ausrichtung", "seite_loeschen": "seite_loeschen", "seite_raender": "seite_raender",
+    "zu_seite": "zu_seite",
+})
+MENUS.update({"Auswahl": "alle_auswaehlen", "Verwalten": "layoutverwaltung"})
+# Einfügen mit Voreinstellungen: Grundausstattung und je Maßstabsstil ein Motiv (Galerie)
+MOTIFS.update({
+    "grundausstattung": M(k=[R(3, 3.5, 18, 17, 2), R(6, 9, 8, 8.5, 0.5)], a=[P("M6 6.5h12M16 10h2.5M16 13h2.5")],
+                          f=[R(6, 9, 8, 8.5, 0.5)]),
+    "massstab_einfache_box": M(k=[R(3, 10, 18, 5)], f=[R(3, 10, 4.5, 5), R(12, 10, 4.5, 5)]),
+    "massstab_doppelte_box": M(k=[R(3, 8, 18, 8), P("M3 12h18")],
+                               f=[R(3, 8, 4.5, 4), R(7.5, 12, 4.5, 4), R(12, 8, 4.5, 4), R(16.5, 12, 4.5, 4)]),
+    "massstab_striche_mitte": M(k=[P("M3 12h18")], a=[P("M3 8.5v7M9 8.5v7M15 8.5v7M21 8.5v7")]),
+    "massstab_striche_unten": M(k=[P("M3 9.5h18")], a=[P("M3 9.5v6M9 9.5v6M15 9.5v6M21 9.5v6")]),
+    "massstab_striche_oben": M(k=[P("M3 14.5h18")], a=[P("M3 8.5v6M9 8.5v6M15 8.5v6M21 8.5v6")]),
+    "massstab_stufen": M(k=[P("M3 10h4.5v4H12v-4h4.5v4H21")], a=[P("M3 8v8M21 8v8")]),
+    "massstab_hohl": M(k=[R(3, 10, 18, 5)], a=[P("M7.5 12.5h4.5M16.5 12.5H21")]),
+    "massstab_numerisch": M(k=[E(15.5, 12, 1.8, 3.6), E(20, 12, 1.8, 3.6)], a=[P("M4.5 10l2-1.6v7.2")],
+                            f=[C(10, 10.2, 1), C(10, 14, 1)]),
+})
+COMMANDS.update({
+    "grundausstattung": "grundausstattung", "karte_galerie": "kartenansicht_neu",
+    "massstab_galerie": "massstabsleiste", "nordpfeil_galerie": "nordpfeil",
+})
+UI.update({name: name for name in ("massstab_einfache_box", "massstab_doppelte_box", "massstab_striche_mitte",
+                                   "massstab_striche_unten", "massstab_striche_oben", "massstab_stufen",
+                                   "massstab_hohl", "massstab_numerisch")})
+# Ausgabe, Atlas, Format übertragen
+BRUSH = M(k=[R(4, 3, 13, 6, 1.5), P("M17 6h3v5h-8v3")], a=[R(10.5, 14, 3, 7, 1)])
+MOTIFS.update({
+    "schnellexport_pdf": badge(MOTIFS["pdf"], M(a=[P("M19.8 13.5l-3.3 5.2h3.2l-1.6 4.3")])),
+    "alle_layouts_exportieren": M(k=[R(7, 2.5, 13, 16, 1.5), P("M4 6v15.5h12.5")], a=[P("M13.5 7v6.5M11 11l2.5 2.5L16 11")]),
+    "atlas_aus_layer": badge(MOTIFS["atlas"], ONE_LAYER),
+    "sortieren": M(k=[P("M4 5.5h9M4 10.5h7M4 15.5h5")], a=[P("M17.5 4v15M14.5 16l3 3 3-3")]),
+    "format_kopieren": BRUSH,
+    "format_einfuegen": badge(BRUSH, M(a=[P("M14.8 18.6l2.4 2.4 4.8-4.8")])),
+    "export_aufloesung": M(k=[R(3, 4, 18, 16, 2)], a=[P("M7 9v6M7 9h2.5a3 3 0 0 1 0 6H7M14 9v6M17.5 9v6")]),
+})
+COMMANDS.update({
+    "schnellexport_pdf": "schnellexport_pdf", "schnellexport_ordner": "ordner",
+    "alle_layouts_exportieren": "alle_layouts_exportieren", "export_aufloesung": "export_aufloesung",
+    "export_worldfile": "georeferenzieren", "atlas_aus_layer": "atlas_aus_layer", "atlas_layer": "atlas",
+    "atlas_seitenname": "textformat", "atlas_filter": "filter", "atlas_sortierung": "sortieren",
+    "atlas_absteigend": "sortieren", "format_kopieren": "format_kopieren", "format_einfuegen": "format_einfuegen",
+})
+
+
 def q(s):
     return "'" + s.replace("'", "''") + "'"
 
 
 def write(path=OUT):
-    used = set(COMMANDS.values()) | set(MENUS.values()) | set(UI.values())
+    used = set(COMMANDS.values()) | set(MENUS.values()) | set(UI.values()) | set(RUNTIME.values())
     unused = sorted(set(MOTIFS) - used)
     lines = ["# Icon-Set „Kontur“ – erzeugt von tools/kontur_icons.py, nicht von Hand ändern.",
              "# Rollen: f = Akzentfläche, k = Kontur, a = Akzentdetail (Raster 24 × 24).",
@@ -1092,7 +1228,7 @@ def write(path=OUT):
             if m[role]:
                 lines.append("    %s:" % role)
                 lines.extend("      - %s" % q(el) for el in m[role])
-    for title, mapping in (("befehle", COMMANDS), ("menues", MENUS), ("oberflaeche", UI)):
+    for title, mapping in (("befehle", COMMANDS), ("menues", MENUS), ("oberflaeche", UI), ("laufzeit", RUNTIME)):
         lines.append("%s:" % title)
         for key in sorted(mapping):
             lines.append("  %s: %s" % (q(key) if not key.isidentifier() or not key.isascii() else key, mapping[key]))

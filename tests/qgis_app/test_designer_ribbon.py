@@ -136,6 +136,7 @@ def build_window(with_dynamic_text=True):
 
 class FakeView(QObject):
     layoutSet = pyqtSignal(object)
+    pageChanged = pyqtSignal(int)
 
     def __init__(self):
         QObject.__init__(self)
@@ -155,6 +156,12 @@ class FakeView(QObject):
 
     def zoomFull(self):  # noqa: N802 (QGIS)
         self.zoomed += 1
+
+    def fitInView(self, rect, mode):  # noqa: N802 (Qt)
+        self.fitted = (rect, mode)
+
+    def emitZoomLevelChanged(self):  # noqa: N802 (QGIS)
+        self.zoom_signals = getattr(self, "zoom_signals", 0) + 1
 
 
 class FakeDesigner(QObject):
@@ -429,6 +436,27 @@ def test_report_follows_the_section_shown(ribbons, report):
     _select_first_item(first)
     settle()
     assert ribbon.selection.items() == []
+
+
+def test_section_change_keeps_only_reachable_wrappers(ribbons, report, monkeypatch):
+    """Abschnittswechsel im Bericht: kein Durchlauf über alle Python-Objekte, nur der leichte Weg."""
+    from qgis_ribbon import designer_ribbon
+    calls = []
+    monkeypatch.setattr(designer_ribbon, "keep_foreign_wrappers", lambda: calls.append("alle"))
+    monkeypatch.setattr(designer_ribbon, "keep_wrappers_from", lambda roots: calls.append(list(roots)))
+    ribbons.start()
+    ribbons.opened(report)
+    old = ribbons.ribbons[report.window()]
+    section = QgsPrintLayout(QgsProject.instance())
+    section.initializeDefaults()
+    report.view().layoutSet.emit(section)
+    settle()
+    assert ribbons.ribbons[report.window()] is not old
+    assert "alle" not in calls and len(calls) == 1
+    roots = calls[0]
+    assert roots[0] is old and len(roots) > 10    # Ribbon, seine Leiste und deren Widgets
+    ribbons.closing(report)
+    assert calls[-1] == "alle"      # Schließen: weiter der volle Durchlauf
 
 
 def test_report_has_no_atlas_for_the_controls(report):

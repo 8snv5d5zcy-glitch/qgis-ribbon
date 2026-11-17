@@ -166,6 +166,11 @@ def test_narrow_collapses_and_keytips_reach_group(plugin, fake_iface):
     expected = [g for g in page.groups if g.variants()[0][0] == COLLAPSED]
     assert expected and collapsed == expected
     assert all(g.variant == 0 for g in page.groups)
+    # Der Knopf ist so breit wie seine Beschriftung (nie gekürzt)
+    for g in collapsed:
+        btn = g.collapse_button
+        text = max(btn.fontMetrics().horizontalAdvance(line) for line in btn.text().splitlines())
+        assert btn.width() >= text + 8, (g.group.id, btn.width(), text)
     mw.activateWindow()
     QApplication.setActiveWindow(mw)
     keys = KeyTipController(w, mw)
@@ -429,3 +434,23 @@ def test_whole_theme_rules_for_qgis_widgets_with_own_palettes():
         assert part in qss
     pal = whole_palette(t, QPalette())
     assert pal.color(QPalette.ColorRole.PlaceholderText).name() == theme.color("muted", t).name()
+
+
+def test_icons_share_a_row_when_labels_are_gone(plugin, fake_iface):
+    """Gruppe Einrasten ohne Beschriftungen: Schalter und Einrasttyp in einer Zeile, keine Lücke."""
+    w = plugin.widget
+    fake_iface.mainWindow().resize(1600, 900)
+    w.select_tab("bearbeiten")
+    settle()
+    group = next(g for g in w.page("bearbeiten").groups if g.group.id == "einrasten")
+    index = next(i for i, (modes, _w) in enumerate(group.variants())
+                 if modes != COLLAPSED and modes[0] == "small" and modes[2] == "small")
+    group.apply(index)
+    settle()
+    first = group.views[0]
+    switch = first._compact if first.kind == "split" else first.widget
+    kind = group.views[2].widget
+    assert switch.isVisibleTo(group) and kind.isVisibleTo(group)
+    assert abs(switch.geometry().top() - kind.geometry().top()) < 3
+    assert kind.geometry().left() > switch.geometry().right()
+    assert group.width() == group.variants()[index][1]

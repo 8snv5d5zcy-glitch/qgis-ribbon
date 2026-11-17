@@ -13,7 +13,8 @@ QGIS Ribbon replaces the QGIS toolbars with a ribbon: commands sorted into tabs 
 5. [Appearance](appearance.md): light and dark, accent colors, icons, the classic QGIS interface
 6. [Extensions](extensions.md): plugin commands, your own scripts and models
 7. [Additional tools](tools.md): domains and other commands of the ribbon
-8. [Settings, reset and troubleshooting](troubleshooting.md)
+8. [Georeferencing in the map](georeference.md): fitting images, control points, transformations, warping
+9. [Settings, reset and troubleshooting](troubleshooting.md)
 
 ## Opening this guide
 

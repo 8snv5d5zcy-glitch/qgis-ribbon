@@ -32,8 +32,11 @@ from ..core.model import CommandRef, Menu, Row, Split
 from ..core.search import fold
 from . import icons, theme
 from .controls.buttons import MENU_ARROW
+from .html_text import escape, multiline
 from .qt_compat import event_pos
 from ..core.i18n import tr
+
+ORPHAN_TIP = tr("Hidden in the ribbon until it is available again. Remove it with “Remove Orphaned Entries …”.")
 
 MIME_TYPE = "application/x-qgis-ribbon-item"
 HEADER_HEIGHT = 26
@@ -224,6 +227,10 @@ class ItemTile(Selectable):
         self.kind = "row" if isinstance(self.element, Row) else (item.size or "large")
         self.menu = has_menu(self.element)
         self.missing = self.element is None
+        # Platzhalter (Plugin fehlt, Skript gelöscht): im Ribbon ausgeblendet, hier blass mit Grund
+        self.orphan = isinstance(self.element, CommandRef) and ext.is_placeholder(self.element.command)
+        if self.orphan:
+            self.missing = True
         self.drop_into = False   # Ziehen: Befehl landet im Dropdown dieses Buttons
         self.setFixedSize(self._size())
 
@@ -1039,7 +1046,8 @@ class Palette(QWidget):
             for cmd in sorted(commands, key=lambda c: (fold(c.label), c.id)):
                 item = QListWidgetItem(icons.command_icon(cmd), cmd.label, self.list)
                 item.setData(ROLE, ("command", cmd.id))
-                item.setToolTip("<b>%s</b>%s" % (cmd.label, ("<br>" + cmd.description) if cmd.description else ""))
+                more = "<br>" + multiline(cmd.description) if cmd.description else ""
+                item.setToolTip("<b>%s</b>%s" % (escape(cmd.label), more))
                 item.setData(Qt.ItemDataRole.AccessibleTextRole, cmd.label)
                 item.setSizeHint(PALETTE_GRID)
                 item.setData(Qt.ItemDataRole.UserRole + 3, fold(" ".join([cmd.label, cmd.description or "", cmd.id])))

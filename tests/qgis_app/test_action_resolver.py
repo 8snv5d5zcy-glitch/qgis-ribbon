@@ -106,3 +106,22 @@ def test_theme_icon_from_definition(fake_iface):
     res = ActionResolver(fake_iface).resolve(
         cmd("zoom", "iface_method", icon="/mActionZoomIn.svg", method="mapCanvas.zoomIn"))
     assert not res.icon.isNull()
+
+
+def test_deleted_panel_is_found_again_without_message(fake_iface):
+    """Befehl „Panel zeigen“, das gemerkte Panel ist gelöscht: neu suchen, keine Meldung."""
+    from qgis.PyQt import sip
+    from qgis.PyQt.QtCore import Qt
+    r = ActionResolver(fake_iface)
+    mw = fake_iface.mainWindow()
+    command = cmd("panel", "dock", object_name="Layers", modus="zeigen")
+    assert r.resolve(command).available
+    sip.delete(mw.findChild(QDockWidget, "Layers"))
+    fresh = QDockWidget("Layer", mw)
+    fresh.setObjectName("Layers")
+    mw.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, fresh)
+    fresh.hide()
+    pushed = []
+    fake_iface.messageBar().widgetAdded.connect(lambda *_a: pushed.append(1))
+    assert r.trigger(command)
+    assert fresh.isVisible() and not pushed

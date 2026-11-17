@@ -37,7 +37,7 @@ Anleitung schließt ``unload`` ebenfalls.
 import os
 import time
 
-from qgis.core import Qgis, QgsApplication, QgsMessageLog, QgsSettings
+from qgis.core import Qgis, QgsApplication, QgsMessageLog, QgsProject, QgsSettings
 from qgis.PyQt.QtCore import QTimer
 from qgis.PyQt.QtGui import QIcon, QPalette
 from qgis.PyQt.QtWidgets import QAction, QApplication, QToolBar
@@ -46,7 +46,7 @@ from .core import config_loader, yaml_cache
 from .core import extensions as ext
 from .core.context import ContextLogic
 from .designer_ribbon import DesignerRibbons
-from .qgis_integration import builtin_commands, log
+from .qgis_integration import builtin_commands, georef_session, log
 from .qgis_integration.action_resolver import ActionResolver
 from .qgis_integration.after_modal import AfterModal
 from .qgis_integration.arrangements import Arrangements
@@ -55,10 +55,10 @@ from .qgis_integration.custom_commands import CommandEnv
 from .qgis_integration.extensions import ExtensionCatalog
 from .qgis_integration.layer_watch import LayerWatch
 from .qgis_integration.menu_bar import MenuBarHider, can_hide
-from .qgis_integration.signals import SignalHub
+from .qgis_integration.signals import SignalHub, keep_foreign_wrappers
 from .qgis_integration.toolbar_manager import ToolbarManager
 from .qgis_integration.user_settings import UserSettings
-from .ui import dialog_commands, guide, icons, theme
+from .ui import dialog_commands, georef_panel, guide, icons, theme
 from .ui.controls import custom as custom_controls
 from .ui.controls import layout_item as layout_item_controls
 from .ui.keytips import KeyTipController
@@ -219,6 +219,9 @@ class RibbonPlugin:
     def _enter_classic(self):
         if not self.user or not self.user.classic() or self.widget is None:
             return
+        # Der Kontext-Tab der Sitzung fehlt in der klassischen Oberfläche: Sitzung abbrechen
+        georef_panel.uninstall()
+        georef_session.uninstall()
         self._teardown()
         self._sync_designers()
         self.iface.messageBar().pushMessage(LOG_TAG, CLASSIC_MESSAGE, level=Qgis.MessageLevel.Info, duration=8)
@@ -241,6 +244,8 @@ class RibbonPlugin:
         layout_item_controls.register_all()
         dialog_commands.register_all()
         self.registered = True
+        # Georeferenzieren in der Karte: Die Sitzung überdauert einen Neuaufbau des Ribbons
+        georef_panel.install(self.iface, georef_session.install(self.iface))
         self.layers = LayerWatch(self.iface, self.hub)
         self.layers.start()
         self.resolver = ActionResolver(
@@ -255,7 +260,7 @@ class RibbonPlugin:
         self.toolbar.setMovable(False)
         self.toolbar.setFloatable(False)
         self.toolbar.toggleViewAction().setVisible(False)
-        self.themes = theme.ThemeManager(self.user)
+        self.themes = theme.ThemeManager(self.user, watch=mw)
         self.whole = WholeTheme(mw)
         # Gesamtbild setzt eine eigene Palette: „Automatisch“ folgt weiter der von QGIS
         self.themes.lightness_override = self.whole.base_lightness
@@ -288,7 +293,11 @@ class RibbonPlugin:
             self.widget.set_menubar_hidden(self.menubar.hidden)
         if self.base.extensions.hide:
             self.toolbars.hide_bars(self.catalog.toolbars)
+        self.catalog.changed.connect(self.widget.search.invalidate)   # bis zum Neuaufbau (evtl. nach Dialog)
+        self.widget.search.tools = self.catalog.algorithms
+        self.catalog.toolboxChanged.connect(self.widget.search.invalidate)
         self.catalog.changed.connect(self.request_rebuild)
+        self.catalog.replaced.connect(self._replaced)
         self.catalog.start()
         self._apply_whole()
         self._install_radios()
@@ -345,6 +354,7 @@ class RibbonPlugin:
             return
         self.radios = LayerTreeRadios(view, layer_tree_exclusive(view), self.hub)
         self.radios.install()
+        self.radios.watch_project(QgsProject.instance())
 
     def _lap(self, since, name):
         now = time.perf_counter()
@@ -387,9 +397,9 @@ class RibbonPlugin:
         self._pending = False
         if self.widget is None:
             return
-        modal = QApplication.activeModalWidget()
+        modal = QApplication.activeModalWidget() or QApplication.activePopupWidget()
         if modal is not None:
-            # Nicht unter einem offenen Dialog abbauen (er kann aus dem Ribbon stammen)
+            # Nicht unter einem offenen Dialog oder Menü abbauen (es kann aus dem Ribbon stammen)
             if self._after_modal is None:
                 self._after_modal = AfterModal(modal, self._after_modal_closed)
             return
@@ -406,12 +416,26 @@ class RibbonPlugin:
         self._after_modal = None
         self.request_rebuild()
 
+    def _replaced(self, keys):
+        """Plugin hat Aktionen durch gleichnamige ersetzt: kein Neuaufbau, Einträge lösen neu auf."""
+        if self.resolver is not None:
+            self.resolver.forget_extensions(keys)
+        if self.widget is not None:
+            self.widget.search.invalidate()
+
     def _teardown(self, save_state=False):
+        # Zuerst: Die Reste dieses Ribbons dürfen keine fremden Slots mitreißen (signals.py)
+        keep_foreign_wrappers()
         if self._after_modal is not None:
             self._after_modal.cancel()
             self._after_modal = None
         if self.catalog is not None:
             self.catalog.changed.disconnect(self.request_rebuild)
+            self.catalog.replaced.disconnect(self._replaced)
+            if self.widget is not None:
+                self.catalog.changed.disconnect(self.widget.search.invalidate)
+                self.catalog.toolboxChanged.disconnect(self.widget.search.invalidate)
+                self.widget.search.tools = None
             self.catalog.stop()
         if self.keytips is not None:
             self.keytips.uninstall()
@@ -475,6 +499,8 @@ class RibbonPlugin:
             self.registered = False
 
     def unload(self):
+        georef_panel.uninstall()
+        georef_session.uninstall()
         if self.designers is not None:
             self.designers.close()
             self.designers = None

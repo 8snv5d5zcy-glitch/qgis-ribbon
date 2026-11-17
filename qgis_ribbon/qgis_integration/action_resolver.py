@@ -6,6 +6,12 @@ Zustand (aktiv, abgehakt). Fehlt eine Quelle, liefert der Resolver einen
 nicht verfügbaren Eintrag mit Begründung; der Button wird ausgegraut statt
 abzustürzen.
 
+Quellen können verschwinden, während der Ribbon steht (Plugin entladen oder neu
+geladen, Skript gelöscht). Ein gemerktes Ergebnis mit gelöschter Quelle wird
+verworfen und neu aufgelöst; bleibt die Quelle weg, ist der Befehl nicht verfügbar.
+Ein Klick darauf ist kein Fehler: kein Hinweis in der Meldungsleiste, nur ein
+Eintrag im Protokoll und eine neue Suche im Katalog der Erweiterungen.
+
 Layout-Fenster: Mit ``window`` sucht der Resolver Aktionen, Menüs und Docks dort
 statt im Hauptfenster. ``designer_action`` ist eine Aktion dieses Fensters,
 ``designer_item`` ein Element-Werkzeug (``_item_action``), ``designer_edit`` eine
@@ -19,6 +25,8 @@ from qgis.PyQt.QtGui import QCursor, QIcon, QKeySequence
 from qgis.PyQt.QtWidgets import QAction, QDockWidget, QMenu, QToolBar
 
 from . import custom_commands
+from ..core import extensions as ext
+from .signals import alive
 from ..core.i18n import tr
 from ..core.inventory import DESIGNER_EDIT_ROLES
 
@@ -43,10 +51,10 @@ class Resolved(object):
     """Ergebnis der Auflösung eines Befehls."""
 
     __slots__ = ("available", "reason", "action", "callback", "menu", "icon",
-                 "qgis_text", "shortcut")
+                 "qgis_text", "shortcut", "source")
 
     def __init__(self, available=True, reason=None, action=None, callback=None, menu=None,
-                 icon=None, qgis_text=None, shortcut=None):
+                 icon=None, qgis_text=None, shortcut=None, source=None):
         self.available = available
         self.reason = reason
         self.action = action          # QAction, deren Zustand gespiegelt wird
@@ -55,6 +63,7 @@ class Resolved(object):
         self.icon = icon if icon is not None else QIcon()
         self.qgis_text = qgis_text
         self.shortcut = shortcut
+        self.source = source          # Objekt hinter ``callback`` (z. B. Panel); gelöscht = neu auflösen
 
 
 def unavailable(reason, icon=None):
@@ -72,6 +81,7 @@ class ActionResolver(object):
         self._actions = None
         self._missing = set()   # rekursiv gesucht und nicht gefunden (bis refresh)
         self._cache = {}
+        self.epoch = 0            # zählt ``forget``: Einträge mit älterem Stand lösen neu auf
         self._icons = {}
 
     @property
@@ -96,6 +106,9 @@ class ActionResolver(object):
         if self._actions is None:
             self._build_index()
         act = self._actions.get(name)
+        if act is not None and not alive(act):
+            del self._actions[name]
+            act = None
         if act is None and name not in self._missing:
             # Gezielte rekursive Suche nach diesem einen Namen. Ein vollständiger
             # rekursiver Index kostete im echten QGIS 30–40 ms je Aufbau.
@@ -137,7 +150,9 @@ class ActionResolver(object):
         """Command -> Resolved. Verfügbare Ergebnisse werden zwischengespeichert."""
         cached = self._cache.get(command.id)
         if cached is not None:
-            return cached
+            if not self._stale(command, cached):
+                return cached
+            del self._cache[command.id]
         handler = getattr(self, "_resolve_" + command.source.type)
         try:
             res = handler(command)
@@ -150,6 +165,39 @@ class ActionResolver(object):
         if res.available:
             self._cache[command.id] = res
         return res
+
+    @staticmethod
+    def _stale(command, res):
+        """Gemerktes Ergebnis, dessen Quelle inzwischen gelöscht ist."""
+        if res.action is not None and not alive(res.action):
+            return True
+        if res.menu is not None and not alive(res.menu):
+            return True
+        if res.source is not None and not alive(res.source):
+            return True
+        if command.source.type == "processing":
+            return QgsApplication.processingRegistry().algorithmById(command.source.get("algorithm")) is None
+        return False
+
+    def vanished(self, command):
+        """Ist die Quelle des Befehls inzwischen weg? (Gemerktes Ergebnis wird dann verworfen.)"""
+        cached = self._cache.get(command.id)
+        if cached is None or not self._stale(command, cached):
+            return False
+        del self._cache[command.id]
+        return True
+
+    def forget(self, command_ids):
+        """Gemerkte Ergebnisse verwerfen (Plugin hat Aktionen durch gleichnamige ersetzt).
+
+        Einträge im Ribbon lösen beim nächsten Abgleich oder Klick neu auf (``epoch``).
+        """
+        for cid in command_ids:
+            self._cache.pop(cid, None)
+        self.epoch += 1
+
+    def forget_extensions(self, keys):
+        self.forget([ext.plugin_id(k) for k in keys])
 
     def clear(self):
         self._cache.clear()
@@ -238,7 +286,7 @@ class ActionResolver(object):
                     dock.show()
                 dock.raise_()
 
-            return Resolved(callback=show, icon=dock.toggleViewAction().icon(), qgis_text=title)
+            return Resolved(callback=show, icon=dock.toggleViewAction().icon(), qgis_text=title, source=dock)
         act = dock.toggleViewAction()
         return Resolved(action=act, icon=act.icon(), qgis_text=title)
 
@@ -320,6 +368,8 @@ class ActionResolver(object):
             # Steuerelemente und Galerien baut die Oberfläche (ui.controls)
             return Resolved()
         result = factory(self.env, command)
+        if isinstance(result, custom_commands.Unavailable):
+            return unavailable(result.reason)
         if isinstance(result, QMenu):
             # Eigenes Menü: wird wie ein QGIS-Menü eingehängt
             return Resolved(menu=result, icon=result.icon())
@@ -332,6 +382,8 @@ class ActionResolver(object):
     def trigger(self, command):
         res = self.resolve(command)
         if not res.available:
+            if self.extensions is not None and command.source.type == "extension":
+                self.extensions.schedule()
             return False
         if res.action is not None:
             return self.call(command, res.action.trigger)
@@ -342,13 +394,26 @@ class ActionResolver(object):
         return True
 
     def call(self, command, fn):
-        """``fn`` für ``command`` ausführen; Fehler melden statt den Ribbon abzubrechen."""
+        """``fn`` für ``command`` ausführen; Fehler melden statt den Ribbon abzubrechen.
+
+        Ist die Quelle währenddessen verschwunden, ist das kein Fehler (``gone``).
+        """
         try:
             fn()
         except Exception as exc:
-            self.report(command, exc)
+            if self.vanished(command):
+                self.gone(command)
+            else:
+                self.report(command, exc)
             return False
         return True
+
+    def gone(self, command):
+        """Quelle verschwunden: Protokoll und neue Suche im Katalog, keine Fehlermeldung."""
+        QgsMessageLog.logMessage(tr("Command %s: source no longer exists") % command.id,
+                                 LOG_TAG, Qgis.MessageLevel.Info)
+        if self.extensions is not None:
+            self.extensions.schedule()
 
     def report(self, command, exc):
         QgsMessageLog.logMessage(tr("Command %s failed: %s") % (command.id, exc),

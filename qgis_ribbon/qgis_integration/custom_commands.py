@@ -2,7 +2,7 @@
 
 Drei Arten, je nach ``kind`` beim Registrieren:
 
-- ``button``: ``factory(env, command) -> callable | QAction | QMenu``. Ein
+- ``button``: ``factory(env, command) -> callable | QAction | QMenu | Unavailable``. Ein
   Callable wird beim Klick ausgeführt. Eine QAction (z. B. ``StateAction``)
   wird wie eine QGIS-Aktion gespiegelt: der Ribbon übernimmt aktiv/abgehakt
   über deren Signal ``changed``. Ein QMenu wird wie ein QGIS-Menü als
@@ -52,18 +52,28 @@ def registered():
     return sorted(_REGISTRY)
 
 
+class Unavailable(object):
+    """Rückgabe einer Fabrik (Art ``button``): Befehl gerade nicht verfügbar, mit Grund (Tooltip)."""
+
+    __slots__ = ("reason",)
+
+    def __init__(self, reason):
+        self.reason = reason
+
+
 class GalleryEntry(object):
     """Eintrag einer Galerie, der erst zur Laufzeit feststeht (Lesezeichen, Grundkarten ...)."""
 
-    __slots__ = ("label", "icon", "callback", "checked", "tooltip", "section")
+    __slots__ = ("label", "icon", "callback", "checked", "tooltip", "section", "motif")
 
-    def __init__(self, label, callback, icon=None, checked=None, tooltip=None, section=None):
+    def __init__(self, label, callback, icon=None, checked=None, tooltip=None, section=None, motif=None):
         self.label = label
         self.callback = callback
         self.icon = icon
         self.checked = checked      # None: nicht abhakbar
         self.tooltip = tooltip
         self.section = section      # Überschrift, unter der der Eintrag steht
+        self.motif = motif          # Motiv des Icon-Sets (Schlüssel unter „oberflaeche“); sonst ``icon``
 
 
 class CommandEnv(object):

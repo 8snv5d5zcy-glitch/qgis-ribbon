@@ -30,7 +30,7 @@ The classic QGIS interface is active. Choose **View › Ribbon Interface**.
 It is hidden. Choose **Hide QGIS Menu Bar** in the ▾ menu again. Until then the menus are available via the **☰** button at the left of the header, see [Appearance](appearance.md).
 
 **A command is grayed out.**
-It needs a matching active layer (for example a vector layer, or a layer in edit mode), a selection, or a plugin that is not loaded. The tooltip shows the reason for missing commands.
+It needs a matching active layer (for example a vector layer, or a layer in edit mode), or a selection. The tooltip shows the reason. Commands of plugins that are not loaded and of deleted scripts are hidden.
 
 **The ribbon shows German texts (or English).**
 The ribbon follows the QGIS language. Change it under **Settings › Options › General** and restart QGIS.

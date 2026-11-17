@@ -35,6 +35,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from . import customization as cz
+from . import extensions as ext
 from .conditions import FIELD_CAPS, ITEM_KINDS, LAYER_KINDS, Snapshot, all_true
 from .model import CommandRef, Menu, Row, Split, iter_commands
 from .i18n import tr
@@ -111,9 +112,9 @@ _SNAPSHOTS = tuple(Snapshot(kind, editable, selection, caps)
                    for editable in (False, True) for selection in (False, True)
                    for caps in (frozenset(), frozenset(FIELD_CAPS)))
 # Layout-Fenster: nichts, ein Element je Art, mehrere; jeweils im Layout und im Bericht
-_SNAPSHOTS += tuple(Snapshot(selected_items=count, item_kind=kind, layout_report=report)
+_SNAPSHOTS += tuple(Snapshot(selected_items=count, item_kind=kind, layout_report=report, layout_pages=pages)
                     for count, kind in [(0, None), (2, None)] + [(1, k) for k in ITEM_KINDS]
-                    for report in (False, True))
+                    for report in (False, True) for pages in (1, 2))
 
 
 def fits(base, tab, commands):
@@ -513,6 +514,55 @@ def quick_remove(base, qat, index):
     return ids
 
 
+# Verwaiste Einträge (Platzhalter fehlender Plugins und gelöschter Skripte)
+def orphan_ids(base, arr, qat):
+    """IDs der Platzhalter, die die Anordnung oder der Schnellzugriff nennen, nach Beschriftung."""
+    dead = {cid for cid, c in base.commands.items() if ext.is_placeholder(c)}
+    if not dead:
+        return []
+    used = set(quick_ids(base, qat))
+    for t in arr.tabs:
+        for g in t.groups:
+            for item in cz.group_items(base, g):
+                used.update(c.id for c in item_commands(base, item))
+    for ids in list(arr.galleries.values()) + list(arr.menus.values()):
+        used.update(ids)
+    return sorted(dead & used, key=lambda cid: (base.commands[cid].label.lower(), cid))
+
+
+def remove_commands(arr, base, qat, ids):
+    """Jeden Verweis auf ``ids`` aus Gruppen, Galerien, Dropdowns und Schnellzugriff entfernen.
+
+    -> neue Liste des Schnellzugriffs (``qat`` unverändert, wenn er keinen davon nennt).
+    """
+    ids = set(ids)
+    for t in arr.tabs:
+        for g in t.groups:
+            if not any(i.command in ids or top_commands(base, i) & ids for i in cz.group_items(base, g)):
+                continue
+            items = cz.make_personal(base, g)
+            items[:] = [i for i in items if i.command not in ids and not top_commands(base, i) & ids]
+            cz.normalize(base, g)
+    for gid in list(arr.galleries):
+        kept = [c for c in arr.galleries[gid] if c not in ids]
+        if kept != arr.galleries[gid]:
+            if not kept and gid in cz.galleries(base) and cz.gallery_needs_items(base, gid):
+                arr.galleries.pop(gid)
+            else:
+                arr.galleries[gid] = kept
+    for key in list(arr.menus):
+        kept = [c for c in arr.menus[key] if c not in ids]
+        if kept != arr.menus[key]:
+            if kept:
+                arr.menus[key] = kept
+            else:
+                arr.menus.pop(key)
+    current = quick_ids(base, qat)
+    if not ids & set(current):
+        return qat
+    return [c for c in current if c not in ids]
+
+
 # Verlauf
 class Editor(object):
     """Anordnung und Schnellzugriff im Editor, mit Rückgängig/Wiederholen.
@@ -663,6 +713,18 @@ class Editor(object):
 
     def restore_tab(self, tab_id):
         return self.run(tr("Restore tab"), restore_tab, self.arr, self.base, tab_id)
+
+    def orphans(self):
+        return orphan_ids(self.base, self.arr, self.qat)
+
+    def remove_orphans(self, ids):
+        """Verwaiste Einträge entfernen (ein Schritt im Verlauf). -> Anzahl."""
+        ids = [c for c in ids if c in self.orphans()]
+        if ids:
+            def run():
+                self.qat = remove_commands(self.arr, self.base, self.qat, ids)
+            self.run(tr("Remove orphaned entries"), run)
+        return len(ids)
 
     def removed_tabs(self):
         return cz.removed_tabs(self.arr, self.base)

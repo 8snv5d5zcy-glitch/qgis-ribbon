@@ -162,6 +162,37 @@ def test_radios_without_own_style_restore_application_style(qgis_app):
     settle()
 
 
+def test_radios_step_aside_while_a_project_is_read(qgis_app):
+    """Projekt laden: vom ersten layerLoaded bis readProject ohne den Python-Stil, danach wieder mit."""
+    from qgis_ribbon.qgis_integration.signals import SignalHub
+    view, hub = QTreeView(), SignalHub()
+    project = QgsProject.instance()
+    radios = LayerTreeRadios(view, lambda _i: False, hub)
+    radios.install()
+    radios.watch_project(project)
+    try:
+        project.layerLoaded.emit(0, 2)
+        assert not isinstance(own_style(view), ExclusiveRadioStyle) and radios.suspended
+        project.layerLoaded.emit(2, 2)       # nach dem letzten Layer baut QGIS noch die Layerliste auf
+        assert radios.suspended
+        from qgis.PyQt.QtXml import QDomDocument
+        project.readProject.emit(QDomDocument())
+        assert isinstance(own_style(view), ExclusiveRadioStyle) and not radios.suspended
+        # Lesen abgebrochen: spätestens mit dem nächsten Projekt
+        project.layerLoaded.emit(0, 3)
+        project.cleared.emit()
+        assert isinstance(own_style(view), ExclusiveRadioStyle) and not radios.suspended
+        project.layerLoaded.emit(0, 0)       # Projekt ohne Layer: nichts zu tun
+        assert not radios.suspended
+    finally:
+        radios.restore()
+        hub.disconnect_all()
+    project.layerLoaded.emit(0, 2)
+    project.cleared.emit()
+    assert view.style() is QgsApplication.style()
+    settle()
+
+
 # Plugin-Menüs unter dem Ribbon-Knopf
 class MenuPlugin(object):
     """Ersatz-Plugin: öffnet beim Auslösen sein Menü selbst am eigenen Leistenknopf."""

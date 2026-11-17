@@ -25,7 +25,11 @@ When you start editing a layer, the ribbon switches to the **Edit** tab. It does
 
 In **Editing**, **Edit**, **Save** and **Discard** act on the active layer only; editing stays on after saving or discarding. **Save All** and **Discard All** act on every layer being edited. QGIS asks before discarding.
 
-**Construction › Advanced Digitizing** turns the construction aids on or off (distance, angle, coordinates while digitizing). It is available while a tool that supports it is active, for example **Create** or **Modify**. The panel does not open with it; **Construction Panel** in the button's dropdown shows or hides the panel without switching the aids on or off. The small icons in **Snapping** switch tracing, self-snapping and snapping to intersections.
+**Construction › Advanced Digitizing** turns the construction aids on or off (distance, angle, coordinates while digitizing). It is available while a tool that supports it is active, for example **Create** or **Modify**. The panel does not open with it; **Construction Panel** in the button's dropdown shows or hides the panel without switching the aids on or off.
+
+**Snapping** shows the settings of the QGIS snapping toolbar one by one: **Snapping** turns snapping on or off, **Snapping Options** in its dropdown opens the whole toolbar. Next to it are **Mode** (active layer, all layers, advanced configuration), the **Snapping Type** dropdown with check marks for vertices, segments, areas, centroids, middle of segments and line endpoints (several at once) and **Tolerance** with its unit. The small icons switch tracing, self-snapping and snapping to intersections. The settings belong to the project; the ribbon shows changes made in the QGIS toolbar or by loading a project right away. With advanced configuration you set type and tolerance per layer in the snapping options; the fields in the ribbon are grey then.
+
+More snapping settings are offered in the editor (**Customize Ribbon**) and can be dragged into any group: the snapping types as separate toggles, **Overlaps**, **Tolerance Unit**, **Scale-Dependent Snapping** with minimum and maximum scale, **Tracing Offset** and **Advanced Snapping Configuration**. QGIS does not store the offset in the project.
 
 ## Contextual tabs
 

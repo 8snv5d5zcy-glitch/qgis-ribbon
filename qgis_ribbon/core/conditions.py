@@ -49,6 +49,9 @@ class Snapshot:
     selected_items: int = 0      # Layout-Fenster: Zahl der gewählten Elemente
     item_kind: Optional[str] = None  # Layout-Fenster: Art des einzigen gewählten Elements (``ITEM_KINDS``)
     layout_report: bool = False  # Layout-Fenster: Es zeigt einen Bericht, kein Drucklayout
+    layout_missing: bool = False  # Layout-Fenster: kein Layout gezeigt (Bericht ohne gewählten Abschnitt)
+    layout_pages: int = 0        # Layout-Fenster: Zahl der Seiten des gezeigten Layouts
+    georef: bool = False         # Eine Sitzung „Georeferenzieren in der Karte“ läuft
 
     def __post_init__(self):
         if self.layer_kind is not None and self.layer_kind not in LAYER_KINDS:
@@ -139,13 +142,23 @@ CONDITIONS = {
     "layout_is_report": (
         ("layout_report",), lambda s: s.layout_report,
         tr("The layout window shows a report.")),
+    "georef_session": (
+        ("georef",), lambda s: s.georef,
+        tr("A georeferencing session is running in the map.")),
     "layout_is_print": (
         ("layout_report",), lambda s: not s.layout_report,
         tr("The layout window shows a print layout.")),
+    "layout_shown": (
+        ("layout_missing",), lambda s: not s.layout_missing,
+        tr("The layout window shows a layout (in a report: a section is selected).")),
+    "layout_several_pages": (
+        ("layout_missing", "layout_pages"), lambda s: not s.layout_missing and s.layout_pages >= 2,
+        tr("The layout shown has more than one page.")),
 }
 
 EVENTS = {
     "editing_started": tr("Editing of the active layer has started."),
+    "georef_started": tr("A georeferencing session has started in the map."),
 }
 
 

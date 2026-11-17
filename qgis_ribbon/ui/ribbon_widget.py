@@ -51,6 +51,7 @@ from . import guide, icons, keys, theme
 from .controls.buttons import BuildContext
 from .quick_access import QuickAccessBar
 from .qt_compat import APP_FILTER, event_pos
+from . import search_box
 from .search_box import SearchBox
 from .tab_page import TabPage
 from ..core.i18n import tr
@@ -80,12 +81,22 @@ class RibbonTabBar(QTabBar):
     Kontexts davor; der gewählte Tab hat einen Unterstrich in Akzentfarbe
     (bei Kontext-Tabs ``ctx``), der beim Wechsel gleitet. Klicks, Tastatur und
     Scrollpfeile bleiben bei ``QTabBar``; nur Größe und Zeichnen sind eigen.
+
+    Bei knapper Breite wird die Leiste stufenweise kompakter (``LEVELS``:
+    Innenabstand, dann gekürzter, dann kein Kontextname); erst wenn auch die
+    letzte Stufe nicht passt, erscheinen Scrollpfeile. ``reveal`` holt danach
+    die Tabs des gewählten Kontexts ins Bild.
     """
 
     PAD = 11            # links/rechts neben dem Tabtext
     HEIGHT = 34
     LABEL_GAP = 8       # Kontextname – erster Tabtext
     UNDERLINE = 3
+    # Stufen bei Platzmangel: (Innenabstand, Kontextname: "full", "short" oder None)
+    LEVELS = ((PAD, "full"), (6, "full"), (6, "short"), (6, None))
+    LABEL_SHORT = 56    # Breite des gekürzten Kontextnamens
+
+    resized = pyqtSignal()
 
     def __init__(self, ribbon, parent=None):
         QTabBar.__init__(self, parent)
@@ -95,9 +106,12 @@ class RibbonTabBar(QTabBar):
         self.contextual = set()
         self._hover = -1
         self._metrics = {}  # Schriftmaße (Tab, Kontextname); geleert bei Schrift-/Stilwechsel
+        self._level = 0     # Stufe aus LEVELS
+        self.end = -1       # Abschluss-Tab (siehe add_end)
         self._from = None   # Unterstrich vor dem Wechsel (QRectF)
         self._progress = 1.0
         self._last = -1
+        self._revealing = False
         self.setDrawBase(False)
         self.setExpanding(False)
         self.setDocumentMode(True)
@@ -146,6 +160,17 @@ class RibbonTabBar(QTabBar):
             self._metrics = {}
         QTabBar.changeEvent(self, event)
 
+    def add_end(self):
+        """Abschluss-Tab ohne Breite hinter allen Tabs, immer sichtbar, nie wählbar.
+
+        Qt 5.15 nimmt das Ende des letzten Tabs als Ende der Leiste, auch wenn er
+        ausgeblendet ist (dann leer). Ist der letzte Tab ein ausgeblendeter
+        Kontext-Tab, bleibt der rechte Scrollpfeil gesperrt und jeder gewählte
+        Tab rückt an den rechten Rand; Tabs rechts davon sind nicht erreichbar.
+        """
+        self.end = self.addTab("")
+        self.setTabEnabled(self.end, False)
+
     def context_of(self, index):
         tab = self.ribbon.tabs[index] if 0 <= index < len(self.ribbon.tabs) else None
         return tab.context if tab is not None and tab.contextual else None
@@ -162,29 +187,162 @@ class RibbonTabBar(QTabBar):
                 return None
         return ctx
 
-    # Größe
-    def _label_width(self, index):
+    def shown_label(self, index, level=None):
+        """Kontextname, wie ihn die Stufe zeigt (gekürzt oder None)."""
         label = self.context_label(index)
+        mode = self.LEVELS[self._level if level is None else level][1]
+        if label is None or mode is None:
+            return None
+        if mode == "short":
+            return self._fm("label").elidedText(label, Qt.TextElideMode.ElideRight, self.LABEL_SHORT)
+        return label
+
+    # Größe
+    def _label_width(self, index, level=None):
+        label = self.shown_label(index, level)
         if label is None:
             return 0
         return self._fm("label").horizontalAdvance(label) + self.LABEL_GAP
 
-    def tabSizeHint(self, index):  # noqa: N802 (Qt)
-        w = self._fm("tab").horizontalAdvance(self.tabText(index)) + 2 * self.PAD + self._label_width(index)
+    def _lead(self, index, level=None):
+        """Abstand vom linken Tabrand bis zum Tabtext."""
+        lead = self.LEVELS[self._level if level is None else level][0] + self._label_width(index, level)
         if index in self.contextual and self.context_label(index) is not None:
-            w += 4
-        return QSize(w, self.HEIGHT)
+            lead += 4
+        return lead
+
+    def _tab_width(self, index, level=None):
+        if index == self.end:
+            return 0
+        pad = self.LEVELS[self._level if level is None else level][0]
+        return self._fm("tab").horizontalAdvance(self.tabText(index)) + pad + self._lead(index, level)
+
+    def tabSizeHint(self, index):  # noqa: N802 (Qt)
+        return QSize(self._tab_width(index), self.HEIGHT)
 
     def minimumTabSizeHint(self, index):  # noqa: N802 (Qt)
         return self.tabSizeHint(index)
 
     def text_rect(self, index):
         r = self.tabRect(index)
-        left = r.x() + self.PAD + self._label_width(index)
-        if index in self.contextual and self.context_label(index) is not None:
-            left += 4
         width = self._fm("tab").horizontalAdvance(self.tabText(index))
-        return QRectF(left, r.y(), width, r.height())
+        return QRectF(r.x() + self._lead(index), r.y(), width, r.height())
+
+    # Platz
+    def needed_width(self, level):
+        return sum(self._tab_width(i, level) for i in range(self.count()) if self.isTabVisible(i))
+
+    def fit_level(self, width):
+        """Erste Stufe, mit der alle sichtbaren Tabs in ``width`` passen, sonst die letzte."""
+        for level in range(len(self.LEVELS)):
+            if self.needed_width(level) <= width:
+                return level
+        return len(self.LEVELS) - 1
+
+    def fit(self):
+        """Stufe zur aktuellen Breite wählen und die Tabs des gewählten Kontexts zeigen."""
+        self._level = self.fit_level(self.width())
+        if self.count():
+            # Qt rechnet die Tabbreiten nur bei einer Änderung neu; der gleiche Text genügt.
+            # Auch ohne Stufenwechsel: Qt 5.15 lässt einen eingeblendeten und gleich
+            # gewählten Tab sonst ohne Breite (tabRect leer, Strich unter Tab 0).
+            self.setTabText(0, self.tabText(0))
+            self.updateGeometry()
+        self.reveal()
+
+    def resizeEvent(self, event):  # noqa: N802 (Qt)
+        self._level = self.fit_level(event.size().width())
+        QTabBar.resizeEvent(self, event)
+        self.reveal()
+        self.resized.emit()
+
+    def tabLayoutChange(self):  # noqa: N802 (Qt)
+        """Nach jeder Neuanordnung der Tabs (Qt): Kontext erneut ins Bild holen.
+
+        ``reveal`` aus ``fit`` läuft, bevor Qt die Tabs nach dem Ein- und
+        Ausblenden neu angeordnet hat; dann lag der gewählte Kontext teils
+        außerhalb (deutsche Beschriftungen, schmales Fenster).
+        """
+        QTabBar.tabLayoutChange(self)
+        if not self._revealing:
+            self.reveal()
+
+    def _group(self, index):
+        """Sichtbare Tabs desselben Kontexts wie ``index`` (bei Haupt-Tabs nur ``index``)."""
+        ctx = self.context_of(index)
+        if ctx is None:
+            return [index]
+        lo = hi = index
+        for i in range(index - 1, -1, -1):
+            if self.context_of(i) != ctx:
+                break
+            if self.isTabVisible(i):
+                lo = i
+        for i in range(index + 1, self.count()):
+            if self.context_of(i) != ctx:
+                break
+            if self.isTabVisible(i):
+                hi = i
+        return [lo, hi]
+
+    def reveal(self):
+        """Bildlauf so, dass der gewählte Tab samt seinem Kontext im Bild liegt.
+
+        Qt 5.15 setzt den Bildlauf bei jedem ``setTabVisible`` auf den Anfang,
+        ohne den gewählten Tab wieder ins Bild zu holen; Qt 6 tut das, aber nur
+        für einen Tab. Einen öffentlichen Bildlauf gibt es nicht: Qt scrollt nur
+        beim Wählen. Deshalb mit gesperrten Signalen nacheinander den ersten
+        Tab (Haupt-Tabs bevorzugt), das Ende und den Anfang des Kontexts und
+        zuletzt wieder den gewählten Tab wählen.
+        """
+        current = self.currentIndex()
+        if current < 0 or not self.isVisible() or not self.isTabVisible(current):
+            return
+        shown = [i for i in range(self.count()) if self.isTabVisible(i) and i != self.end]
+        group = self._group(current)
+        order = [shown[0], group[-1], group[0], current]
+        if shown[0] == current:   # Wählen des gewählten Tabs scrollt nicht
+            order.insert(0, shown[-1])
+        blocked = self.blockSignals(True)
+        self._revealing = True
+        try:
+            for i in order:
+                QTabBar.setCurrentIndex(self, i)
+            self._under_arrows(group, current)
+        finally:
+            self._revealing = False
+            self.blockSignals(blocked)
+
+    def visible_right(self):
+        """Rechter Rand des sichtbaren Bereichs: die Scrollpfeile liegen rechts über den Tabs."""
+        arrows = [b for b in self.findChildren(QToolButton) if b.isVisible()]
+        return min([b.x() for b in arrows] + [self.width()])
+
+    def _under_arrows(self, group, current):
+        """Letzten Tab des Kontexts unter den Scrollpfeilen hervorholen.
+
+        Qt 5.15 zieht beim Wählen den Platz der Pfeile nicht immer ab (im echten
+        QGIS 3.44 bei 1120 px deutsch gesehen: der letzte Kontext-Tab lag unter den
+        Pfeilen). Abhilfe über den rechten Pfeil, der nur scrollt und nicht wählt.
+        """
+        first, last = group[0], group[-1]
+        area = self.visible_right()
+        if self.tabRect(last).right() <= area or self.tabRect(last).right() - self.tabRect(first).left() >= area:
+            return
+        arrows = sorted((b for b in self.findChildren(QToolButton) if b.isVisible()), key=lambda b: b.x())
+        if not arrows:
+            return
+        right = arrows[-1]
+        for _ in range(self.count()):
+            before = self.tabRect(last).right()
+            if before <= area or not right.isEnabled():
+                break
+            right.click()
+            if self.tabRect(last).right() == before:
+                break
+        if self.tabRect(first).left() < 0:
+            QTabBar.setCurrentIndex(self, first)
+        QTabBar.setCurrentIndex(self, current)
 
     def _underline(self, index):
         rect = self.text_rect(index)
@@ -203,6 +361,11 @@ class RibbonTabBar(QTabBar):
             self._from = None
             self._progress = 1.0
         self.update()
+
+    def shift_animation(self, dx):
+        """Startpunkt des Unterstrichs mitschieben, wenn die Leiste nach dem Wechsel gerollt hat."""
+        if dx and self._from is not None:
+            self._from = self._from.translated(dx, 0)
 
     def _on_anim(self, value):
         self._progress = float(value)
@@ -255,17 +418,17 @@ class RibbonTabBar(QTabBar):
             p.drawRoundedRect(cap, 8, 8)
         p.setFont(self._label_font())
         for i in range(self.count()):
-            label = self.context_label(i) if self.isTabVisible(i) else None
+            label = self.shown_label(i) if self.isTabVisible(i) else None
             if label is None:
                 continue
             r = self.tabRect(i)
-            lr = QRectF(r.x() + self.PAD, r.y(), self._label_width(i), r.height() - 2)
+            lr = QRectF(r.x() + self.LEVELS[self._level][0], r.y(), self._label_width(i), r.height() - 2)
             p.setPen(theme.color("ctxT"))
             p.drawText(lr, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, label)
 
         # Tabtexte und Hover
         for i in range(self.count()):
-            if not self.isTabVisible(i):
+            if not self.isTabVisible(i) or i == self.end:
                 continue
             tr = self.text_rect(i)
             contextual = i in self.contextual
@@ -402,6 +565,7 @@ class RibbonWidget(QWidget):
         self.last_apply_ms = None  # Messpunkt: Übernahme eines neuen Kontexts
         self._index = {t.id: i for i, t in enumerate(ribbon.tabs)}
         self.minimized = False
+        self._shown_tab = 0   # zuletzt gezeigter Tab (Abschluss-Tab zählt nicht)
         self.popup = None
 
         self.header = QWidget(self)
@@ -419,7 +583,25 @@ class RibbonWidget(QWidget):
         self.quick.extend_menu = self.add_customize_actions
         self.tabbar = RibbonTabBar(ribbon, self.header)
         self.tabbar.setObjectName("ribbon_tabbar")
-        self.search = SearchBox(ribbon, self.ctx, self.run_entry, self.can_run_entry, self.header)
+        self.search = SearchBox(ribbon, self.ctx, self.run_entry, self.can_run_entry, self.header,
+                                functions=self.function_menu)
+        # Bei wenig Platz: Suchfeld schmaler, dann nur eine Lupe (fit_search)
+        self.search_button = QToolButton(self.header)
+        self.search_button.setObjectName("ribbon_search_button")
+        self.search_button.setAutoRaise(True)
+        self.search_button.setFixedSize(28, 28)
+        self.search_button.setIcon(icons.ui_icon("suchen"))
+        self.search_button.setToolTip(search_box.PLACEHOLDER)
+        self.search_button.clicked.connect(self.open_search)
+        self.search_button.hide()
+        self.search_stage = 0
+        self._fitting = False
+        self._fit_timer = QTimer(self)
+        self._fit_timer.setSingleShot(True)
+        self._fit_timer.setInterval(0)
+        self._fit_timer.timeout.connect(self.fit_search)
+        self.search.focusLost.connect(self._search_left)
+        self.search.executed.connect(self._search_left)
         self.pin = QToolButton(self.header)
         self.pin.setAutoRaise(True)
         self.pin.setObjectName("ribbon_minimize")
@@ -453,6 +635,8 @@ class RibbonWidget(QWidget):
         # Kontext-Tabs dazukamen, und zeigte Scrollpfeile trotz freiem Platz.
         head.addWidget(self.tabbar, 1, Qt.AlignmentFlag.AlignBottom)
         head.addWidget(self.search, 0, Qt.AlignmentFlag.AlignVCenter)
+        head.addWidget(self.search_button, 0, Qt.AlignmentFlag.AlignVCenter)
+        self._head = head
         head.addWidget(self.pin, 0, Qt.AlignmentFlag.AlignVCenter)
         head.addWidget(self.guide_button, 0, Qt.AlignmentFlag.AlignVCenter)
 
@@ -476,6 +660,8 @@ class RibbonWidget(QWidget):
                 self.tabbar.setTabToolTip(i, "%s: %s" % (tab.context, tab.label))
             if logic is not None and not logic.tab_visible(tab.id):
                 self.tabbar.setTabVisible(i, False)
+        self.tabbar.add_end()
+        self.tabbar.resized.connect(self._fit_timer.start)
         self.tabbar.currentChanged.connect(self._on_tab_changed)
         self.tabbar.tabBarClicked.connect(self._on_tab_clicked)
         self.tabbar.tabBarDoubleClicked.connect(lambda _i: self.toggle_minimized())
@@ -549,11 +735,31 @@ class RibbonWidget(QWidget):
     def _on_tab_changed(self, index):
         if index < 0:
             return
+        if index >= len(self.ribbon.tabs):
+            # Abschluss-Tab (``RibbonTabBar.end``): Qt wählt ihn, wenn der gewählte Tab verschwindet
+            # oder die Leiste kurz verborgen ist (QGIS: Bedienfelder umschalten); zurück zum letzten Tab
+            self.tabbar.setCurrentIndex(self._valid_tab(self._shown_tab))
+            return
+        self._shown_tab = index
+        if self.tabbar.context_of(index) is not None:
+            # Qt scrollt beim Wählen nur bis zum gewählten Tab; der Rest des Kontexts
+            # konnte hinter die Scrollpfeile rutschen (wenig Platz, deutsch, QGIS 3.44)
+            before = self.tabbar.tabRect(index).x()
+            self.tabbar.reveal()
+            self.tabbar.shift_animation(self.tabbar.tabRect(index).x() - before)
         page = self.ensure_built(index)
         self.stack.setCurrentIndex(index)
         page.refresh_stale()
         if self.logic is not None:
             self.logic.tab_selected(self.ribbon.tabs[index].id)
+
+    def _valid_tab(self, index):
+        """``index``, wenn sichtbar, sonst der nächste sichtbare Tab davor (sonst der erste)."""
+        count = len(self.ribbon.tabs)
+        for i in list(range(min(index, count - 1), -1, -1)) + list(range(count)):
+            if self.tabbar.isTabVisible(i):
+                return i
+        return 0
 
     def _on_tab_clicked(self, index):
         if self.minimized and index >= 0:
@@ -566,13 +772,84 @@ class RibbonWidget(QWidget):
         start = time.perf_counter()
         for cid in changes.commands:
             self.ctx.refresh(cid)
+        # Erst alle neuen Tabs einblenden, dann wählen, zuletzt die alten ausblenden:
+        # Ausblenden des gewählten Tabs ließe Qt selbst auf einen Nachbar-Tab springen.
+        for tid, visible in changes.tabs.items():
+            if visible:
+                self.tabbar.setTabVisible(self._index[tid], True)
         if changes.select is not None:
-            # Erst wählen, dann ausblenden: sonst springt Qt selbst auf einen Nachbar-Tab.
             self.tabbar.setTabVisible(self._index[changes.select], True)
             self.tabbar.setCurrentIndex(self._index[changes.select])
         for tid, visible in changes.tabs.items():
-            self.tabbar.setTabVisible(self._index[tid], visible)
+            if not visible:
+                self.tabbar.setTabVisible(self._index[tid], False)
+        if changes.tabs or changes.select is not None:
+            self.tabbar.fit()
+            self.fit_search()
         self.last_apply_ms = (time.perf_counter() - start) * 1000.0
+
+    # Suchfeld bei wenig Platz
+    def fit_search(self):
+        """Platz für die Tabs zuerst vom Suchfeld nehmen: 220 px, 140 px, dann nur die Lupe.
+
+        Erst wenn die Tabs auch in der letzten Stufe der Tableiste nicht neben
+        das Suchfeld passen, wird es schmaler; die Scrollpfeile kommen zuletzt.
+        """
+        if self._fitting or not self.tabbar.isVisible():
+            return
+        slot = self.search_button.width() if self.search_stage == 2 else self.search.width()
+        share = self.tabbar.width() + slot
+        need = self.tabbar.needed_width(len(self.tabbar.LEVELS) - 1)
+        if need + search_box.WIDTH <= share:
+            stage = 0
+        elif need + search_box.NARROW <= share:
+            stage = 1
+        else:
+            stage = 2
+        if stage != self.search_stage:
+            self.set_search_stage(stage)
+
+    def set_search_stage(self, stage):
+        """0: Feld 220 px, 1: Feld 140 px, 2: Lupe (das Feld klappt bei Bedarf über den Tabs auf)."""
+        self._fitting = True
+        try:
+            if stage < 2:
+                self.search.setFixedWidth(search_box.WIDTH if stage == 0 else search_box.NARROW)
+                if self.search_stage == 2:
+                    self._head.insertWidget(self._head.indexOf(self.search_button), self.search, 0,
+                                            Qt.AlignmentFlag.AlignVCenter)
+                    self.search_button.hide()
+                    self.search.show()
+            elif self.search_stage < 2:
+                self._head.removeWidget(self.search)
+                self.search.hide()
+                self.search.setFixedWidth(search_box.WIDTH)
+                self.search_button.show()
+            self.search_stage = stage
+        finally:
+            self._fitting = False
+
+    def search_anchor(self):
+        """Widget, an dem die KeyTip-Marke der Suche steht (Feld oder Lupe)."""
+        return self.search_button if self.search_stage == 2 else self.search
+
+    def open_search(self):
+        """Suche fokussieren; als Lupe über den Tabs aufklappen (rechtsbündig an der Lupe)."""
+        if self.search_stage == 2:
+            b = self.search_button.geometry()
+            h = self.search.sizeHint().height()
+            self.search.setGeometry(b.right() + 1 - search_box.WIDTH, (self.header.height() - h) // 2,
+                                    search_box.WIDTH, h)
+            self.search.raise_()
+            self.search.show()
+        self.search.setFocus(Qt.FocusReason.ShortcutFocusReason)
+        self.search.selectAll()
+        return True
+
+    def _search_left(self):
+        """Aufgeklapptes Suchfeld einklappen, wenn es den Fokus verliert oder einen Befehl auslöst."""
+        if self.search_stage == 2 and not self.search.completer.popup().isVisible():
+            self.search.hide()
 
     def is_tab_visible(self, tab_id):
         return self.tabbar.isTabVisible(self._index[tab_id])
@@ -689,7 +966,8 @@ class RibbonWidget(QWidget):
         self.quick.set_commands(quick_access.effective(self.ribbon, self.user.quick_access()))
 
     def _store_quick_access(self, commands):
-        self.user.set_quick_access(quick_access.serialize(commands))
+        keep = quick_access.hidden(self.ribbon, self.user.quick_access())
+        self.user.set_quick_access(quick_access.serialize(commands, keep))
         self.quick.set_commands(commands)
 
     def add_to_quick_access(self, command):
@@ -773,6 +1051,16 @@ class RibbonWidget(QWidget):
         menu.addSeparator()
         act = menu.addAction(icons.ui_icon("hilfe"), guide.MENU_TEXT, lambda: self.open_help("index"))
         act.setToolTip(guide.TIP)
+
+    def function_menu(self):
+        """Funktionen des Ribbons als Menü für die Suche (Ort „Ribbon“); die Suche liest es bei jedem Fokus neu."""
+        menu = QMenu(self)
+        menu.setObjectName("ribbon_functions")
+        if APP_FILTER:
+            menu.addAction(TEXT_KEYTIPS, self.open_keytip_dialog)
+        menu.addAction(TEXT_PIN if self.minimized else TEXT_MINIMIZE, self.toggle_minimized)
+        self.add_customize_actions(menu)
+        return menu
 
     def request_classic(self):
         self.hide_popup()

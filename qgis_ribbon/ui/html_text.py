@@ -9,3 +9,8 @@ _TABLE = str.maketrans({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "
 
 def escape(text):
     return str(text).translate(_TABLE)
+
+
+def multiline(text):
+    """Reiner Text (auch mehrzeilig) für einen HTML-Tooltip."""
+    return escape(text).replace("\n", "<br>")

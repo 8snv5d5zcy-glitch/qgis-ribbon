@@ -294,6 +294,7 @@ def test_search_finds_and_runs_the_command_pool(plugin, fake_iface, layers):
     # QGIS-Menü ohne Ort: öffnet unter dem Suchfeld
     menu = QMenu("Zuletzt verwendet", fake_iface.mainWindow())
     menu.setObjectName("mRecentProjectsMenu")
+    menu.setProperty("ribbonTestNative", True)   # wie in QGIS: kein Plugin-Hauptmenü (conftest.NATIVE)
     menu.addAction("Projekt A")
     fake_iface.mainWindow().menuBar().addMenu(menu)
     search.index = None

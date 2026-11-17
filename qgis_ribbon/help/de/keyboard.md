@@ -43,12 +43,16 @@ Eigene Kürzel gehören zur Anordnung, siehe [Ribbon anpassen](customize.md).
 
 ## Befehlssuche
 
-Das Feld **Befehl suchen** rechts in der Kopfzeile findet Befehle nach Name, Beschreibung oder Ort im Ribbon, dazu Befehle aus den Menüs von QGIS, die nicht im Ribbon stehen.
+Das Feld **Befehl suchen** rechts in der Kopfzeile findet Befehle nach Name, Beschreibung oder Ort im Ribbon, dazu Befehle aus den Menüs und Werkzeugleisten von QGIS (auch aus deren Dropdowns), die nicht im Ribbon stehen, die Funktionen des Ribbons selbst und alle Werkzeuge des Werkzeugkastens samt eigener Skripte und Modelle.
 
 ![Befehlssuche](../images/de/search.png)
 
 - Öffnen: in das Feld klicken, oder **Alt**, dann **Q**.
-- Jeder Treffer zeigt, wo der Befehl steht (zum Beispiel *Analyse › Werkzeuge*). Befehle aus den QGIS-Menüs sind mit *QGIS:* gekennzeichnet, Befehle ohne Platz im Ribbon (etwa **Eigenschaften: Metadaten** oder **Projekteigenschaften: KBS**) mit *Befehlsvorrat*. Ein QGIS-Untermenü wie **Zuletzt verwendet** öffnet sich unter dem Suchfeld.
+- In einem schmalen Fenster wird das Feld schmaler und zuletzt zu einer Lupe; ein Klick darauf oder **Alt**, dann **Q** klappt das Feld über den Tabs auf.
+- Jeder Treffer zeigt, wo der Befehl steht (zum Beispiel *Analyse › Werkzeuge*). Befehle aus den QGIS-Menüs sind mit *QGIS:* gekennzeichnet, Befehle ohne Platz im Ribbon (etwa **Eigenschaften: Metadaten** oder **Projekteigenschaften: KBS**) mit *Befehlsvorrat*. Ein QGIS-Untermenü wie **Zuletzt verwendet** öffnet sich unter dem Suchfeld. Der Ort steht gedämpft neben dem Namen; ist die Liste zu schmal, wird der Ort gekürzt, nie der Name.
+- Funktionen des Ribbons stehen mit dem Ort *Ribbon*: zum Beispiel findet *anpassen* **Ribbon anpassen**, *dunkel* den dunklen Modus unter *Ribbon › Darstellung*, dazu Anordnungen, **Klassische QGIS-Oberfläche** und die Anleitung.
+- **Neues Skript**, **Neues Modell** und ihre Nachbarn (Skript aus Vorlage, öffnen, zum Werkzeugkasten hinzufügen) stehen im Tab **Analyse**, Gruppe **Werkzeuge**, im Dropdown **Skripte und Modelle** und sind über die Suche zu finden.
+- Werkzeuge des Werkzeugkastens stehen mit *Werkzeugkasten › Anbieter › Gruppe* in der Liste, nach den Befehlen des Ribbons und der QGIS-Menüs; eigene Skripte und Modelle vor den übrigen Werkzeugen. Ein Treffer öffnet den Dialog des Werkzeugs. Gefunden wird auch der englische interne Name oder ein Stichwort (zum Beispiel *fix* für **Geometrien reparieren**), auch wenn das Werkzeug im Ribbon liegt. Neue und gelöschte Skripte berücksichtigt die Suche sofort.
 - **Eingabe** führt den ersten Treffer aus, die Pfeiltasten wählen einen anderen.
 - **Esc** leert das Feld und kehrt zur Karte zurück.
 - Groß- und Kleinschreibung spielen keine Rolle. Umlaute lassen sich als ae, oe, ue und ss eingeben.

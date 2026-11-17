@@ -36,7 +36,7 @@ MODULES = (
 )
 # Namen, die der Vergleich nennt, die aber geprüft und richtig sind (Name: Begründung)
 GEPRUEFT = {
-    "associatedWidgets": "ui/qt_compat.action_widgets, Ausweichweg für Qt5",
+    "associatedWidgets": "action_widgets in ui/qt_compat und qgis_integration/qt_compat, Ausweichweg für Qt5",
     "paletteChanged": "ui/theme.py, unter Qt6 Ereignisfilter statt Signal",
 }
 # Umgebung der aufrufenden QGIS-Version darf nicht in die andere durchschlagen

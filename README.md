@@ -1,6 +1,6 @@
 # QGIS Ribbon
 
-A ribbon interface for [QGIS](https://qgis.org): commands sorted into tabs and groups, contextual tabs for the active layer, a Quick Access Toolbar, KeyTips for the keyboard and a command search, instead of the QGIS toolbars.
+QGIS Ribbon replaces the toolbars of [QGIS](https://qgis.org) with a fully customizable ribbon: commands sorted into tabs and groups, contextual tabs for the active layer, **georeferencing directly in the map**, a ribbon for the **print layout window**, a Quick Access Toolbar, KeyTips for the keyboard and a command search.
 
 *Deutsch: [siehe unten](#deutsch).*
 
@@ -9,15 +9,16 @@ A ribbon interface for [QGIS](https://qgis.org): commands sorted into tabs and g
 ## Features
 
 - **Tabs** Map, Insert, Analysis, View, Edit, Imagery, Share and Extensions; **contextual tabs** for vector layers, tables and rasters.
+- **Ribbon editor:** drag and drop commands into any group, create your own tabs and groups, hide and reorder, fully usable by keyboard, with undo.
+- **Georeference in the map:** move, scale and rotate an image right in the map, or set control points with snapping and live residuals (Helmert, affine, polynomial, thin plate spline, projective). Save a world file or warp to a new GeoTIFF; the QGIS Georeferencer stays available.
+- **Print layout window** with its own ribbon: tabs for the selected item, ready-made map, scale bar, north arrow and basic layout, export and atlas without panels, reports, templates and page sizes. It can be switched off separately.
 - **Controls:** large, medium and small buttons, split buttons, menus, galleries, fields for scale, opacity or fonts, dialog launchers, rich tooltips; groups collapse in narrow windows.
 - **Quick Access Toolbar**, **KeyTips** (press Alt), **command search** (Alt, then Q), minimizing (Ctrl+F1).
-- **Ribbon editor:** drag and drop commands into any group, create your own tabs and groups, hide and reorder, fully usable by keyboard, with undo.
 - **Arrangements:** save, load, export and import complete ribbon setups as JSON files.
 - **Appearance:** automatic, light or dark, three accent colors, own icon set, optional style for the whole QGIS window.
 - **Extensions tab:** commands of installed plugins, your own Processing scripts and models, every toolbox tool.
 - **Extra tools** where QGIS has no single command, for example a dialog for attribute domains.
 - **English and German** user interface, following the QGIS language, with a built-in illustrated **guide** (Help › Plugins › QGIS Ribbon Guide).
-- The print layout window has its own ribbon: tabs for the selected item, reports, templates and page sizes. It can be switched off separately.
 - The ribbon only calls existing QGIS functions. The menu bar and panels stay unchanged. Deactivating the plugin, or **Classic QGIS Interface**, restores the QGIS toolbars and window layout exactly.
 
 | | |
@@ -99,7 +100,7 @@ Screenshots show map data from [Natural Earth](https://www.naturalearthdata.com)
 
 ## Deutsch
 
-QGIS Ribbon ersetzt die Werkzeugleisten von QGIS durch ein Ribbon: Befehle in Tabs und Gruppen, Kontext-Tabs für den aktiven Layer, Schnellzugriffsleiste, Tastaturkürzel (Alt) und Befehlssuche. Das Ribbon lässt sich grafisch anpassen; Anordnungen lassen sich speichern und als Datei weitergeben. Die Oberfläche gibt es auf Deutsch und Englisch, sie folgt der Sprache von QGIS.
+QGIS Ribbon ersetzt die Werkzeugleisten von QGIS durch ein frei anpassbares Ribbon: Befehle in Tabs und Gruppen, Kontext-Tabs für den aktiven Layer, **Georeferenzieren direkt in der Karte** (Bild verschieben, skalieren, drehen oder Passpunkte setzen), ein eigenes Ribbon im **Layout-Fenster**, Schnellzugriffsleiste, Tastaturkürzel (Alt) und Befehlssuche. Das Ribbon lässt sich grafisch anpassen; Anordnungen lassen sich speichern und als Datei weitergeben. Die Oberfläche gibt es auf Deutsch und Englisch, sie folgt der Sprache von QGIS.
 
 - Installation: **Erweiterungen › Erweiterungen verwalten und installieren …**, nach *QGIS Ribbon* suchen, **Installieren**.
 - Anleitung: im Plugin unter **Hilfe › Erweiterungen › Anleitung QGIS Ribbon** oder hier: [qgis_ribbon/help/de/index.md](qgis_ribbon/help/de/index.md).

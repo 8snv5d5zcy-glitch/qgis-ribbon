@@ -52,9 +52,10 @@ def test_report_tab_offers_settings_and_output(ribbon):
 
 def test_page_sizes_and_template_are_offered(ribbon):
     assert ribbon.commands["seitengroesse"].source.get("id") == "ribbon.seite_groesse"
-    assert "seitengroesse" in {c.id for c in iter_commands(ribbon.tab("layout"))}
-    insert = {c.id for c in iter_commands(ribbon.tab("einfuegen"))}
-    assert {"layout_neu", "neues_layout_a4_quer", "neues_layout_a3_hoch", "neu_aus_vorlage_layout"} <= insert
+    layout = {c.id for c in iter_commands(ribbon.tab("layout"))}
+    assert {"seitengroesse", "layout_neu", "neues_layout_a4_quer", "neues_layout_a3_hoch",
+            "neu_aus_vorlage_layout"} <= layout
+    assert "layout" not in {g.id for g in ribbon.tab("einfuegen").groups}
     main = config_loader.load()
     assert "neu_aus_vorlage_layout" in {c.id for c in iter_commands(main.tab("teilen"))}
 
@@ -136,7 +137,7 @@ def test_replaces_the_toolbars_of_qgis(ribbon):
 
 
 def test_quick_access(ribbon):
-    assert [c.id for c in ribbon.quick_access] == ["projekt_speichern", "rueckgaengig", "wiederholen"]
+    assert [c.id for c in ribbon.quick_access] == ["projekt_speichern", "rueckgaengig", "wiederholen", "export_pdf"]
 
 
 def test_every_command_is_placed_and_described(ribbon):
@@ -229,3 +230,106 @@ def test_check_source_of_designer_types():
     assert check_source({"type": "designer_item", "item": "LayoutShape", "group": "shapes"}, index)[0] == MISSING
     assert check_source({"type": "designer_edit", "role": "copy"}, index)[0] == OK
     assert check_source({"type": "designer_edit", "role": "nein"}, index)[0] == INVALID
+
+
+# Aufbau des Tabs Layout (Gewichtung, Seitenbefehle)
+
+def test_layout_tab_groups_in_order_with_weight(ribbon):
+    from qgis_ribbon.core.model import CommandRef, Row, Split
+    tab = ribbon.tab("layout")
+    assert [g.id for g in tab.groups] == ["zwischenablage", "auswahl", "seite", "navigieren", "verwalten"]
+    large = {g.id: [e for e in g.elements if getattr(e, "size", None) == "large"] for g in tab.groups}
+    assert all(len(elements) == 1 for elements in large.values()), large
+    clip, select, page, nav, manage = tab.groups
+    assert isinstance(clip.elements[0], Split) and [c.id for c in clip.elements[0].items] == ["an_ort_einfuegen"]
+    assert isinstance(select.elements[-1], Menu) and select.elements[-1].key == "Auswahl"
+    assert [c.id for c in select.elements[-1].items] == ["alle_auswaehlen", "auswahl_aufheben", "auswahl_umkehren",
+                                                          "naechstes_darunter", "naechstes_darueber"]
+    assert page.launcher.id == "seiteneigenschaften"
+    assert [e.command.id for e in page.elements if isinstance(e, CommandRef)] == [
+        "seiten_hinzufuegen", "seitengroesse", "seite_ausrichtung", "seite_loeschen", "seite_raender", "zu_seite"]
+    assert nav.elements[0].command.id == "ganze_seite"
+    assert [c.id for e in nav.elements if isinstance(e, Row) for c in e.commands] == [
+        "layout_verschieben", "zoom_werkzeug", "layout_hineinzoomen", "layout_herauszoomen", "zoom_100",
+        "auf_breite", "ansicht_aktualisieren"]
+    assert manage.elements[0].command.id == "layout_neu" and "neu_aus_vorlage_layout" in {
+        c.id for c in manage.elements[0].items}
+    assert [c.id for c in manage.elements[-1].items] == ["aus_vorlage", "layout_duplizieren", "layout_umbenennen",
+                                                          "layout_loeschen", "layoutverwaltung", "layouteigenschaften"]
+
+
+def test_navigate_and_layout_shrink_first(ribbon):
+    """Verkleinert wird reihum von rechts: Layout und Navigieren stehen rechts."""
+    from qgis_ribbon.core import adaptive
+    widths = [[60, 100, 200]] * 5
+    choice = adaptive.choose(widths, [2] * 5, 1000 - 200)
+    groups = [g.id for g in ribbon.tab("layout").groups]
+    shrunk = {groups[n] for n, c in enumerate(choice) if c < 2}
+    assert shrunk == {"navigieren", "verwalten"}
+
+
+def test_page_commands_are_gray_without_a_layout(ribbon):
+    from qgis_ribbon.core.conditions import Snapshot
+    from qgis_ribbon.core.context import ContextLogic
+    logic = ContextLogic(ribbon)
+    page = ["seiten_hinzufuegen", "seitengroesse", "seiteneigenschaften", "druckseite", "seite_ausrichtung",
+            "seite_raender"]
+    logic.update(Snapshot(layout_report=True, layout_missing=True))
+    assert not any(logic.command_enabled(c) for c in page + ["seite_loeschen", "zu_seite"])
+    logic.update(Snapshot(layout_report=True, layout_pages=1))
+    assert all(logic.command_enabled(c) for c in page)
+    assert not logic.command_enabled("seite_loeschen") and not logic.command_enabled("zu_seite")
+    logic.update(Snapshot(layout_report=True, layout_pages=3))
+    assert logic.command_enabled("seite_loeschen") and logic.command_enabled("zu_seite")
+
+
+def test_saved_reference_to_the_dropped_insert_group_is_reported(ribbon):
+    from qgis_ribbon.core import customization as cz
+    data = {"tabs": [{"tab": t.id} for t in ribbon.tabs]}
+    data["tabs"][1] = {"tab": "einfuegen", "groups": [{"group": "einfuegen/layout"},
+                                                       {"group": "einfuegen/kartenrahmen"}]}
+    arr, warnings = cz.from_dict(data, ribbon)
+    assert any("einfuegen/layout" in w for w in warnings)
+    insert = next(t for t in arr.tabs if t.id == "einfuegen")
+    assert [g.ref for g in insert.groups][0] == "einfuegen/kartenrahmen"
+    assert "einfuegen/layout" not in [g.ref for g in insert.groups]
+
+def test_insert_tab_offers_basic_layout_and_galleries_after_drawing(ribbon):
+    from qgis_ribbon.core.model import CommandRef, Split
+    tab = ribbon.tab("einfuegen")
+    frame, elements = tab.groups[0], tab.groups[1]
+    assert isinstance(frame.elements[0], CommandRef) and frame.elements[0].command.id == "grundausstattung"
+    splits = {e.command.id: e for g in (frame, elements) for e in g.elements if isinstance(e, Split)}
+    expected = {"element_karte": "karte_galerie", "element_massstab": "massstab_galerie",
+                "element_nordpfeil": "nordpfeil_galerie"}
+    for main, gallery in expected.items():
+        split = splits[main]
+        assert [c.id for c in split.items] == [main, gallery]
+        assert split.items[1].gallery is not None and split.items[1].source.get("id") == "ribbon." + gallery
+        assert "layout_shown" in split.items[1].enabled_when
+    assert tuple(ribbon.commands["grundausstattung"].enabled_when) == ("layout_shown",)
+
+
+def test_share_atlas_and_format_tabs_offer_output_settings(ribbon):
+    from qgis_ribbon.core.model import CommandRef, Split
+    share = {g.id: g for g in ribbon.tab("teilen").groups}["exportieren"]
+    ids = [e.command.id for e in share.elements]
+    assert ids == ["export_pdf", "schnellexport_pdf", "alle_layouts_exportieren", "export_aufloesung",
+                   "export_worldfile"]
+    assert isinstance(share.elements[0], Split) and [c.id for c in share.elements[0].items] == [
+        "export_pdf", "export_bild", "export_svg"]
+    atlas = [g.id for g in ribbon.tab("atlas").groups]
+    assert atlas[:3] == ["atlas", "abdeckung", "sortierung"]
+    coverage = {g.id: g for g in ribbon.tab("atlas").groups}["abdeckung"]
+    assert [e.command.id for e in coverage.elements if isinstance(e, CommandRef)] == [
+        "atlas_layer", "atlas_seitenname", "atlas_filter"]
+    fmt = {g.id: g for g in ribbon.tab("layout_format").groups}["format_uebertragen"]
+    assert [e.command.id for e in fmt.elements] == ["format_kopieren", "format_einfuegen"]
+
+
+def test_main_window_share_tab_exports_all_layouts():
+    main = config_loader.load(config_loader.DEFAULT_CONFIG)
+    ids = {c.id for c in iter_commands(main.tab("teilen"))}
+    assert "alle_layouts_exportieren" in ids
+    assert main.commands["alle_layouts_exportieren"].source.get("id") == "ribbon.alle_layouts_exportieren"
+

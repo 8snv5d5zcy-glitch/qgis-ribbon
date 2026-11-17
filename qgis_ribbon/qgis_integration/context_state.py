@@ -14,6 +14,7 @@ Signalverbindungen:
   die nicht mehr aktiv sind (keine Lecks, keine Doppelaufrufe).
 """
 
+import dataclasses
 import time
 
 from qgis.core import (QgsLayerTreeGroup, QgsMeshLayer, QgsPointCloudLayer, QgsRasterLayer,
@@ -22,6 +23,7 @@ from qgis.PyQt import sip
 from qgis.PyQt.QtCore import QTimer
 
 from ..core.conditions import Snapshot
+from . import georef_session
 from .field_ops import field_caps
 from .signals import SignalHub
 
@@ -99,6 +101,11 @@ class ContextState(object):
         self._running = True
         self.hub.connect(self.iface, "currentLayerChanged", self._on_layer_changed)
         watch_tree_selection(self.iface, self.hub, self.schedule)
+        georef = georef_session.manager()
+        if georef is not None:
+            # Die Verwaltung lebt länger als dieser Zustand: Verbindungen über den Hub des Plugins
+            self.hub.connect(georef, "changed", self.schedule)
+            self.hub.connect(georef, "started", self._on_georef_started)
         self._watch(self.iface.activeLayer())
         self._flush()
 
@@ -141,6 +148,10 @@ class ContextState(object):
         self.events.append("editing_started")
         self.schedule()
 
+    def _on_georef_started(self):
+        self.events.append("georef_started")
+        self.schedule()
+
     def schedule(self, *_args):
         """Aktualisierung anstoßen; mehrere Aufrufe bis zur Ereignisschleife zählen einmal."""
         if self._running and not self._timer.isActive():
@@ -151,6 +162,9 @@ class ContextState(object):
             return
         start = time.perf_counter()
         events, self.events = tuple(self.events), []
-        self.listener(snapshot(self.layer, current_group(self.iface)), events)
+        snap = snapshot(self.layer, current_group(self.iface))
+        if georef_session.active():
+            snap = dataclasses.replace(snap, georef=True)
+        self.listener(snap, events)
         self.updates += 1
         self.last_update_ms = (time.perf_counter() - start) * 1000.0

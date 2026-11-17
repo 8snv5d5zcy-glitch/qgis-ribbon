@@ -29,7 +29,7 @@ from . import theme
 
 HELP_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "help")
 TOPICS = ("index", "ribbon", "layout", "keyboard", "customize", "appearance", "extensions", "tools",
-          "troubleshooting")
+          "georeference", "troubleshooting")
 ONLINE = "https://github.com/8snv5d5zcy-glitch/qgis-ribbon/blob/main/qgis_ribbon/help/%s/%s.md"
 TITLE = tr("QGIS Ribbon Guide")
 MENU_TEXT = tr("Ribbon Guide …")

@@ -58,9 +58,11 @@ def kind_of(item):
     return "other"
 
 
-def snapshot(items, report=False):
+def snapshot(items, report=False, layout=None):
+    """Kontext des Fensters; ``layout`` ist das gezeigte Layout (None: Bericht ohne Abschnitt)."""
+    pages = layout.pageCollection().pageCount() if layout is not None else 0
     return Snapshot(selected_items=len(items), item_kind=kind_of(items[0]) if len(items) == 1 else None,
-                    layout_report=report)
+                    layout_report=report, layout_missing=layout is None, layout_pages=pages)
 
 
 class LayoutSelection(object):
@@ -95,6 +97,7 @@ class LayoutSelection(object):
             return
         self.layout_hub.connect(self.layout, "selectionChanged", self.schedule)
         self.layout_hub.connect(self.layout.undoStack().stack(), "indexChanged", self.schedule)
+        self.layout_hub.connect(self.layout.pageCollection(), "changed", self.schedule)
         if self.report:
             return
         atlas = self.layout.atlas()
@@ -141,10 +144,13 @@ class LayoutSelection(object):
         self._timer.stop()
         self._flush()
 
+    def shown_layout(self):
+        """Gezeigtes Layout; None ohne Layout oder wenn der Abschnitt des Berichts gelöscht ist."""
+        return None if self.layout is None or sip.isdeleted(self.layout) else self.layout
+
     def _selected(self):
-        if self.layout is None or sip.isdeleted(self.layout):   # Abschnitt des Berichts gelöscht
-            return []
-        return list(self.layout.selectedLayoutItems())
+        layout = self.shown_layout()
+        return [] if layout is None else list(layout.selectedLayoutItems())
 
     def _watch(self):
         self.item_hub.disconnect_all()
@@ -166,7 +172,7 @@ class LayoutSelection(object):
         if self._selected() != self._items:
             self._watch()
         self.notifications += 1
-        state = snapshot(self._items, self.report)
+        state = snapshot(self._items, self.report, self.shown_layout())
         if state != self._context:
             self._context = state
             if self.listener is not None:

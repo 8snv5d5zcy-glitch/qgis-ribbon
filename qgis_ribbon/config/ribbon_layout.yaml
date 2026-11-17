@@ -6,7 +6,7 @@ version: 1
 
 hide_toolbars: ["mLayoutToolbar", "mToolsToolbar", "mNavigationToolbar", "mActionsToolbar", "mAtlasToolbar", "mReportToolbar"]
 
-quick_access: ["projekt_speichern", "rueckgaengig", "wiederholen"]
+quick_access: ["projekt_speichern", "rueckgaengig", "wiederholen", "export_pdf"]
 
 tabs:
   - id: "layout"
@@ -15,72 +15,75 @@ tabs:
       - id: "zwischenablage"
         label: "Clipboard"
         items:
-          - {command: "einfuegen", size: "large"}
-          - {command: "an_ort_einfuegen", size: "medium"}
+          - split: "einfuegen"
+            items: ["an_ort_einfuegen"]
+            size: "large"
           - {command: "ausschneiden", size: "medium"}
           - {command: "kopieren", size: "medium"}
-          - {command: "element_loeschen", size: "large"}
-      - id: "navigieren"
-        label: "Navigate"
-        items:
-          - {command: "layout_verschieben", size: "large"}
-          - {command: "zoom_werkzeug", size: "large"}
-          - {command: "ganze_seite", size: "medium"}
-          - {command: "zoom_100", size: "medium"}
-          - {command: "auf_breite", size: "medium"}
-          - {command: "layout_hineinzoomen", size: "medium"}
-          - {command: "layout_herauszoomen", size: "medium"}
-          - {command: "ansicht_aktualisieren", size: "medium"}
+          - {command: "element_loeschen", size: "medium"}
       - id: "auswahl"
         label: "Selection"
         items:
           - {command: "element_auswaehlen", size: "large"}
           - {command: "inhalt_verschieben", size: "medium"}
           - {command: "knoten_bearbeiten", size: "medium"}
-          - {command: "alle_auswaehlen", size: "medium"}
-          - {command: "auswahl_aufheben", size: "medium"}
-          - {command: "auswahl_umkehren", size: "medium"}
-          - {command: "naechstes_darunter", size: "medium"}
-          - {command: "naechstes_darueber", size: "medium"}
+          - menu: "Selection"
+            key: "Auswahl"
+            icon: "/mActionSelectAll.svg"
+            items: ["alle_auswaehlen", "auswahl_aufheben", "auswahl_umkehren", "naechstes_darunter", "naechstes_darueber"]
+            size: "medium"
       - id: "seite"
         label: "Page"
+        launcher: "seiteneigenschaften"
         items:
           - {command: "seiten_hinzufuegen", size: "large"}
-          - {command: "seitengroesse", size: "large"}
-          - {command: "seiteneigenschaften", size: "medium"}
-          - {command: "layouteigenschaften", size: "medium"}
-          - {command: "druckseite", size: "medium"}
+          - {command: "seitengroesse", size: "medium"}
+          - {command: "seite_ausrichtung", size: "medium"}
+          - {command: "seite_loeschen", size: "medium"}
+          - {command: "seite_raender", size: "medium"}
+          - {command: "zu_seite", size: "medium"}
+      - id: "navigieren"
+        label: "Navigate"
+        items:
+          - {command: "ganze_seite", size: "large"}
+          - row: ["layout_verschieben", "zoom_werkzeug", "layout_hineinzoomen", "layout_herauszoomen"]
+          - row: ["zoom_100", "auf_breite", "ansicht_aktualisieren"]
       - id: "verwalten"
         label: "Layout"
         items:
-          - {command: "layout_oeffnen", size: "large"}
-          - {command: "layout_umbenennen", size: "medium"}
-          - {command: "layout_duplizieren", size: "medium"}
-          - {command: "layout_loeschen", size: "medium"}
-          - {command: "layoutverwaltung", size: "medium"}
-          - {command: "fenster_schliessen", size: "medium"}
+          - split: "layout_neu"
+            items: ["neues_layout_a4_quer", "neues_layout_a4_hoch", "neues_layout_a3_quer", "neues_layout_a3_hoch", "neu_aus_vorlage_layout"]
+            size: "large"
+          - {command: "layout_oeffnen", size: "medium"}
+          - menu: "Manage"
+            key: "Verwalten"
+            icon: "/mActionLayoutManager.svg"
+            items: ["aus_vorlage", "layout_duplizieren", "layout_umbenennen", "layout_loeschen", "layoutverwaltung", "layouteigenschaften"]
+            size: "medium"
   - id: "einfuegen"
     label: "Insert"
     groups:
-      - id: "layout"
-        label: "Layout"
-        items:
-          - split: "layout_neu"
-            items: ["neues_layout_a4_quer", "neues_layout_a4_hoch", "neues_layout_a3_quer", "neues_layout_a3_hoch"]
-            size: "large"
-          - {command: "neu_aus_vorlage_layout", size: "large"}
-          - {command: "aus_vorlage", size: "large"}
       - id: "kartenrahmen"
         label: "Map Frame"
         items:
-          - {command: "element_karte", size: "large"}
-          - {command: "element_karte_3d", size: "large"}
+          - {command: "grundausstattung", size: "large"}
+          - split: "element_karte"
+            label: "Map"
+            items: ["element_karte", "karte_galerie"]
+            size: "large"
+          - {command: "element_karte_3d", size: "medium"}
       - id: "kartenelemente"
         label: "Map Elements"
         items:
           - {command: "element_legende", size: "large"}
-          - {command: "element_massstab", size: "large"}
-          - {command: "element_nordpfeil", size: "large"}
+          - split: "element_massstab"
+            label: "Scale Bar"
+            items: ["element_massstab", "massstab_galerie"]
+            size: "large"
+          - split: "element_nordpfeil"
+            label: "North Arrow"
+            items: ["element_nordpfeil", "nordpfeil_galerie"]
+            size: "large"
           - {command: "element_hoehenprofil", size: "large"}
       - id: "tabellen"
         label: "Tables"
@@ -113,8 +116,20 @@ tabs:
       - id: "atlas"
         label: "Atlas"
         items:
-          - {command: "atlas_einstellungen", size: "large"}
+          - {command: "atlas_aus_layer", size: "large"}
           - {command: "atlas_vorschau", size: "large"}
+          - {command: "atlas_einstellungen", size: "medium"}
+      - id: "abdeckung"
+        label: "Coverage"
+        items:
+          - {command: "atlas_layer", size: "medium"}
+          - {command: "atlas_seitenname", size: "medium"}
+          - {command: "atlas_filter", size: "medium"}
+      - id: "sortierung"
+        label: "Sorting"
+        items:
+          - {command: "atlas_sortierung", size: "medium"}
+          - {command: "atlas_absteigend", size: "medium"}
       - id: "blaettern"
         label: "Browse"
         items:
@@ -184,6 +199,7 @@ tabs:
           - {command: "zum_hauptfenster", size: "large"}
           - {command: "vollbild", size: "medium"}
           - {command: "panels_umschalten", size: "medium"}
+          - {command: "fenster_schliessen", size: "medium"}
       - id: "einstellungen"
         label: "Settings"
         items:
@@ -196,9 +212,16 @@ tabs:
       - id: "exportieren"
         label: "Export"
         items:
-          - {command: "export_pdf", size: "large"}
-          - {command: "export_bild", size: "large"}
-          - {command: "export_svg", size: "large"}
+          - split: "export_pdf"
+            label: "Export"
+            items: ["export_pdf", "export_bild", "export_svg"]
+            size: "large"
+          - split: "schnellexport_pdf"
+            items: ["schnellexport_pdf", "schnellexport_ordner"]
+            size: "large"
+          - {command: "alle_layouts_exportieren", size: "large"}
+          - {command: "export_aufloesung", size: "medium"}
+          - {command: "export_worldfile", size: "medium"}
       - id: "drucken"
         label: "Print"
         items:
@@ -271,6 +294,11 @@ contextual_tabs:
         items:
           - {command: "item_deckkraft", size: "medium"}
           - {command: "item_mischmodus", size: "medium"}
+      - id: "format_uebertragen"
+        label: "Copy Format"
+        items:
+          - {command: "format_kopieren", size: "medium"}
+          - {command: "format_einfuegen", size: "medium"}
   - id: "layout_karte"
     label: "Map"
     context: "Item"
@@ -515,14 +543,139 @@ commands:
     label: "Add Pages"
     source: {type: "designer_action", object_name: "mActionAddPages"}
     description: "Add pages to the layout."
+    enabled_when: ["layout_shown"]
   seitengroesse:
     label: "Page Size"
     source: {type: "custom", id: "ribbon.seite_groesse"}
     description: "Set the size and orientation of the current page."
+    enabled_when: ["layout_shown"]
   seiteneigenschaften:
     label: "Page Properties"
     source: {type: "designer_action", object_name: "mActionPageProperties"}
     description: "Set the size and the background of the current page."
+    enabled_when: ["layout_shown"]
+  seite_ausrichtung:
+    label: "Orientation"
+    source: {type: "custom", id: "ribbon.seite_ausrichtung"}
+    description: "Switch the current page between portrait and landscape."
+    enabled_when: ["layout_shown"]
+  seite_loeschen:
+    label: "Delete Page"
+    source: {type: "custom", id: "ribbon.seite_loeschen"}
+    description: "Delete the current page. The last page of a layout stays."
+    enabled_when: ["layout_several_pages"]
+  seite_raender:
+    label: "Margin Guides"
+    source: {type: "custom", id: "ribbon.seite_raender"}
+    description: "Place guides at an equal distance from the edges of the current page."
+    enabled_when: ["layout_shown"]
+  zu_seite:
+    label: "Go to Page"
+    source: {type: "custom", id: "ribbon.zu_seite"}
+    kind: "control"
+    description: "Show a page of the layout in full."
+    enabled_when: ["layout_several_pages"]
+  grundausstattung:
+    label: "Basic Layout"
+    source: {type: "custom", id: "ribbon.grundausstattung"}
+    icon: "/mActionAddMap.svg"
+    description: "Add what the page is missing: title, map, legend, scale bar and north arrow, arranged for the page size. One undo step."
+    enabled_when: ["layout_shown"]
+  karte_galerie:
+    label: "Map Views"
+    source: {type: "custom", id: "ribbon.karte_galerie"}
+    kind: "control"
+    icon: "/mActionAddMap.svg"
+    description: "Insert a map showing the current map view, a map theme or a bookmark. On an empty page the map fills the page."
+    enabled_when: ["layout_shown"]
+    gallery: {display: "dropdown"}
+  massstab_galerie:
+    label: "Scale Bar Styles"
+    source: {type: "custom", id: "ribbon.massstab_galerie"}
+    kind: "control"
+    icon: "/mActionScaleBar.svg"
+    description: "Insert a scale bar in the chosen style, linked to the map and placed below it."
+    enabled_when: ["layout_shown"]
+    gallery: {display: "dropdown"}
+  nordpfeil_galerie:
+    label: "North Arrows"
+    source: {type: "custom", id: "ribbon.nordpfeil_galerie"}
+    kind: "control"
+    icon: "/north_arrow.svg"
+    description: "Insert a north arrow, linked to the map and placed in its upper right corner."
+    enabled_when: ["layout_shown"]
+    gallery: {display: "dropdown"}
+  schnellexport_pdf:
+    label: "PDF to Project Folder"
+    source: {type: "custom", id: "ribbon.schnellexport_pdf"}
+    icon: "/mActionSaveAsPDF.svg"
+    description: "Export the layout as PDF without a dialog, named after the layout, into the folder chosen for this project."
+    enabled_when: ["layout_is_print"]
+  schnellexport_ordner:
+    label: "Choose Export Folder"
+    source: {type: "custom", id: "ribbon.schnellexport_ordner"}
+    icon: "/mActionFileOpen.svg"
+    description: "Choose the folder of this project for PDF to Project Folder."
+  alle_layouts_exportieren:
+    label: "Export All Layouts"
+    source: {type: "custom", id: "ribbon.alle_layouts_exportieren"}
+    icon: "/mActionSaveAsPDF.svg"
+    description: "Export the layouts of the project you check, as PDF or PNG, into one folder. An atlas becomes one PDF."
+  export_aufloesung:
+    label: "Resolution"
+    source: {type: "custom", id: "ribbon.export_aufloesung"}
+    kind: "control"
+    description: "Export resolution of the layout in dots per inch."
+    enabled_when: ["layout_is_print"]
+  export_worldfile:
+    label: "Save World File"
+    source: {type: "custom", id: "ribbon.export_worldfile"}
+    kind: "control"
+    description: "Save a world file next to exported images, so GIS programs can place them on the map."
+    enabled_when: ["layout_is_print"]
+  atlas_aus_layer:
+    label: "Atlas from Active Layer"
+    source: {type: "custom", id: "ribbon.atlas_aus_layer"}
+    icon: "/mIconAtlas.svg"
+    description: "Use the active layer of the main window as atlas coverage layer, let the map follow the atlas and show the preview."
+    enabled_when: ["layout_is_print"]
+  atlas_layer:
+    label: "Coverage Layer"
+    source: {type: "custom", id: "ribbon.atlas_layer"}
+    kind: "control"
+    description: "Layer whose features make the atlas pages. Empty turns the atlas off."
+  atlas_seitenname:
+    label: "Page Name"
+    source: {type: "custom", id: "ribbon.atlas_seitenname"}
+    kind: "control"
+    description: "Field or expression for the name of each atlas page."
+  atlas_filter:
+    label: "Filter"
+    source: {type: "custom", id: "ribbon.atlas_filter"}
+    kind: "control"
+    description: "Only features matching this expression become pages. Empty shows all."
+  atlas_sortierung:
+    label: "Sort By"
+    source: {type: "custom", id: "ribbon.atlas_sortierung"}
+    kind: "control"
+    description: "Field for the order of the atlas pages. Empty keeps the order of the layer."
+  atlas_absteigend:
+    label: "Descending"
+    source: {type: "custom", id: "ribbon.atlas_absteigend"}
+    kind: "control"
+    description: "Sort the atlas pages in descending order."
+  format_kopieren:
+    label: "Copy Format"
+    source: {type: "custom", id: "ribbon.format_kopieren"}
+    icon: "/mActionEditCopy.svg"
+    description: "Remember frame, background, opacity and blend mode of the selected item; of a text also font, color and alignment."
+    enabled_when: ["layout_items_selected"]
+  format_einfuegen:
+    label: "Paste Format"
+    source: {type: "custom", id: "ribbon.format_einfuegen"}
+    icon: "/mActionEditPaste.svg"
+    description: "Apply the copied format to all selected items in one undo step. Text settings only go to texts."
+    enabled_when: ["layout_items_selected"]
   layouteigenschaften:
     label: "Layout Properties"
     source: {type: "designer_action", object_name: "mActionLayoutProperties"}
@@ -531,6 +684,7 @@ commands:
     label: "Page Setup"
     source: {type: "designer_action", object_name: "mActionPageSetup"}
     description: "Set the paper and the margins for printing."
+    enabled_when: ["layout_shown"]
   layout_oeffnen:
     label: "Layouts"
     source: {type: "qgis_menu", object_name: "mLayoutsMenu"}
@@ -584,7 +738,7 @@ commands:
     source: {type: "designer_action", object_name: "mActionLoadFromTemplate"}
     description: "Add the items of a layout template (.qpt) to this layout."
   element_karte:
-    label: "Map"
+    label: "Draw Map"
     source: {type: "designer_item", item: "LayoutMap"}
     description: "Draw a new map frame."
   element_karte_3d:
@@ -596,11 +750,11 @@ commands:
     source: {type: "designer_item", item: "LayoutLegend"}
     description: "Draw a new legend."
   element_massstab:
-    label: "Scale Bar"
+    label: "Draw Scale Bar"
     source: {type: "designer_item", item: "LayoutScaleBar"}
     description: "Draw a new scale bar."
   element_nordpfeil:
-    label: "North Arrow"
+    label: "Draw North Arrow"
     source: {type: "designer_item", item: "LayoutPicture", index: 1}
     description: "Draw a new north arrow."
   element_hoehenprofil:

@@ -64,7 +64,7 @@ Befehle links doppelt anklicken oder mit **Hinzufügen ›** übernehmen. Die Re
 
 Auch die Dropdowns von Split-Buttons und Menüs lassen sich füllen, zum Beispiel **Erweitertes Digitalisieren** im Tab Bearbeiten. Im Editor einen Befehl aus der Palette auf die Mitte eines Buttons mit ▾ ziehen: Der Button wird hervorgehoben, beim Loslassen kommt der Befehl ans Ende seines Dropdowns. Eine Kachel eines einfachen Befehls lässt sich ebenso hineinziehen; sie verschwindet dann aus der Gruppe. Am Rand des Buttons abgelegt, landet der Befehl wie gewohnt daneben.
 
-Reihenfolge und Einträge legt **Dropdown anpassen …** in den Eigenschaften des Buttons fest, im selben Dialog wie bei Galerien. Auch hier stehen Befehle anderer Plugins zur Wahl. Die Änderung gilt überall, wo der Button steht, und lässt sich im Editor rückgängig machen. Fehlt ein Plugin später, bleibt sein Eintrag grau stehen, bis es wieder geladen ist.
+Reihenfolge und Einträge legt **Dropdown anpassen …** in den Eigenschaften des Buttons fest, im selben Dialog wie bei Galerien. Auch hier stehen Befehle anderer Plugins zur Wahl. Die Änderung gilt überall, wo der Button steht, und lässt sich im Editor rückgängig machen. Fehlt ein Plugin später, ist sein Eintrag ausgeblendet, bis es wieder geladen ist.
 
 ## Anordnungen
 
@@ -77,6 +77,6 @@ Das Untermenü **Anordnungen** im Menü ▾ und im Rechtsklick-Menü verwaltet d
 - **Löschen** entfernt eine gespeicherte Anordnung.
 - **Exportieren …** schreibt die aktuelle Anordnung in eine JSON-Datei, zum Beispiel zum Weitergeben an Kolleginnen und Kollegen. **Importieren …** lädt eine solche Datei.
 
-Nennt eine Anordnung Befehle, die es in dieser QGIS-Installation nicht gibt (zum Beispiel von einem nicht installierten Plugin), erscheinen sie ausgegraut oder werden beim Import mit einem Hinweis übergangen.
+Nennt eine Anordnung Befehle, die es in dieser QGIS-Installation nicht gibt (zum Beispiel von einem nicht installierten Plugin), blendet der Ribbon sie aus, oder sie werden beim Import mit einem Hinweis übergangen. Im Editor stehen solche verwaisten Einträge blass mit Grund; **Verwaiste Einträge entfernen …** unten im Editor entfernt sie aus Tabs, Galerien, Dropdowns und dem Schnellzugriff (rückgängig machen möglich, wirksam erst mit **Speichern**).
 
 Eine Anordnung enthält auch das [Ribbon im Layout-Fenster](layout.md). Laden Sie eine ältere Anordnung ohne diesen Teil, bleibt das Layout-Fenster, wie es ist.

@@ -35,6 +35,29 @@ else:
 
     _APP = None
 
+    # Das Nachbau-QGIS entsteht in Python; ``sip.ispycreated`` hielte jede seiner Aktionen
+    # für die eines Plugins. Was als QGIS gilt, trägt diese Eigenschaft (``native``).
+    NATIVE = "ribbonTestNative"
+
+    def native(*objs):
+        """Objekte als „von QGIS erzeugt“ markieren (nicht als Plugin-Aktion zählen)."""
+        for obj in objs:
+            obj.setProperty(NATIVE, True)
+        return objs[0] if len(objs) == 1 else objs
+
+    from qgis_ribbon.qgis_integration import extensions as _extensions
+    _from_python = _extensions.from_python
+
+    def _test_from_python(obj):
+        try:
+            if obj.property(NATIVE):
+                return False
+        except (AttributeError, RuntimeError):
+            return False
+        return _from_python(obj)
+
+    _extensions.from_python = _test_from_python
+
     @pytest.fixture(scope="session", autouse=True)
     def qgis_app():
         global _APP
@@ -118,6 +141,12 @@ else:
         def pluginHelpMenu(self):
             return self._mw.findChild(QMenu, "mPluginHelpMenu")
 
+        def addDockWidget(self, area, dock):
+            self._mw.addDockWidget(area, dock)
+
+        def removeDockWidget(self, dock):
+            self._mw.removeDockWidget(dock)
+
     def _action(mw, name, text, checkable=False):
         act = QAction(text, mw)
         act.setObjectName(name)
@@ -183,6 +212,8 @@ else:
         plugin_act = QAction("Werkzeugkiste", mw)
         plugin_act.setObjectName("toolboxAction")
         plugin_tb.addAction(plugin_act)
+        for obj in mw.findChildren(QObject):
+            native(obj)
         return mw
 
     @pytest.fixture

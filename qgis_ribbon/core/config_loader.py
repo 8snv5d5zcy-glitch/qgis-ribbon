@@ -31,7 +31,7 @@ MAX_MENU_DEPTH = 3
 
 _TOP_KEYS = {"version", "hide_toolbars", "quick_access", "tabs", "contextual_tabs", "commands",
              "extensions"}
-_EXTENSION_KEYS = {"menus", "toolbars", "qgis_toolbars", "hide"}
+_EXTENSION_KEYS = {"menus", "toolbars", "qgis_toolbars", "skip_menus", "hide"}
 _COMMAND_KEYS = {"label", "source", "kind", "icon", "enabled_when", "description", "gallery", "qgis_min"}
 _GALLERY_KEYS = {"display", "items", "columns"}
 _TAB_KEYS = {"id", "label", "groups", "activate_on", "dynamic", "visible_when"}
@@ -419,7 +419,7 @@ class _Parser(object):
             return ExtensionSources()
         self._keys(raw, _EXTENSION_KEYS, "extensions")
         lists = {}
-        for key in ("menus", "toolbars", "qgis_toolbars"):
+        for key in ("menus", "toolbars", "qgis_toolbars", "skip_menus"):
             names = self._list(raw, key, "extensions", required=False)
             for i, name in enumerate(names):
                 if not isinstance(name, str) or not name:

@@ -32,9 +32,9 @@ benennt um, Leertaste blendet ein und aus, Strg+Z/Strg+Y.
 
 from qgis.PyQt.QtCore import QPoint, QSize, Qt, QTimer
 from qgis.PyQt.QtGui import QCursor, QDrag, QKeySequence
-from qgis.PyQt.QtWidgets import (QButtonGroup, QCheckBox, QDialog, QFrame, QHBoxLayout, QLabel,
-                                 QLineEdit, QMenu, QMessageBox, QPushButton, QShortcut, QSplitter,
-                                 QToolButton, QVBoxLayout)
+from qgis.PyQt.QtWidgets import (QButtonGroup, QCheckBox, QDialog, QDialogButtonBox, QFrame, QHBoxLayout,
+                                 QLabel, QLineEdit, QListWidget, QListWidgetItem, QMenu, QMessageBox,
+                                 QPushButton, QShortcut, QSplitter, QToolButton, QVBoxLayout)
 
 from ..core import customization as cz
 from ..core import editor as ed
@@ -43,7 +43,7 @@ from ..core.model import CommandRef, Menu, Row, Split
 from ..core.search import ribbon_entries
 from . import guide, icons, keys, theme
 from .qt_compat import event_pos
-from .editor_widgets import (MIME_TYPE, GroupCard, NewGroupCard, Palette, Preview, QuickStrip, TabChip,
+from .editor_widgets import (MIME_TYPE, ORPHAN_TIP, GroupCard, NewGroupCard, Palette, Preview, QuickStrip, TabChip,
                              TabStrip, chip_pixmap, drag_pixmap, menu_entries, mime, scroll_area)
 from ..core.i18n import tr
 
@@ -77,6 +77,44 @@ def confirm_remove_tab(parent, label):
                                   QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                   QMessageBox.StandardButton.No)
     return answer == QMessageBox.StandardButton.Yes
+
+
+ORPHANS_TITLE = tr("Remove Orphaned Entries")
+ORPHANS_TEXT = tr("These entries belong to plugins that are not loaded or to tools that no longer exist. "
+                  "The ribbon hides them; if the plugin or tool comes back, they reappear. "
+                  "Remove the checked ones from tabs, galleries, dropdowns and Quick Access:")
+
+
+def choose_orphans(parent, entries):
+    """Auswahl der zu entfernenden verwaisten Einträge (in Tests ersetzt).
+
+    ``entries``: [(ID, Beschriftung, Grund)] -> Liste der IDs oder None (abgebrochen).
+    """
+    dlg = QDialog(parent)
+    dlg.setObjectName("ribbon_orphans")
+    dlg.setWindowTitle(ORPHANS_TITLE)
+    theme.style_dialog(dlg)
+    lay = QVBoxLayout(dlg)
+    text = QLabel(ORPHANS_TEXT, dlg)
+    text.setWordWrap(True)
+    lay.addWidget(text)
+    lst = QListWidget(dlg)
+    for cid, label, reason in entries:
+        item = QListWidgetItem("%s  —  %s" % (label, reason) if reason else label, lst)
+        item.setData(Qt.ItemDataRole.UserRole, cid)
+        item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+        item.setCheckState(Qt.CheckState.Checked)
+    lay.addWidget(lst)
+    box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, dlg)
+    box.accepted.connect(dlg.accept)
+    box.rejected.connect(dlg.reject)
+    lay.addWidget(box)
+    dlg.resize(520, 360)
+    ok = dlg.exec() == QDialog.DialogCode.Accepted
+    ids = [lst.item(i).data(Qt.ItemDataRole.UserRole) for i in range(lst.count())
+           if lst.item(i).checkState() == Qt.CheckState.Checked]
+    dlg.deleteLater()
+    return ids if ok else None
 
 
 def tab_title(tab):
@@ -260,6 +298,12 @@ class RibbonEditor(QDialog):
         self.restore_menu.aboutToShow.connect(self._fill_restore_menu)
         self.restore_button.setMenu(self.restore_menu)
         foot.addWidget(self.restore_button)
+        self.orphans_button = QPushButton(tr("Remove Orphaned Entries …"), self)
+        self.orphans_button.setObjectName("ribbon_editor_orphans")
+        self.orphans_button.setToolTip(tr("Entries of plugins that are not loaded and of deleted tools "
+                                          "(hidden in the ribbon)"))
+        self.orphans_button.clicked.connect(self.remove_orphans)
+        foot.addWidget(self.orphans_button)
         self.help_button = QPushButton(tr("Help"), self)
         self.help_button.setToolTip(tr("Guide: customizing the ribbon (F1)"))
         self.help_button.clicked.connect(lambda: guide.show_help("customize", self))
@@ -270,8 +314,8 @@ class RibbonEditor(QDialog):
         self.save_button = QPushButton(tr("Save"), self)
         self.save_button.setObjectName("ribbon_editor_save")
         self.save_button.clicked.connect(self.save)
-        for b in (self.reset_button, self.restore_button, self.help_button, self.cancel_button,
-                  self.save_button):
+        for b in (self.reset_button, self.restore_button, self.orphans_button, self.help_button,
+                  self.cancel_button, self.save_button):
             b.setAutoDefault(False)
             b.setDefault(False)
         foot.addWidget(self.cancel_button)
@@ -346,7 +390,7 @@ class RibbonEditor(QDialog):
             self.widgets[card.header.sel] = card.header
             for tile in card.tiles:
                 tile.setAccessibleName(ed.describe(self.base, tile.item, where))
-                tile.setToolTip(ed.describe(self.base, tile.item, where))
+                tile.setToolTip(self._tile_tip(tile, where))
                 tile.marked = self.clip == tile.sel[1]
                 self.widgets[tile.sel] = tile
         self.preview.new_card = NewGroupCard(self, tab.id, self.preview)
@@ -386,6 +430,13 @@ class RibbonEditor(QDialog):
         except KeyError:
             return False
 
+    def _tile_tip(self, tile, where):
+        tip = ed.describe(self.base, tile.item, where)
+        if tile.orphan:
+            reason = tile.element.command.description
+            tip = "\n".join(t for t in (tip, reason, ORPHAN_TIP) if t)
+        return tip
+
     def _update_header(self):
         if self.editor.dirty:
             text = tr("Arrangement: changed (not saved yet)")
@@ -403,6 +454,7 @@ class RibbonEditor(QDialog):
         self.arrangement_label.setText(text)
         self.undo_button.setEnabled(self.editor.can_undo)
         self.redo_button.setEnabled(self.editor.can_redo)
+        self.orphans_button.setVisible(bool(self.editor.orphans()))
         undo, redo = keys.text("Ctrl+Z"), keys.text(keys.REDO)
         self.undo_button.setToolTip(tr("Undo: %s (%s)") % (self.editor.undo_label(), undo)
                                     if self.editor.can_undo else tr("Undo (%s)") % undo)
@@ -1155,6 +1207,19 @@ class RibbonEditor(QDialog):
     def restore_tab(self, tab_id):
         return self.do(self.editor.restore_tab, tab_id, select=lambda p: ("tab", p.tab),
                        message=tr("Tab restored with all its groups."))
+
+    def remove_orphans(self):
+        ids = self.editor.orphans()
+        if not ids:
+            return 0
+        entries = [(c, self.base.commands[c].label, self.base.commands[c].description) for c in ids]
+        chosen = choose_orphans(self, entries)
+        if not chosen:
+            return 0
+        n = self.do(self.editor.remove_orphans, chosen,
+                    message=tr("%d orphaned entries removed. Undo with %s, applied only with “Save”.")
+                    % (len(chosen), keys.text("Ctrl+Z")))
+        return n or 0
 
     def reset_all(self):
         self.clip = None

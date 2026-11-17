@@ -51,6 +51,20 @@ def test_ui_symbols(shipped):
         assert shipped.for_ui(name) in shipped.motifs
 
 
+
+def test_runtime_motifs_per_provider(shipped):
+    """Eigene Skripte ohne eigenes Icon: eigenes Motiv; Modelle und QGIS-Werkzeuge: keins."""
+    assert shipped.for_provider("script") == "skript_werkzeug" in shipped.motifs
+    assert shipped.for_provider("model") is None and shipped.for_provider("native") is None
+
+
+def test_check_runtime_section():
+    good = {"motive": {"gut": {"k": ['<path d="M0 0h1"/>']}}}
+    assert icons.check(dict(good, laufzeit={"script": "gut"})) == []
+    errors = "\n".join(icons.check(dict(good, laufzeit={"script": "fehlt", "Mein Anbieter": "gut"})))
+    assert "laufzeit: script" in errors and "'fehlt'" in errors
+    assert "'Mein Anbieter'" in errors
+
 def test_svg_has_colors_only_from_arguments(shipped):
     motif = shipped.motifs[shipped.for_command("puffer")]
     text = icons.svg(motif, "#111111", "#222222", "#333333")

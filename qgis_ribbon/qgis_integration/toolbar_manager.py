@@ -21,11 +21,17 @@ Regeln:
 - Layout-Fenster (``remember=False``): keine Merkliste. Der Designer speichert
   seinen Zustand erst beim Schließen, und der Ribbon blendet die Leisten davor
   wieder ein; nach einem Absturz bleibt der alte Zustand mit allen Leisten.
+- Tastenkürzel: Eine Aktion, die nur in einer ausgeblendeten Leiste steht, verliert
+  ihr Kürzel (Qt5 und Qt6). Beim Ausblenden hängen die Aktionen der Leiste, die noch
+  nicht am Fenster hängen, mit ``addAction`` am Fenster; kommt später eine dazu
+  (``ActionAdded``), ebenso. ``restore()`` entfernt genau diese wieder.
 """
 
 from qgis.core import QgsSettings
-from qgis.PyQt.QtCore import QObject, Qt
-from qgis.PyQt.QtWidgets import QToolBar
+from qgis.PyQt.QtCore import QEvent, QObject, Qt
+from qgis.PyQt.QtWidgets import QToolBar, QWidgetAction
+
+from .signals import alive
 
 SETTINGS_KEY = "qgis_ribbon/ausgeblendete_toolbars"
 STATE_KEY = "UI/state"   # Fensterzustand, den QGIS beim Start wiederherstellt
@@ -48,6 +54,8 @@ class ToolbarManager(QObject):
         self._hidden_bars = []     # ausgeblendete Leisten ohne objectName (Objekt)
         self._ribbon = None
         self._break_before = None  # Toolbar, vor der wir einen Umbruch eingefügt haben
+        self._attached = []        # Aktionen, die wir fürs Kürzel ans Fenster gehängt haben
+        self._watched = []         # ausgeblendete Leisten (ActionAdded/ActionRemoved)
 
     def _toolbars(self):
         """Toolbars des Hauptfensters (direkte Kinder; rekursive Suche ist teuer)."""
@@ -98,8 +106,10 @@ class ToolbarManager(QObject):
             if not tb.isHidden():
                 tb.hide()
                 self._hidden.append(name)
+                self._keep_shortcuts(tb)
             elif name in leftover:  # nach Absturz noch versteckt
                 self._hidden.append(name)
+                self._keep_shortcuts(tb)
         if self.settings is not None:
             self.settings.setValue(SETTINGS_KEY, list(self._hidden))
 
@@ -112,6 +122,56 @@ class ToolbarManager(QObject):
             if not tb.objectName() and not tb.isHidden() and tb not in self._hidden_bars:
                 tb.hide()
                 self._hidden_bars.append(tb)
+                self._keep_shortcuts(tb)
+
+    # Tastenkürzel der Aktionen ausgeblendeter Leisten
+    def _keep_shortcuts(self, tb):
+        if tb not in self._watched:
+            tb.installEventFilter(self)
+            self._watched.append(tb)
+        present = {id(a) for a in self.mw.actions()}
+        for act in tb.actions():
+            self._attach(act, present)
+
+    def _attach(self, act, present=None):
+        if act.isSeparator() or isinstance(act, QWidgetAction):
+            return
+        if present is None:
+            present = {id(a) for a in self.mw.actions()}
+        if id(act) in present:
+            return
+        self.mw.addAction(act)
+        self._attached.append(act)
+
+    def _detach(self, act):
+        """Aktion vom Fenster lösen, wenn sie in keiner anderen ausgeblendeten Leiste mehr steht."""
+        if not any(a is act for a in self._attached):
+            return
+        for tb in self._watched:
+            if alive(tb) and any(a is act for a in tb.actions()):
+                return
+        self._attached = [a for a in self._attached if a is not act]
+        if alive(act):
+            self.mw.removeAction(act)
+
+    def eventFilter(self, obj, event):  # noqa: N802 (Qt)
+        t = event.type()
+        if t == QEvent.Type.ActionAdded:
+            self._attach(event.action())
+        elif t == QEvent.Type.ActionRemoved:
+            # Qt nimmt die Aktion vor dem Ereignis aus der Leiste
+            self._detach(event.action())
+        return False
+
+    def _release_shortcuts(self):
+        for tb in self._watched:
+            if alive(tb):
+                tb.removeEventFilter(self)
+        self._watched = []
+        for act in self._attached:
+            if alive(act):
+                self.mw.removeAction(act)
+        self._attached = []
 
     def _unnamed(self):
         out = []
@@ -133,6 +193,7 @@ class ToolbarManager(QObject):
 
     def restore(self):
         """Ausgeblendete Toolbars wieder einblenden und Merkliste löschen."""
+        self._release_shortcuts()
         self._show_hidden()
         self._hidden = []
         self._hidden_bars = []

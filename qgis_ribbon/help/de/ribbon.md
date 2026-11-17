@@ -25,7 +25,11 @@ Beginnt die Bearbeitung eines Layers, wechselt das Ribbon zum Tab **Bearbeiten**
 
 In **Bearbeitung** wirken **Bearbeiten**, **Speichern** und **Verwerfen** nur auf den aktiven Layer; nach Speichern oder Verwerfen bleibt die Bearbeitung an. **Alle speichern** und **Alle verwerfen** wirken auf alle Layer in Bearbeitung. Vor dem Verwerfen kommt eine Rückfrage.
 
-**Konstruktion › Erweiterte Digitalisierung** schaltet die Konstruktionshilfen ein oder aus (Abstand, Winkel, Koordinaten beim Digitalisieren). Der Schalter ist bedienbar, solange ein Werkzeug aktiv ist, das sie unterstützt, etwa **Erstellen** oder **Ändern**. Das Panel öffnet sich dabei nicht; **Konstruktionspanel** im Dropdown des Buttons blendet es ein oder aus, ohne die Hilfen ein- oder auszuschalten. Die kleinen Icons in **Einrasten** schalten Spurverfolgung, Selbsteinrasten und das Einrasten auf Schnittpunkte.
+**Konstruktion › Erweiterte Digitalisierung** schaltet die Konstruktionshilfen ein oder aus (Abstand, Winkel, Koordinaten beim Digitalisieren). Der Schalter ist bedienbar, solange ein Werkzeug aktiv ist, das sie unterstützt, etwa **Erstellen** oder **Ändern**. Das Panel öffnet sich dabei nicht; **Konstruktionspanel** im Dropdown des Buttons blendet es ein oder aus, ohne die Hilfen ein- oder auszuschalten.
+
+**Einrasten** zeigt die Einstellungen der QGIS-Einrastleiste einzeln: **Einrasten** schaltet das Einrasten ein oder aus, **Einrastoptionen** im Dropdown öffnet die ganze Leiste. Daneben stehen **Modus** (aktiver Layer, alle Layer, erweiterte Konfiguration), das Dropdown **Einrasttyp** mit Häkchen für Stützpunkte, Segmente, Flächen, Schwerpunkte, Segmentmitten und Linienendpunkte (mehrere zugleich) und **Toleranz** mit ihrer Einheit. Die kleinen Icons schalten Spurverfolgung, Selbsteinrasten und das Einrasten auf Schnittpunkte. Die Einstellungen gehören zum Projekt; Änderungen in der QGIS-Leiste oder beim Laden eines Projekts zeigt der Ribbon sofort an. Bei erweiterter Konfiguration legen Sie Typ und Toleranz je Layer in den Einrastoptionen fest; die Felder im Ribbon sind dann grau.
+
+Weitere Einrast-Einstellungen stehen im Editor (**Ribbon anpassen**) zur Auswahl und lassen sich in jede Gruppe ziehen: die Einrasttypen als einzelne Schalter, **Überschneidungen**, **Toleranzeinheit**, **Maßstabsabhängiges Einrasten** mit kleinstem und größtem Maßstab, **Versatz der Spurverfolgung** und **Erweiterte Einrastkonfiguration**. Den Versatz speichert QGIS nicht im Projekt.
 
 ## Kontext-Tabs
 

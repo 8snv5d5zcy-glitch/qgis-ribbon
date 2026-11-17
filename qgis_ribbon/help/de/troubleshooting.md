@@ -30,7 +30,7 @@ Die klassische QGIS-Oberfläche ist aktiv. **Ansicht › Ribbon-Oberfläche** w�
 Sie ist ausgeblendet. Im Menü ▾ **QGIS-Menüleiste ausblenden** erneut wählen. Bis dahin sind die Menüs über den Knopf **☰** links in der Kopfzeile erreichbar, siehe [Darstellung](appearance.md).
 
 **Ein Befehl ist ausgegraut.**
-Er braucht einen passenden aktiven Layer (zum Beispiel einen Vektorlayer oder einen Layer im Bearbeitungsmodus), eine Auswahl oder ein Plugin, das nicht geladen ist. Bei fehlenden Befehlen nennt der Tooltip den Grund.
+Er braucht einen passenden aktiven Layer (zum Beispiel einen Vektorlayer oder einen Layer im Bearbeitungsmodus) oder eine Auswahl. Der Tooltip nennt den Grund. Befehle nicht geladener Plugins und gelöschter Skripte blendet der Ribbon aus.
 
 **Das Ribbon zeigt englische Texte (oder deutsche).**
 Das Ribbon folgt der Sprache von QGIS. Sie lässt sich unter **Einstellungen › Optionen › Allgemein** ändern; danach QGIS neu starten.

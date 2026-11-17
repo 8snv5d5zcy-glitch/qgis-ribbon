@@ -3,7 +3,8 @@ import copy
 
 import pytest
 from qgis.core import QgsApplication
-from qgis.PyQt.QtCore import QEvent, Qt
+from qgis.PyQt import sip
+from qgis.PyQt.QtCore import QEvent, QPoint, Qt
 from qgis.PyQt.QtGui import QKeySequence
 from qgis.PyQt.QtTest import QTest
 from qgis.PyQt.QtWidgets import (QAction, QApplication, QDialogButtonBox, QLabel, QMenu, QShortcut, QToolButton,
@@ -15,7 +16,7 @@ from qgis_ribbon.qgis_integration.signals import SignalHub
 from qgis_ribbon.qgis_integration.user_settings import (KEY_MINIMIZED, KEY_QUICK_ACCESS,
                                                          UserSettings)
 from qgis_ribbon.ui.controls.gallery import GalleryGrid
-from qgis_ribbon.ui import keytips as keytips_ui, menu_anchor, quick_access, ribbon_widget
+from qgis_ribbon.ui import keytips as keytips_ui, menu_anchor, quick_access, ribbon_widget, search_box
 from qgis_ribbon.ui.keys import MAC
 from qgis_ribbon.ui.keytips import KeyTipController
 from qgis_ribbon.ui.qt_compat import APP_FILTER
@@ -115,6 +116,23 @@ def test_alt_alone_shows_level0(setup):
     assert not keys.active
     settle()
     assert visible_labels(w) == []
+
+
+@NEEDS_FILTER
+def test_keytip_of_medium_button_sits_below_its_icon(setup):
+    """Marke eines mittleren Buttons unter dem Icon, nicht mitten auf der Beschriftung."""
+    w, keys, mw = setup
+    alt(mw)
+    QTest.keyClick(mw, Qt.Key.Key_K)
+    settle()
+    btn = w.findChild(QToolButton, "ribbon_btn_speichern")
+    assert btn.property("ribbon_size") == "medium"
+    item = next(i for i in keys.items if i.widget is btn)
+    label = next(l for l in w.findChildren(QLabel, "ribbon_keytip") if l.text() == item.code and l.isVisible())
+    centre = label.mapToGlobal(QPoint(label.width() // 2, 0)).x() - btn.mapToGlobal(QPoint(0, 0)).x()
+    assert abs(centre - keytips_ui.MEDIUM_ICON_X) <= 1 and centre < btn.width() // 2
+    QTest.keyClick(mw, Qt.Key.Key_Escape)
+    QTest.keyClick(mw, Qt.Key.Key_Escape)
 
 
 @NEEDS_FILTER
@@ -403,6 +421,26 @@ def test_search_results_in_model(setup):
     w.search.completer.popup().hide()
 
 
+def test_search_survives_deleted_qgis_action(setup):
+    """Von QGIS gelöschte Aktion (neu aufgebautes Menü): kein RuntimeError, Index neu."""
+    w, _keys, mw = setup
+    menu = QMenu("Zuletzt", mw)
+    old = menu.addAction("Kurzlebige Aktion")
+    mw.menuBar().addMenu(menu)
+    try:
+        assert w.search.results("kurzlebige")[0].ref is old
+        sip.delete(old)
+        new = menu.addAction("Kurzlebige Aktion")
+        w.search.update_results("kurzlebige")
+        assert w.search.model.rowCount() == 1
+        entry = w.search.model.item(0).data(search_box.ROLE_ENTRY)
+        assert entry.ref is new
+        w.search.completer.popup().hide()
+    finally:
+        mw.menuBar().removeAction(menu.menuAction())
+        menu.deleteLater()
+
+
 # -- Galerie per Tastatur -------------------------------------------------------------
 
 def test_gallery_grid_keyboard(setup, fake_iface):
@@ -489,3 +527,69 @@ def test_keytip_dialog_filter_and_menu_entries(setup):
     assert "Kürzel anpassen …" in [a.text() for a in w.context_menu(None).actions()]
     w.quick.menu.aboutToShow.emit()
     assert "Kürzel anpassen …" in [a.text() for a in w.quick.menu.actions()]
+
+
+def test_keytip_on_split_with_deleted_qgis_menu(fake_iface, settings):
+    """Split, dessen Dropdown ein QGIS-Menü ist; QGIS löscht es und legt es neu an: keine Ausnahme."""
+    from qgis.PyQt import sip
+    from qgis.PyQt.QtWidgets import QMenu, QWidget
+    data = copy.deepcopy(DEFINITION)
+    data["tabs"][0]["groups"][0]["items"][0] = {"split": "verschieben", "items": ["layer_menue"], "size": "large"}
+    ribbon = config_loader.parse(data)
+    mw = fake_iface.mainWindow()
+    hub = SignalHub()
+    w = RibbonWidget(ribbon, ActionResolver(fake_iface), hub, mw, user=UserSettings(settings))
+    w.resize(1200, 140)
+    w.show()
+    settle()
+    try:
+        split = w.findChild(QWidget, "ribbon_split_verschieben")
+        old = mw.findChild(QMenu, "mAddLayerMenu")
+        assert split.menu is old
+        mw.menuBar().removeAction(old.menuAction())
+        sip.delete(old)
+        new = QMenu("Layer hinzufügen", mw)
+        new.setObjectName("mAddLayerMenu")
+        new.addAction("Neu angelegt")
+        mw.menuBar().addMenu(new)
+        target = next(t for ts in w.ctx.targets.values() for t in ts if t.label == "Verschieben")
+        assert target.activate()
+        settle()
+        popup = QApplication.activePopupWidget()
+        assert popup is not None and "Neu angelegt" in [a.text() for a in popup.actions()]
+        popup.close()
+        assert split.menu is new
+        # Klick unten ohne Menü: neu aufbauen und öffnen
+        mw.menuBar().removeAction(new.menuAction())
+        sip.delete(new)
+        again = QMenu("Layer hinzufügen", mw)
+        again.setObjectName("mAddLayerMenu")
+        again.addAction("Noch einmal")
+        mw.menuBar().addMenu(again)
+        split.bottom.click()
+        settle()
+        assert split.menu is again
+        again.close()
+    finally:
+        w.hide_popup()
+        hub.disconnect_all()
+        w.deleteLater()
+        settle()
+
+
+def test_arrangement_hints_logged_once_per_session(monkeypatch):
+    """Hinweise wie „… no longer exists“ stehen je Sitzung einmal im Protokoll, nicht bei jedem Aufbau."""
+    from qgis_ribbon.qgis_integration import arrangements as arr_mod
+    base = config_loader.parse(copy.deepcopy(DEFINITION))
+    logged = []
+    monkeypatch.setattr(arr_mod, "_LOGGED", set())
+    monkeypatch.setattr(arr_mod.QgsMessageLog, "logMessage", staticmethod(lambda text, *a, **k: logged.append(text)))
+
+    class User:
+        def layout(self):
+            return {"menus": {"verschwunden": ["neu"]}}
+
+    arrangements = arr_mod.Arrangements(base, User())
+    arrangements.effective()
+    arrangements.effective()
+    assert arrangements.warnings and len(logged) == len(set(logged)) == len(arrangements.warnings)

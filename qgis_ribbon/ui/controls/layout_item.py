@@ -14,21 +14,24 @@ gewähltes Element dieser Art. ``AtlasFeatureControl`` zeigt das aktuelle Atlas-
 Registrierung: ``register_all()`` beim Aufbau, ``unregister_all()`` beim Entladen.
 """
 
+import re
+
 from qgis.core import (Qgis, QgsLayoutItemAttributeTable, QgsLayoutItemPicture, QgsLayoutItemRegistry,
-                       QgsLayoutItemShape, QgsScaleBarSettings, QgsUnitTypes)
-from qgis.gui import (QgsBlendModeComboBox, QgsColorButton, QgsDoubleSpinBox, QgsFontButton, QgsLayoutItemComboBox,
-                      QgsMapLayerComboBox, QgsOpacityWidget, QgsScaleWidget, QgsSymbolButton)
+                       QgsLayoutItemShape, QgsPrintLayout, QgsScaleBarSettings, QgsUnitTypes)
+from qgis.gui import (QgsBlendModeComboBox, QgsColorButton, QgsDoubleSpinBox, QgsFieldComboBox,
+                      QgsFieldExpressionWidget, QgsFontButton, QgsLayoutItemComboBox, QgsMapLayerComboBox,
+                      QgsOpacityWidget, QgsScaleWidget, QgsSymbolButton)
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QCheckBox, QComboBox, QFileDialog, QFontComboBox, QLineEdit, QSlider, QStyle
 
 from ...core.i18n import tr
-from ...qgis_integration import custom_commands, layer_ops, layout_ops, layout_state
+from ...qgis_integration import custom_commands, layer_ops, layout_ops, layout_output, layout_state
 from ...qgis_integration.layout_ops import MIXED
 from .custom import EDITOR_WIDTHS, OPACITY_SLIDER_MIN, LayerControl, _factory, format_size, parse_size
 
 EDITOR_WIDTHS.update({"refpoint": 110, "frame_width": 84, "item_text": 170, "item_map": 120, "item_choice": 125,
                       "item_scale": 135, "item_length": 110, "item_path": 210, "item_font": 130, "item_button": 70,
-                      "atlas_feature": 170})
+                      "atlas_feature": 170, "page": 120, "dpi": 90})
 RANGE = 100000.0
 BLANK = " "
 
@@ -79,6 +82,11 @@ class ItemNumberControl(ItemControl):
         w.setKeyboardTracking(False)               # erst bei Eingabetaste oder Fokuswechsel schreiben
         w.valueChanged.connect(self._changed)
         return w
+
+    def fit_sample(self):
+        """Breiteste Zahl mit Einheit (die Einheit setzt ``read``; „mm“ ist die breiteste übliche)."""
+        unit = " mm" if self.unit is not None else self.suffix
+        return self.editor.textFromValue(min(self.high, 9999.99)) + unit
 
     def getter(self, item):
         raise NotImplementedError
@@ -937,6 +945,43 @@ class TableVisibleControl(TableControl, KindCheckControl):
         layout_ops.set_table_visible_only(self.table(item), on)
 
 
+# Seite (Tab Layout): gezeigte Seite, bedienbar ab zwei Seiten
+
+class PageControl(ItemControl):
+    """Feld „Zu Seite“: zeigt die Seite, die das Fenster zeigt, und holt eine gewählte Seite in die Mitte."""
+
+    editor_kind = "page"
+
+    def create_editor(self):
+        self._labels = None
+        w = QComboBox(self)
+        w.setMaxVisibleItems(20)
+        w.activated.connect(self._chosen)
+        return w
+
+    def shown(self):
+        return self.env.items.shown_layout() if self.env.items is not None else None
+
+    def suitable(self, _items):
+        layout = self.shown()
+        return layout is not None and layout.pageCollection().pageCount() > 1
+
+    def _chosen(self, row):
+        layout = self.shown()
+        page = layout.pageCollection().page(row) if layout is not None and row >= 0 else None
+        if not self._reading and page is not None:
+            self._ctx.resolver.call(self.command, lambda: layout_ops.show_page(self.env.designer.view(), page))
+
+    def read(self, _items):
+        layout = self.shown()
+        labels = layout_ops.page_labels(layout)
+        if labels != self._labels:
+            self._labels = labels
+            self.editor.clear()
+            self.editor.addItems(labels)
+        self.editor.setCurrentIndex(min(max(self.env.designer.view().currentPage(), 0), len(labels) - 1))
+
+
 # Atlas
 
 class AtlasFeatureControl(ItemControl):
@@ -969,6 +1014,202 @@ class AtlasFeatureControl(ItemControl):
             self.editor.clear()
             self.editor.addItems(names)
         self.editor.setCurrentIndex(atlas.currentFeatureNumber())
+
+
+# Ausgabe (Tab Teilen) und Atlas-Einstellungen: Werte des Layouts, nicht der Auswahl
+
+class PrintLayoutControl(ItemControl):
+    """Grundform: bedienbar, wenn das Fenster ein Drucklayout zeigt (kein Bericht)."""
+
+    def print_layout(self):
+        designer = self.env.designer
+        layout = designer.layout() if designer is not None else None
+        return layout if isinstance(layout, QgsPrintLayout) else None
+
+    def suitable(self, _items):
+        return self.print_layout() is not None
+
+    def apply(self, change):
+        """``change(layout)`` als Befehl dieses Steuerelements (nicht während des Lesens)."""
+        layout = self.print_layout()
+        if not self._reading and layout is not None:
+            self._ctx.resolver.call(self.command, lambda: change(layout))
+
+
+class ExportResolutionControl(PrintLayoutControl):
+    """Exportauflösung des Layouts: feste Werte oder eine eigene Zahl."""
+
+    editor_kind = "dpi"
+
+    def create_editor(self):
+        w = QComboBox(self)
+        w.setEditable(True)
+        w.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        for dpi in layout_output.RESOLUTIONS:
+            w.addItem(tr("%d dpi") % dpi, dpi)
+        w.activated.connect(self._chosen)
+        w.lineEdit().editingFinished.connect(self._typed)
+        return w
+
+    def _chosen(self, row):
+        if row >= 0:
+            value = self.editor.itemData(row)
+            self.apply(lambda layout: layout_output.set_export_dpi(layout, value))
+
+    def _typed(self):
+        match = re.search(r"\d+(?:[.,]\d+)?", self.editor.currentText())
+        if match:
+            value = float(match.group(0).replace(",", "."))
+            self.apply(lambda layout: layout_output.set_export_dpi(layout, value))
+
+    def read(self, _items):
+        dpi = layout_output.export_dpi(self.print_layout())
+        self.editor.setEditText(tr("%d dpi") % round(dpi))
+
+
+class WorldfileControl(PrintLayoutControl):
+    """Schalter Georeferenz (Worldfile) beim Export als Bild."""
+
+    show_label = False
+
+    def create_editor(self):
+        w = QCheckBox(self.command.label, self)
+        w.clicked.connect(lambda on: self.apply(lambda layout: layout_output.set_worldfile(layout, on)))
+        return w
+
+    def read(self, _items):
+        self.editor.setChecked(layout_output.worldfile_on(self.print_layout()))
+
+
+class AtlasControl(PrintLayoutControl):
+    """Grundform der Atlas-Felder; ``needs_layer``: nur mit Abdeckungslayer bei eingeschaltetem Atlas."""
+
+    needs_layer = True
+
+    def atlas(self):
+        layout = self.print_layout()
+        return layout.atlas() if layout is not None else None
+
+    def coverage(self):
+        atlas = self.atlas()
+        return atlas.coverageLayer() if atlas is not None and atlas.enabled() else None
+
+    def suitable(self, _items):
+        return self.atlas() is not None and (not self.needs_layer or self.coverage() is not None)
+
+    def change_atlas(self, change):
+        self.apply(lambda layout: change(layout.atlas()))
+
+
+class AtlasLayerControl(AtlasControl):
+    """Abdeckungslayer; leer schaltet den Atlas aus."""
+
+    editor_kind = "item_map"
+    needs_layer = False
+
+    def create_editor(self):
+        w = QgsMapLayerComboBox(self)
+        w.setFilters(Qgis.LayerFilter.VectorLayer)
+        w.setAllowEmptyLayer(True)
+        w.activated.connect(self._chosen)      # nicht layerChanged: das meldet auch Änderungen am Projekt
+        return w
+
+    def _chosen(self, _row):
+        layer = self.editor.currentLayer()
+        if layer is not self.coverage():
+            self.change_atlas(lambda atlas: layout_output.set_coverage(atlas, layer))
+
+    def read(self, _items):
+        self.editor.setLayer(self.coverage())
+
+
+class AtlasExpressionControl(AtlasControl):
+    """Feld oder Ausdruck des Atlas (Seitenname, Filter)."""
+
+    editor_kind = "field"
+
+    def create_editor(self):
+        w = QgsFieldExpressionWidget(self)
+        w.setAllowEmptyFieldName(True)
+        w.fieldChanged[str, bool].connect(self._changed)
+        return w
+
+    def _changed(self, text, valid):
+        if valid and text != self.getter(self.atlas()):
+            self.change_atlas(lambda atlas: self.setter(atlas, text))
+
+    def read(self, _items):
+        self.editor.setLayer(self.coverage())
+        self.editor.setExpression(self.getter(self.atlas()))
+
+    def getter(self, atlas):
+        raise NotImplementedError
+
+    def setter(self, atlas, text):
+        raise NotImplementedError
+
+
+class AtlasPageNameControl(AtlasExpressionControl):
+    def getter(self, atlas):
+        return atlas.pageNameExpression()
+
+    def setter(self, atlas, text):
+        layout_output.set_page_name(atlas, text)
+
+
+class AtlasFilterExpressionControl(AtlasExpressionControl):
+    """Filterausdruck; ein Ausdruck schaltet den Filter ein, ein leeres Feld aus."""
+
+    def getter(self, atlas):
+        return atlas.filterExpression() if atlas.filterFeatures() else ""
+
+    def setter(self, atlas, text):
+        layout_output.set_filter(atlas, bool(text), text)
+
+
+class AtlasSortControl(AtlasControl):
+    """Sortierfeld; leer: Reihenfolge des Layers."""
+
+    editor_kind = "item_choice"
+
+    def create_editor(self):
+        w = QgsFieldComboBox(self)
+        w.setAllowEmptyFieldName(True)
+        w.fieldChanged.connect(self._changed)
+        return w
+
+    def _changed(self, name):
+        atlas = self.atlas()
+        current = atlas.sortExpression() if atlas.sortFeatures() else ""
+        if name != current:
+            self.change_atlas(lambda a: layout_output.set_sort(a, name))
+
+    def read(self, _items):
+        self.editor.setLayer(self.coverage())
+        atlas = self.atlas()
+        self.editor.setField(atlas.sortExpression() if atlas.sortFeatures() else "")
+
+
+class AtlasDescendingControl(AtlasControl):
+    """Sortierrichtung: absteigend ja oder nein; nur mit Sortierfeld."""
+
+    show_label = False
+
+    def create_editor(self):
+        w = QCheckBox(self.command.label, self)
+        w.clicked.connect(self._clicked)
+        return w
+
+    def _clicked(self, on):
+        atlas = self.atlas()
+        field = atlas.sortExpression() if atlas.sortFeatures() else ""
+        self.change_atlas(lambda a: layout_output.set_sort(a, field, ascending=not on))
+
+    def suitable(self, items):
+        return AtlasControl.suitable(self, items) and self.atlas().sortFeatures()
+
+    def read(self, _items):
+        self.editor.setChecked(not self.atlas().sortAscending())
 
 
 CONTROLS = {
@@ -1006,6 +1247,14 @@ CONTROLS = {
     "ribbon.item_tabelle_filter": _factory(TableFilterControl),
     "ribbon.item_tabelle_nur_karte": _factory(TableVisibleControl),
     "ribbon.atlas_objekt": _factory(AtlasFeatureControl),
+    "ribbon.zu_seite": _factory(PageControl),
+    "ribbon.export_aufloesung": _factory(ExportResolutionControl),
+    "ribbon.export_worldfile": _factory(WorldfileControl),
+    "ribbon.atlas_layer": _factory(AtlasLayerControl),
+    "ribbon.atlas_seitenname": _factory(AtlasPageNameControl),
+    "ribbon.atlas_filter": _factory(AtlasFilterExpressionControl),
+    "ribbon.atlas_sortierung": _factory(AtlasSortControl),
+    "ribbon.atlas_absteigend": _factory(AtlasDescendingControl),
     "ribbon.item_x": _factory(ItemPositionControl, axis="x"),
     "ribbon.item_y": _factory(ItemPositionControl, axis="y"),
     "ribbon.item_breite": _factory(ItemSizeControl, axis="w"),

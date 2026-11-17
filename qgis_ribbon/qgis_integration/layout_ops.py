@@ -16,9 +16,9 @@ liefert bei verschiedenen Werten ``MIXED``.
 
 import os
 
-from qgis.core import (Qgis, QgsApplication, QgsCoordinateTransform, QgsExpression, QgsLayoutItem, QgsLayoutItemMap,
-                       QgsLayoutItemPage, QgsLayoutMeasurement, QgsLayoutMultiFrame, QgsLayoutPoint, QgsLayoutSize,
-                       QgsPrintLayout, QgsProject, QgsReadWriteContext, QgsUnitTypes)
+from qgis.core import (Qgis, QgsApplication, QgsCoordinateTransform, QgsExpression, QgsLayoutGuide, QgsLayoutItem,
+                       QgsLayoutItemMap, QgsLayoutItemPage, QgsLayoutMeasurement, QgsLayoutMultiFrame, QgsLayoutPoint,
+                       QgsLayoutSize, QgsPrintLayout, QgsProject, QgsReadWriteContext, QgsUnitTypes)
 from qgis.PyQt.QtCore import QFile, QIODevice, Qt
 from qgis.PyQt.QtWidgets import QAction, QApplication, QFileDialog, QInputDialog, QMenu
 from qgis.PyQt.QtXml import QDomDocument
@@ -182,10 +182,12 @@ def set_page_size(layout, page, size, orientation):
 
 def current_page(env):
     """Seite, die das Layout-Fenster gerade zeigt; (None, None) ohne Layout (Bericht zu Beginn)."""
-    layout = env.items.layout if env.items is not None else None
+    layout = env.items.shown_layout() if env.items is not None else None
     if layout is None:
         return None, None
-    return layout, layout.pageCollection().page(max(env.designer.view().currentPage(), 0))
+    pages = layout.pageCollection()
+    page = pages.page(min(max(env.designer.view().currentPage(), 0), pages.pageCount() - 1))
+    return (layout, page) if page is not None else (None, None)
 
 
 def page_size_menu(env, command):
@@ -207,6 +209,117 @@ def page_size_menu(env, command):
         menu.removeAction(menu.actions()[-1])
 
     return _filled_menu(env, command, "ribbon_seite_groesse", fill)
+
+
+# Seiten (Tab Layout, Gruppe Seite): je Befehl ein Rückgängig-Schritt, immer die gezeigte Seite
+
+MARGINS_MM = (5, 10, 15, 20)
+
+
+def toggle_orientation(layout, page):
+    """Hoch- und Querformat der Seite tauschen (Breite und Höhe), als ein Rückgängig-Schritt."""
+    size = page.pageSize()
+    pages = layout.pageCollection()
+    stack = layout.undoStack()
+    stack.beginCommand(page, tr("Change page orientation"))
+    pages.beginPageSizeChange()
+    page.setPageSize(QgsLayoutSize(size.height(), size.width(), size.units()))
+    pages.endPageSizeChange()
+    pages.reflow()
+    stack.endCommand()
+
+
+def delete_page(layout, page):
+    """Seite löschen, nie die letzte; True, wenn gelöscht. QGIS legt den Rückgängig-Schritt selbst an."""
+    pages = layout.pageCollection()
+    if pages.pageCount() < 2:
+        return False
+    pages.deletePage(page)
+    return True
+
+
+def margin_guides(layout, page, margin_mm):
+    """[(Ausrichtung, Lage in Layout-Einheiten)] der vier Führungslinien im Abstand ``margin_mm`` vom Rand."""
+    rect = page.rect()
+    margin = layout.convertToLayoutUnits(QgsLayoutMeasurement(margin_mm, Qgis.LayoutUnit.Millimeters))
+    return [(Qt.Orientation.Horizontal, margin), (Qt.Orientation.Horizontal, rect.height() - margin),
+            (Qt.Orientation.Vertical, margin), (Qt.Orientation.Vertical, rect.width() - margin)]
+
+
+def add_margin_guides(layout, page, margin_mm):
+    """Führungslinien als Ränder auf die Seite legen, als ein Rückgängig-Schritt; Zahl der neuen Linien.
+
+    Linien, die an dieser Stelle schon liegen, kommen nicht doppelt dazu.
+    """
+    guides = layout.guides()
+    number = layout.pageCollection().pageNumber(page)
+    present = {(g.orientation(), round(g.layoutPosition(), 3)) for g in guides.guidesOnPage(number)}
+    wanted = [(o, pos) for o, pos in margin_guides(layout, page, margin_mm) if (o, round(pos, 3)) not in present]
+    if not wanted:
+        return 0
+    units = layout.units()
+    stack = layout.undoStack()
+    stack.beginMacro(tr("Add margin guides"))     # QGIS legt je Linie einen Schritt an
+    try:
+        for orientation, pos in wanted:
+            guides.addGuide(QgsLayoutGuide(orientation, QgsLayoutMeasurement(pos, units), page))
+    finally:
+        stack.endMacro()
+    return len(wanted)
+
+
+def show_page(view, page):
+    """Seite ganz zeigen (wie „Ganze Seite“, nur für diese Seite); die Ansicht meldet danach die Seite."""
+    view.fitInView(page.sceneBoundingRect(), Qt.AspectRatioMode.KeepAspectRatio)
+    view.emitZoomLevelChanged()     # nach fitInView der Basisklasse vorgeschrieben (Lineale, Zoomfeld)
+
+
+def page_labels(layout):
+    """Beschriftungen der Seiten für das Feld „Zu Seite“."""
+    pages = layout.pageCollection()
+    return [tr("Page %d of %d") % (n + 1, pages.pageCount()) for n in range(pages.pageCount())]
+
+
+def _on_page(env, action):
+    def run():
+        layout, page = current_page(env)
+        if page is not None:
+            action(layout, page)
+
+    return run
+
+
+def toggle_orientation_command(env, _command):
+    return _on_page(env, toggle_orientation)
+
+
+def delete_page_command(env, _command):
+    return _on_page(env, delete_page)
+
+
+def _show_guides(env):
+    """Führungslinien einblenden über die Aktion des Fensters, damit deren Haken stimmt."""
+    window = env.designer.window() if env.designer is not None else None
+    action = window.findChild(QAction, "mActionShowGuides") if window is not None else None
+    if action is not None and action.isCheckable() and not action.isChecked():
+        action.trigger()
+
+
+def margin_guides_menu(env, command):
+    def choose(margin):
+        layout, page = current_page(env)
+        if page is not None:
+            add_margin_guides(layout, page, margin)
+            _show_guides(env)
+
+    def fill(menu):
+        if current_page(env)[1] is None:
+            menu.addAction(tr("No page to change")).setEnabled(False)
+            return
+        for margin in MARGINS_MM:
+            menu.addAction(tr("%d mm Margin") % margin).triggered.connect(lambda _c=False, m=margin: choose(m))
+
+    return _filled_menu(env, command, "ribbon_seite_raender", fill)
 
 
 # Elementwerte

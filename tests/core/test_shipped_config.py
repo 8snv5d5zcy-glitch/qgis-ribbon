@@ -45,11 +45,39 @@ def test_no_esri_ids_or_esri_texts(raw_text):
 
 def test_unplaced_commands_are_editor_offers(ribbon):
     # Befehle ohne Ort stehen nur im Editor zur Auswahl: einfache Buttons mit Beschreibung;
-    # Ausnahme: die Galerie „Abfragbare Layer“, standardmäßig aus dem Erkunden-Dropdown genommen
+    # Ausnahmen: die Galerie „Abfragbare Layer“, standardmäßig aus dem Erkunden-Dropdown genommen,
+    # und die übrigen Einrast-Einstellungen (Platz im Tab Bearbeiten ist knapp)
     used = {c.id for t in ribbon.tabs for c in iter_commands(t)} | {c.id for c in ribbon.quick_access}
     unplaced = [ribbon.commands[c] for c in set(ribbon.commands) - used]
     assert unplaced and len(used) > 150
-    assert all((c.kind == "button" or c.id == "abfragbare_layer") and c.description for c in unplaced),         [c.id for c in unplaced]
+    snapping = {"einrasten_einheit", "einrasten_massstab_modus", "einrasten_massstab_min", "einrasten_massstab_max",
+                "spurverfolgung_versatz"}
+    assert all((c.kind == "button" or c.id == "abfragbare_layer" or c.id in snapping) and c.description
+               for c in unplaced), [c.id for c in unplaced]
+
+
+def test_snapping_settings_one_by_one(ribbon):
+    """Gruppe Einrasten: Split mit Einrastoptionen, Modus, Dropdown Einrasttyp, Toleranz, Zeile mit den Schaltern."""
+    from qgis_ribbon.core.model import CommandRef, Menu, Row, Split
+    tab = next(t for t in ribbon.tabs if t.id == "bearbeiten")
+    group = next(g for g in tab.groups if g.id == "einrasten")
+    kinds = [type(el) for el in group.elements]
+    assert kinds == [Split, CommandRef, Menu, CommandRef, Row]
+    split, mode, menu, tolerance, row = group.elements
+    assert split.command.id == "einrasten" and [c.id for c in split.items] == ["einrastoptionen"]
+    assert (mode.command.id, mode.size) == ("einrasten_modus", "medium")
+    assert (tolerance.command.id, tolerance.size) == ("einrasten_toleranz", "medium")
+    assert menu.key == "Einrasttyp" and menu.size == "medium"
+    types = ["stuetzpunkt", "segment", "flaeche", "schwerpunkt", "mittelpunkt", "endpunkt"]
+    assert [c.id for c in menu.items] == ["einrasten_" + t for t in types]
+    for cmd in menu.items:
+        assert cmd.source.type == "custom" and cmd.source.get("id") == "ribbon.einrasttyp" and cmd.kind == "button"
+    assert [c.id for c in row.commands] == ["spurverfolgung", "selbsteinrasten", "schnittpunkte_einrasten"]
+    for cid in ("einrasten_einheit", "einrasten_massstab_modus", "einrasten_massstab_min",
+                "einrasten_massstab_max", "spurverfolgung_versatz"):
+        assert ribbon.commands[cid].kind == "control", cid
+    for cid in ("einrasten_ueberschneidungen", "einrasten_erweitert"):
+        assert ribbon.commands[cid].kind == "button", cid
 
 
 # Wörter, in denen ae/oe/ue/ss richtig geschrieben sind (keine Ersatzschreibweise)
@@ -57,7 +85,9 @@ ALLOWED_ASCII = {"aussehen", "webadresse", "ausschneiden", "messen", "messwerkze
                  "processing", "quelle", "anpassen", "ausschnitt", "klasse",
                  "beschriftungsklasse", "beschriftungsklassen", "bildverbesserung", "virtueller", "aktuelles",
                  "kartenausschnitt", "neuen", "virtuellen", "zeitsteuerung", "zusammenfassung",
-                 "ausschalten", "datenquellen", "hilfsspeicher", "oberflächenanpassung", "quer", "lässt"}
+                 "ausschalten", "datenquellen", "hilfsspeicher", "oberflächenanpassung", "quer", "lässt",
+                 "grundausstattung", "maßstabsstile"}
+ALLOWED_ASCII |= {"passpunkt", "passpunkte", "passpunkttabelle"}
 
 
 def test_labels_use_real_umlauts():
@@ -132,3 +162,19 @@ def test_accessibility_and_construction_without_duplicates(ribbon):
     (el,) = group("bearbeiten", "konstruktion").elements
     assert isinstance(el, Split) and el.command.id == "erweiterte_digitalisierung"
     assert [c.id for c in el.items] == ["konstruktionspanel"]
+
+
+@pytest.mark.parametrize("kind,tab", [("group", "gruppe_darstellung"), ("point_cloud", "punktwolke_darstellung"),
+                                      ("vector_tile", "vektorkacheln_darstellung"),
+                                      ("raster", "raster_darstellung")])
+def test_switch_to_vector_shows_all_vector_tabs(ribbon, kind, tab):
+    """Von einem anderen „Darstellung“-Tab auf einen Vektorlayer: alle drei Vektor-Tabs, Darstellung gewählt."""
+    from qgis_ribbon.core.conditions import Snapshot
+    from qgis_ribbon.core.context import ContextLogic
+    logic = ContextLogic(ribbon, Snapshot(layer_kind=kind))
+    logic.tab_selected(tab)
+    ch = logic.update(Snapshot(layer_kind="vector"))
+    assert ch.select == "vektor_darstellung"
+    shown = {tid for tid, on in ch.tabs.items() if on}
+    assert shown == {"vektor_darstellung", "vektor_beschriftung", "vektor_daten"}
+    assert ch.tabs[tab] is False

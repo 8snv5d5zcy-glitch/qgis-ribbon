@@ -13,7 +13,8 @@ QGIS Ribbon ersetzt die Werkzeugleisten von QGIS durch ein Ribbon: Befehle geord
 5. [Darstellung](appearance.md): hell und dunkel, Akzentfarben, Icons, klassische QGIS-Oberfläche
 6. [Erweiterungen](extensions.md): Befehle von Plugins, eigene Skripte und Modelle
 7. [Weitere Werkzeuge](tools.md): Domänen und andere Befehle des Ribbons
-8. [Einstellungen, Zurücksetzen und Probleme](troubleshooting.md)
+8. [Georeferenzieren in der Karte](georeference.md): Bilder einpassen, Passpunkte, Transformationen, entzerren
+9. [Einstellungen, Zurücksetzen und Probleme](troubleshooting.md)
 
 ## Diese Anleitung öffnen
 

@@ -139,10 +139,26 @@ def command_icon(command, fallback=None):
     if ext.is_runtime(command.id):
         if fallback is None and _RUNTIME is not None:
             fallback = _RUNTIME(command)
+        name = runtime_motif(command)
+        if name is not None:
+            return motif_icon(name, fallback)
         return fallback if fallback is not None else QIcon()
     s = icon_set()
     name = s.for_command(command.id) if s is not None else None
     return motif_icon(name, fallback)
+
+
+def runtime_motif(command):
+    """Motiv für ein Werkzeug ohne eigenes Icon, wenn das Icon-Set seinem Anbieter eins gibt (``laufzeit``)."""
+    s = icon_set()
+    if s is None or not s.runtime or not ext.is_toolbox(command.id):
+        return None
+    alg_id = command.source.get("algorithm") or ""
+    name = s.for_provider(alg_id.split(":", 1)[0])
+    if name is None:
+        return None
+    from ..qgis_integration.extensions import uses_default_icon
+    return name if uses_default_icon(alg_id) else None
 
 
 def menu_icon(label, fallback=None):

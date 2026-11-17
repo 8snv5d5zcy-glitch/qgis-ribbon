@@ -6,6 +6,7 @@ from qgis.PyQt.QtWidgets import QAction, QMenu, QToolBar, QWidget
 
 from qgis_ribbon.core import config_loader
 from qgis_ribbon.plugin import TOOLBAR_NAME, RibbonPlugin
+from qgis_ribbon.qgis_integration.signals import kept_wrappers
 from qgis_ribbon.qgis_integration.toolbar_manager import SETTINGS_KEY, STATE_KEY
 
 
@@ -57,6 +58,21 @@ def test_load_and_unload_restores_main_window_exactly(fake_iface, settings):
     after = snapshot(mw)
     for key in before:
         assert after[key] == before[key], key
+
+
+def test_teardown_keeps_wrappers_of_qgis_objects(fake_iface, settings):
+    # Abbau, Neuaufbau und klassische Ansicht hinterlassen Zyklen mit Wrappern von QGIS-Objekten;
+    # ohne Festhalten gibt die Speicherbereinigung fremde Slots frei (signals.keep_foreign_wrappers)
+    mw = fake_iface.mainWindow()
+    bar = mw.menuBar()          # von C++ erzeugt, wie die Aktionen und Menüs von QGIS
+    plugin = RibbonPlugin(fake_iface, settings=settings)
+    plugin.initGui()
+    settle()
+    for teardown in (plugin._rebuild, lambda: plugin.set_classic(True), plugin.unload):
+        kept_wrappers().clear()
+        teardown()
+        settle()
+        assert any(obj is bar for obj in kept_wrappers().values())
 
 
 def test_quit_order_of_qgis_leaves_state_without_ribbon(fake_iface, settings):
@@ -157,9 +173,9 @@ def test_sizes_have_fixed_heights(size):
 def test_controls_with_active_layer_and_clean_unload(fake_iface, settings, layers):
     """Steuerelemente aller Tabs mit aktivem Layer; Entladen hinterlässt nichts."""
     from qgis_ribbon.qgis_integration import custom_commands
-    from qgis_ribbon.ui.controls.custom import (LabelClassActiveControl, LabelClassControl, LayerControl,
-                                                MeshGroupControl, PointCloudControl, RasterEnhanceControl,
-                                                SymbolClassControl)
+    from qgis_ribbon.ui.controls.custom import (GeorefLayerControl, LabelClassActiveControl, LabelClassControl,
+                                                LayerControl, MeshGroupControl, PointCloudControl,
+                                                RasterEnhanceControl, SymbolClassControl)
 
     mw = fake_iface.mainWindow()
     settle()
@@ -173,8 +189,9 @@ def test_controls_with_active_layer_and_clean_unload(fake_iface, settings, layer
     controls = plugin.widget.findChildren(LayerControl)
     assert len(controls) >= 10
     # Vektorlayer: alle bedienbar außer den Reglern für Raster, Punktwolken und Netze und den
-    # Klassen-Befehlen (ohne Beschriftungsklassen grau, bei Einzelsymbol keine Symbolklasse zu wählen)
-    other = (RasterEnhanceControl, PointCloudControl, MeshGroupControl)
+    # Klassen-Befehlen (ohne Beschriftungsklassen grau, bei Einzelsymbol keine Symbolklasse zu wählen);
+    # die Regler beim Georeferenzieren nur während einer Sitzung
+    other = (RasterEnhanceControl, PointCloudControl, MeshGroupControl, GeorefLayerControl)
     class_only = (LabelClassControl, LabelClassActiveControl, SymbolClassControl)
     assert all(c.isEnabled() != isinstance(c, other) for c in controls if not isinstance(c, class_only))
     fake_iface.set_active_layer(layers["raster"])
@@ -182,9 +199,11 @@ def test_controls_with_active_layer_and_clean_unload(fake_iface, settings, layer
     raster = [c for c in controls if isinstance(c, RasterEnhanceControl)]
     assert len(raster) == 3 and all(c.isEnabled() for c in raster)
     fake_iface.set_active_layer(layers["vector"])
-    # Alle Steuerelemente der Definition sind gebaut, keines bleibt grau
+    # Alle Steuerelemente mit Ort im Ribbon sind gebaut, keines bleibt grau (ohne Ort: nur im Editor)
+    from qgis_ribbon.core.model import iter_commands
+    placed = {c.id for t in plugin.ribbon.tabs for c in iter_commands(t)}
     unbuilt = [c.id for c in plugin.ribbon.commands.values()
-               if c.kind == "control" and c.gallery is None
+               if c.kind == "control" and c.gallery is None and c.id in placed
                and not any(w.command.id == c.id for w in controls)]
     assert not unbuilt, unbuilt
     launchers = [w for w in plugin.widget.findChildren(QWidget) if w.objectName().startswith("ribbon_launcher_")]

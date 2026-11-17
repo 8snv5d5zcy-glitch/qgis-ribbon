@@ -14,7 +14,7 @@ Registrierung: ``register_all()`` beim Aufbau, ``unregister_all()`` beim
 Entladen (``custom_commands``, Art ``control``).
 """
 
-from qgis.core import QgsSymbolLayerUtils
+from qgis.core import Qgis, QgsSnappingConfig, QgsSymbolLayerUtils
 from qgis.gui import (QgsBlendModeComboBox, QgsColorButton, QgsDoubleSpinBox,
                       QgsFieldExpressionWidget, QgsOpacityWidget, QgsScaleWidget, QgsSpinBox)
 from qgis.PyQt.QtCore import QSize, Qt
@@ -22,16 +22,20 @@ from qgis.PyQt.QtGui import QIcon, QPainter
 from qgis.PyQt.QtWidgets import (QCheckBox, QComboBox, QFontComboBox, QHBoxLayout, QLabel,
                                  QSizePolicy, QSlider, QWidget)
 
-from ...qgis_integration import (builtin_commands, compare, custom_commands, kontext_ops, layer_ops,
-                                 raster_ops, symbol_ops)
-from .. import icons, theme
+from ...qgis_integration import (builtin_commands, compare, custom_commands, georef_session, kontext_ops, layer_ops,
+                                 raster_ops, signals, snapping_ops, symbol_ops)
+from .. import georef_panel, icons, theme
+from . import fit
 from ..html_text import escape
 from ..qt_compat import font_style_string, font_styles
+from ...core import georef
 from ...core.i18n import tr
 
 EDITOR_WIDTHS = {"scale": 110, "opacity": 200, "blend": 120, "font": 140, "size": 52,
                  "style": 90, "color": 36, "class": 120, "field": 150, "number": 72,
-                 "interval": 84, "dataset": 140}
+                 "interval": 84, "dataset": 140, "snap_mode": 112, "tolerance": 116, "units": 100,
+                 "scale_mode": 150, "georef_method": 150}
+TOLERANCE_UNITS_WIDTH = 60   # Einheit neben der Toleranz (Kurzform)
 
 
 class IconLabel(QWidget):
@@ -68,6 +72,7 @@ class LayerControl(QWidget):
         lay = QHBoxLayout(self)
         lay.setContentsMargins(2, 0, 2, 0)
         lay.setSpacing(self.label_gap)
+        self._text_label = None
         if size != "small" and self.show_label:
             fallback = ctx.resolver.theme_icon(command.icon) if command.icon else None
             icon = icons.command_icon(command, fallback)
@@ -75,10 +80,15 @@ class LayerControl(QWidget):
                 lay.addWidget(IconLabel(icon, self))
             text = QLabel(command.label, self)
             lay.addWidget(text)
+            self._text_label = text
         self.editor = self.create_editor()
         self.editor.setFixedHeight(theme.ROW_HEIGHT - 2)
         width = EDITOR_WIDTHS.get(self.editor_kind)
         if width:
+            # nie schmaler als der Inhalt in der aktuellen Schrift (Maßstab, Zahl mit Einheit, Auswahl)
+            fitted = fit.editor_width(self.editor, self.fit_sample())
+            if fitted:
+                width = max(width, min(fitted, fit.FIT_MAX))
             self.editor.setFixedWidth(width)
         lay.addWidget(self.editor)
         self.setFixedHeight(theme.ROW_HEIGHT)
@@ -91,12 +101,33 @@ class LayerControl(QWidget):
         ctx.add_target(self, command.label, self.focus_editor, command)
         self.refresh(self.layer())
 
+    def fit_sample(self):
+        """Mustertext für die Breite des Felds (None: aus dem Feld, siehe ``fit.editor_width``)."""
+        return None
+
     def focus_editor(self):
         """Per Tastatur (KeyTip, Suche): Fokus in den Editor. False, wenn nicht bedienbar."""
         if not self.isEnabled():
             return False
         self.editor.setFocus(Qt.FocusReason.ShortcutFocusReason)
         return True
+
+    # Schmale Fassung bei wenig Platz: ohne Beschriftung (Icon und Tooltip bleiben)
+    def compactable(self):
+        return self._text_label is not None
+
+    def set_compact(self, on):
+        if self._text_label is not None:
+            self._text_label.setHidden(on)
+
+    def width_for(self, compact):
+        width = self.sizeHint().width()
+        if self._text_label is None:
+            return width
+        label = self._text_label.sizeHint().width() + self.layout().spacing()
+        if self._text_label.isHidden():
+            return width if compact else width + label
+        return width - label if compact else width
 
     def _tooltip(self):
         parts = ["<b>%s</b>" % escape(self.command.label)]
@@ -264,6 +295,72 @@ class OpacityControl(LayerControl):
 
     def read_default(self):
         self.editor.setOpacity(1.0)
+
+
+class GeorefLayerControl(LayerControl):
+    """Steuerelement einer Sitzung „Georeferenzieren in der Karte“: wirkt auf deren Arbeitslayer,
+    gleich welcher Layer aktiv ist."""
+
+    group_aware = False
+
+    def __init__(self, env, command, ctx, parent=None, size="medium"):
+        LayerControl.__init__(self, env, command, ctx, parent, size)
+        # Die Verwaltung lebt länger als der Ribbon: Verbindung über den Hub (beim Abbau getrennt)
+        ctx.hub.connect(georef_session.install(env.iface), "changed", self._on_session)
+
+    def _on_session(self):
+        self.refresh()
+
+    def watcher(self):
+        return None
+
+    def layer(self):
+        manager = georef_session.manager()
+        session = manager.session if manager is not None else None
+        return session.layer if session is not None and session.alive() else None
+
+    def session(self):
+        manager = georef_session.manager()
+        return manager.session if manager is not None else None
+
+
+class GeorefOpacityControl(GeorefLayerControl, OpacityControl):
+    """Deckkraft des Arbeitslayers."""
+
+
+class GeorefMethodControl(GeorefLayerControl):
+    """Transformation der Sitzung; nicht wählbar, solange Passpunkte fehlen (Grund im Tooltip des Eintrags)."""
+
+    editor_kind = "georef_method"
+
+    def create_editor(self):
+        w = QComboBox(self)
+        for method in georef.METHODS:
+            w.addItem(georef_panel.method_name(method), method)
+        w.view().setMinimumWidth(w.view().sizeHintForColumn(0) + 24)
+        w.currentIndexChanged.connect(self._changed)
+        return w
+
+    def read(self, _layer):
+        session = self.session()
+        if session is None:
+            return
+        count = session.active_count()
+        model = self.editor.model()
+        for i in range(self.editor.count()):
+            method = self.editor.itemData(i)
+            ok, missing = georef.available(method, count)
+            item = model.item(i)
+            item.setEnabled(ok or method == session.method)
+            item.setToolTip("" if ok else georef_panel.missing_text(missing))
+        _select(self.editor, session.method)
+
+    def _changed(self, index):
+        session = self.session()
+        if self._reading or session is None:
+            return
+        method = self.editor.itemData(index)
+        self._ctx.resolver.call(self.command, lambda: session.set_method(method))
 
 
 class BlendModeControl(LayerControl):
@@ -689,6 +786,193 @@ class MagnifierControl(CanvasControl):
         self.editor.setValue(self.canvas.magnificationFactor() * 100.0)
 
 
+class SnappingControl(LayerControl):
+    """Einrast-Einstellung des Projekts (``snapping_ops``) statt einer Eigenschaft des Layers.
+
+    Hört über den Hub auf die Signale des Projekts; das Einrast-Widget von QGIS
+    folgt denselben Signalen, beide zeigen also denselben Stand.
+    """
+
+    per_layer_off = False   # im Modus „erweiterte Konfiguration“ grau (Einstellung je Layer)
+
+    def __init__(self, env, command, ctx, parent=None, size="medium"):
+        LayerControl.__init__(self, env, command, ctx, parent, size)
+        proj = snapping_ops.project()
+        for signal in snapping_ops.PROJECT_SIGNALS:
+            ctx.hub.connect(proj, signal, self._on_project)
+
+    def _on_project(self, *_args):
+        self.refresh()
+
+    def watcher(self):
+        return None
+
+    def suitable(self, layer):
+        return True
+
+    def usable(self, cfg):
+        return not (self.per_layer_off and snapping_ops.advanced(cfg))
+
+    def sync(self):
+        usable = self.usable(snapping_ops.config())
+        self.setEnabled(usable and self._ctx.allowed(self.command))
+        tip = self._tooltip()
+        self.setToolTip(tip if usable or not self.per_layer_off
+                        else "%s<br><i>%s</i>" % (tip, escape(snapping_ops.PER_LAYER)))
+
+    def change(self, fn, *args):
+        if not self._reading:
+            self._ctx.resolver.call(self.command, lambda: fn(*args))
+
+
+def _combo(parent, entries, slot):
+    w = QComboBox(parent)
+    for value, text in entries:
+        w.addItem(text, value)
+    # Das Feld ist schmal (Platz im Tab), die aufgeklappte Liste zeigt die Texte ganz
+    w.view().setMinimumWidth(w.view().sizeHintForColumn(0) + 24)
+    w.currentIndexChanged.connect(lambda i: slot(w.itemData(i)))
+    return w
+
+
+def _select(combo, value):
+    i = combo.findData(value)
+    combo.setCurrentIndex(i if i >= 0 else 0)
+
+
+class SnapModeControl(SnappingControl):
+    editor_kind = "snap_mode"
+
+    def create_editor(self):
+        return _combo(self, snapping_ops.MODES, lambda v: self.change(snapping_ops.set_mode, v))
+
+    def read(self, _layer):
+        _select(self.editor, snapping_ops.config().mode())
+
+
+class SnapUnitsControl(SnappingControl):
+    editor_kind = "units"
+    per_layer_off = True
+
+    def create_editor(self):
+        return _combo(self, snapping_ops.UNITS, lambda v: self.change(snapping_ops.set_units, v))
+
+    def read(self, _layer):
+        _select(self.editor, snapping_ops.config().units())
+
+
+class SnapToleranceControl(SnappingControl):
+    """Toleranz mit ihrer Einheit in einem Element (wie im Einrast-Widget von QGIS)."""
+
+    editor_kind = "tolerance"
+    per_layer_off = True
+
+    def create_editor(self):
+        box = QWidget(self)
+        lay = QHBoxLayout(box)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(2)
+        self.value = QgsDoubleSpinBox(box)
+        self.value.setRange(0.0, 99999999.0)
+        self.value.setDecimals(5)
+        self.value.setShowClearButton(False)
+        self.value.valueChanged.connect(lambda v: self.change(snapping_ops.set_tolerance, v))
+        self.units = _combo(box, snapping_ops.UNITS_SHORT, lambda v: self.change(snapping_ops.set_units, v))
+        self.units.setFixedWidth(TOLERANCE_UNITS_WIDTH)
+        lay.addWidget(self.value, 1)
+        lay.addWidget(self.units)
+        return box
+
+    def read(self, _layer):
+        cfg = snapping_ops.config()
+        for w in (self.value, self.units):
+            w.blockSignals(True)
+        try:
+            self.value.setDecimals(0 if cfg.units() == Qgis.MapToolUnit.Pixels else 5)
+            self.value.setValue(cfg.tolerance())
+            _select(self.units, cfg.units())
+        finally:
+            for w in (self.value, self.units):
+                w.blockSignals(False)
+
+    def focus_editor(self):
+        if not self.isEnabled():
+            return False
+        self.value.setFocus(Qt.FocusReason.ShortcutFocusReason)
+        return True
+
+
+class SnapScaleModeControl(SnappingControl):
+    editor_kind = "scale_mode"
+
+    def create_editor(self):
+        return _combo(self, snapping_ops.SCALE_MODES, lambda v: self.change(snapping_ops.set_scale_mode, v))
+
+    def read(self, _layer):
+        _select(self.editor, snapping_ops.config().scaleDependencyMode())
+
+
+class SnapScaleControl(SnappingControl):
+    """Kleinster bzw. größter Maßstab fürs Einrasten; nur bei „Maßstabsgrenze für alle Layer“ bedienbar."""
+
+    editor_kind = "scale"
+
+    def __init__(self, env, command, ctx, parent=None, size="medium", which="min"):
+        self.which = which
+        SnappingControl.__init__(self, env, command, ctx, parent, size)
+
+    def create_editor(self):
+        w = QgsScaleWidget(self)
+        w.setAllowNull(True)
+        w.setShowCurrentScaleButton(True)
+        w.setMapCanvas(self.env.iface.mapCanvas())
+        w.scaleChanged.connect(lambda *_a: self.change(
+            snapping_ops.set_scale, self.which, 0.0 if w.isNull() else w.scale()))
+        return w
+
+    def usable(self, cfg):
+        return cfg.scaleDependencyMode() == QgsSnappingConfig.ScaleDependencyMode.Global
+
+    def read(self, _layer):
+        cfg = snapping_ops.config()
+        value = cfg.minimumScale() if self.which == "min" else cfg.maximumScale()
+        if value:
+            self.editor.setScale(value)
+        else:
+            self.editor.setNull()
+
+
+class TracingOffsetControl(SnappingControl):
+    """Versatz der Spurverfolgung (hält QGIS im Tracer der Karte, nicht im Projekt)."""
+
+    editor_kind = "number"
+
+    def __init__(self, env, command, ctx, parent=None, size="medium"):
+        self._boxes = []
+        SnappingControl.__init__(self, env, command, ctx, parent, size)
+
+    def _follow_boxes(self):
+        """Zahlenfelder von QGIS beobachten; das im Dialog Einrastoptionen entsteht erst beim Öffnen."""
+        self._boxes = [box for box in self._boxes if signals.alive(box)]
+        for box in snapping_ops.tracing_spin_boxes(self.env.iface.mainWindow()):
+            if not any(box is known for known in self._boxes):
+                self._boxes.append(box)
+                self._ctx.hub.connect(box, "valueChanged", self._on_project)
+
+    def create_editor(self):
+        w = QgsDoubleSpinBox(self)
+        w.setRange(-1000000.0, 1000000.0)
+        w.setDecimals(6)
+        w.setClearValue(0.0)
+        w.valueChanged.connect(lambda v: self.change(
+            snapping_ops.set_tracing_offset, self.env.iface.mainWindow(), self.env.iface.mapCanvas(), v))
+        return w
+
+    def read(self, _layer):
+        self._follow_boxes()
+        self.editor.setValue(snapping_ops.tracing_offset(self.env.iface.mapCanvas()))
+
+
 class RasterEnhanceControl(LayerControl):
     """Helligkeit, Kontrast oder Gamma des aktiven Rasterlayers."""
 
@@ -831,6 +1115,8 @@ CONTROLS = {
     "ribbon.beschriftung_massstab_min": _factory(ScaleControl, which="min", labels=True),
     "ribbon.layer_deckkraft": _factory(OpacityControl),
     "ribbon.layer_mischmodus": _factory(BlendModeControl),
+    "ribbon.georef_deckkraft": _factory(GeorefOpacityControl),
+    "ribbon.georef_verfahren": _factory(GeorefMethodControl),
     "ribbon.objekt_mischmodus": _factory(FeatureBlendModeControl),
     "ribbon.flimmer_intervall": _factory(FlickerIntervalControl),
     "ribbon.punktwolke_punktgroesse": _factory(PointCloudControl, which="size"),
@@ -853,6 +1139,13 @@ CONTROLS = {
     "ribbon.raster_helligkeit": _factory(RasterEnhanceControl, which="brightness"),
     "ribbon.raster_kontrast": _factory(RasterEnhanceControl, which="contrast"),
     "ribbon.raster_gamma": _factory(RasterEnhanceControl, which="gamma"),
+    "ribbon.einrasten_modus": _factory(SnapModeControl),
+    "ribbon.einrasten_toleranz": _factory(SnapToleranceControl),
+    "ribbon.einrasten_einheit": _factory(SnapUnitsControl),
+    "ribbon.einrasten_massstab_modus": _factory(SnapScaleModeControl),
+    "ribbon.einrasten_massstab_min": _factory(SnapScaleControl, which="min"),
+    "ribbon.einrasten_massstab_max": _factory(SnapScaleControl, which="max"),
+    "ribbon.spurverfolgung_versatz": _factory(TracingOffsetControl),
 }
 
 

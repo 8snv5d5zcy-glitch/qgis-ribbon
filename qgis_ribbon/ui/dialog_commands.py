@@ -36,8 +36,22 @@ def _fields(name):
     return factory
 
 
+def _georef(module, name):
+    """Befehle der Sitzung „Georeferenzieren in der Karte“ mit Dialog oder Bedienfeld (Import beim Aufbau)."""
+    def factory(env, command):
+        from importlib import import_module
+        return getattr(import_module("." + module, __package__), name)(env, command)
+    return factory
+
+
+GEOREF_IDS = {"ribbon.georef_entzerren": ("georef_dialog", "georef_entzerren"),
+              "ribbon.georef_tabelle": ("georef_panel", "georef_tabelle")}
+
+
 def register_all():
     custom_commands.register(DOMAINS_ID, _domains, "button")
+    for cid, (module, name) in GEOREF_IDS.items():
+        custom_commands.register(cid, _georef(module, name), "button")
     custom_commands.register(GALLERY_ID, _gallery, "button")
     for cid, name in FIELD_IDS.items():
         custom_commands.register(cid, _fields(name), "button")
@@ -45,6 +59,8 @@ def register_all():
 
 def unregister_all():
     custom_commands.unregister(DOMAINS_ID)
+    for cid in GEOREF_IDS:
+        custom_commands.unregister(cid)
     custom_commands.unregister(GALLERY_ID)
     for cid in FIELD_IDS:
         custom_commands.unregister(cid)

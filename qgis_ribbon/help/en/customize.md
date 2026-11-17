@@ -64,7 +64,7 @@ Double-click commands on the left or use **Add ›** to add them. Set the order 
 
 The dropdowns of split buttons and menus can be filled as well, for example **Advanced Digitizing** in the Edit tab. In the editor, drag a command from the palette onto the middle of a button with ▾: the button is highlighted, and on release the command goes to the end of its dropdown. A tile of a single command can be dragged in the same way; it then leaves the group. Dropped at the edge of the button, the command goes next to it as usual.
 
-**Customize Dropdown …** in the properties of the button sets items and order, in the same dialog as for galleries. Commands of other plugins can be chosen here too. The change applies wherever the button appears and can be undone in the editor. If a plugin is missing later, its item stays greyed out until the plugin is loaded again.
+**Customize Dropdown …** in the properties of the button sets items and order, in the same dialog as for galleries. Commands of other plugins can be chosen here too. The change applies wherever the button appears and can be undone in the editor. If a plugin is missing later, its item is hidden until the plugin is loaded again.
 
 ## Arrangements
 
@@ -77,6 +77,6 @@ The submenu **Arrangements** in the ▾ menu and in the right-click menu manages
 - **Delete** removes a saved arrangement.
 - **Export …** writes the current arrangement to a JSON file, for example to share it with colleagues. **Import …** loads such a file.
 
-If an arrangement names commands that are missing in this QGIS installation (for example of a plugin that is not installed), they appear grayed out, or are skipped with a message when importing.
+If an arrangement names commands that are missing in this QGIS installation (for example of a plugin that is not installed), the ribbon hides them, or they are skipped with a message when importing. The editor shows such orphaned entries faded with the reason; **Remove Orphaned Entries …** at the bottom of the editor removes them from tabs, galleries, dropdowns and Quick Access (can be undone, applied only with **Save**).
 
 An arrangement also contains the [ribbon in the layout window](layout.md). If you load an older arrangement without this part, the layout window stays as it is.

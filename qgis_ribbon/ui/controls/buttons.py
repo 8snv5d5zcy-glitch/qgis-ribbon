@@ -26,7 +26,8 @@ from qgis.PyQt.QtWidgets import (QAction, QHBoxLayout, QMenu, QSizePolicy, QTool
                                  QVBoxLayout, QWidget)
 
 from .. import icons, menu_anchor, theme
-from ..html_text import escape
+from ...qgis_integration.signals import alive
+from ..html_text import escape, multiline
 from ...core.i18n import tr
 
 MENU_ARROW = "\u25be"  # ▾ hinter der Beschriftung von Menü-Teilen
@@ -118,7 +119,7 @@ class BuildContext(object):
 def tooltip(label, resolved, description=None):
     parts = ["<b>%s</b>" % escape(label)]
     if description:
-        parts.append(escape(description))
+        parts.append(multiline(description))
     if resolved.qgis_text and resolved.qgis_text != label:
         parts.append("QGIS: %s" % escape(resolved.qgis_text))
     if resolved.shortcut:
@@ -129,30 +130,47 @@ def tooltip(label, resolved, description=None):
 
 
 class ProxyAction(QAction):
-    """Ribbon-Eintrag für einen Befehl; spiegelt die QGIS-Aktion, falls vorhanden."""
+    """Ribbon-Eintrag für einen Befehl; spiegelt die QGIS-Aktion, falls vorhanden.
+
+    Löscht ein Plugin die gespiegelte Aktion (Entladen, Neuladen, neu angelegte
+    Aktion), löst der Eintrag beim nächsten Abgleich neu auf: Er spiegelt dann die
+    neue Aktion oder wird grau mit Grund im Tooltip, statt einen Fehler zu werfen.
+    """
 
     def __init__(self, command, ctx, parent, label=None):
         QAction.__init__(self, parent)
         self.command = command
         self._ctx = ctx
-        res = ctx.resolver.resolve(command)
-        self.resolved = res
-        text = label or command.label
-        self.setText(text)
-        self.setIconText(text)
-        self.setIcon(icons.command_icon(command, res.icon))
-        self.setToolTip(tooltip(text, res, command.description))
+        self._text = label or command.label
+        self.resolved = None
+        self.setText(self._text)
+        self.setIconText(self._text)
         self.setObjectName("ribbon_" + command.id)
-        src = res.action
-        if src is not None:
-            self.setCheckable(src.isCheckable())
-            ctx.hub.connect(src, "changed", self.sync)
+        self._adopt(ctx.resolver.resolve(command))
         ctx.register(self)
         self.sync()
         self.triggered.connect(self._run)
 
-    def sync(self):
+    def _adopt(self, res):
+        self.resolved = res
+        self._epoch = self._ctx.resolver.epoch
+        self.setIcon(icons.command_icon(self.command, res.icon))
+        self.setToolTip(tooltip(self._text, res, self.command.description))
+        src = res.action
+        if src is not None:
+            self.setCheckable(src.isCheckable())
+            self._ctx.hub.connect(src, "changed", self.sync)
+
+    def _source(self):
+        """Gespiegelte Aktion; ist sie gelöscht, neu auflösen (None, wenn es keine gibt)."""
         src = self.resolved.action
+        if (src is not None and not alive(src)) or self._epoch != self._ctx.resolver.epoch:
+            self._adopt(self._ctx.resolver.resolve(self.command))
+            src = self.resolved.action
+        return src
+
+    def sync(self):
+        src = self._source()
         allowed = self._ctx.allowed(self.command)
         if src is None:
             self.setEnabled(self.resolved.available and allowed)
@@ -162,6 +180,7 @@ class ProxyAction(QAction):
             self.setChecked(src.isChecked())
 
     def _run(self, _checked=False):
+        self._source()
         if self.command.source.type in menu_anchor.FOREIGN_SOURCES:
             # Plugins öffnen ihr Menü oft selbst am ausgeblendeten Leistenknopf
             with menu_anchor.anchored(menu_anchor.trigger_widget(self)):
@@ -188,10 +207,21 @@ def activate_button(btn):
     return True
 
 
-def keyboard_menu(owner, main_action, menu):
-    """Menü eines Split-Buttons für die Tastatur: Hauptbefehl oben, dann die Einträge."""
+def keyboard_menu(owner, main_action, menu, renew=None):
+    """Menü eines Split-Buttons für die Tastatur: Hauptbefehl oben, dann die Einträge.
+
+    Ist ``menu`` gelöscht (ein QGIS-Menü als Dropdown, das QGIS neu angelegt hat), baut
+    ``renew()`` es neu auf; ohne Ersatz löst der Hauptbefehl aus.
+    """
     if not owner.isEnabled():
         return False
+    if menu is None or not alive(menu):
+        menu = renew() if renew is not None else None
+        if menu is None or not alive(menu):
+            if main_action is not None and main_action.isEnabled():
+                main_action.trigger()
+                return True
+            return False
     popup = QMenu(owner)
     popup.setToolTipsVisible(True)
     popup.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
@@ -342,6 +372,14 @@ def build_menu(items, ctx, parent, gallery=None):
     return menu
 
 
+def renew_menu(split, ctx, btn):
+    """Dropdown eines Split-Buttons neu aufbauen, weil sein Menü gelöscht ist (nur Protokoll)."""
+    ctx.resolver.gone(split.command)
+    menu = split_menu(split, ctx, btn)
+    btn.setMenu(menu)
+    return menu
+
+
 def split_menu(split, ctx, parent):
     """Menü eines Split-Buttons. Ist der einzige Eintrag ein QGIS-Menü, dient dieses
     direkt als Dropdown (statt eines Menüs mit nur einem Untermenü)."""
@@ -359,7 +397,7 @@ def _sync_menu(menu):
     Auslösens und würde den gerade gesetzten Zustand sonst überschreiben.
     """
     for act in _menu_proxies(menu):
-        src = act.resolved.action
+        src = act._source()
         if src is not None and hasattr(src, "refresh"):
             src.refresh()
         act.sync()
@@ -438,9 +476,20 @@ class LargeSplitButton(QWidget):
         self.setFixedWidth(self.large_width())
         self.setFixedHeight(theme.CONTENT_HEIGHT)
         self.setProperty("ribbon_size", "large")
+        self._ctx = ctx
+        self.bottom.clicked.connect(self._menu_gone)   # nur ohne Menü: es wurde gelöscht
         self.target = ctx.add_target(self, split.display_label,
-                                     lambda: keyboard_menu(self, self.action, self.menu),
+                                     lambda: keyboard_menu(self, self.action, self.menu, self.renew),
                                      split.command)
+
+    def renew(self):
+        self.menu = renew_menu(self.split, self._ctx, self.bottom)
+        _follow_menu(self.bottom, self.menu)
+        return self.menu
+
+    def _menu_gone(self, _checked=False):
+        if self.bottom.menu() is None:
+            self.renew().popup(self.bottom.mapToGlobal(self.bottom.rect().bottomLeft()))
 
     def large_width(self):
         return max(theme.LARGE_MIN_WIDTH, text_width(self.bottom, self.bottom.text()) + SPLIT_PADDING)
@@ -456,7 +505,7 @@ def compact_split(split, ctx, parent, menu):
     btn.setObjectName("ribbon_split_compact_" + split.command.id)
     remember(btn, act.text(), True)
     ctx.widget_commands[btn] = split.command
-    btn.keyboard = lambda: keyboard_menu(btn, act, menu)
+    btn.keyboard = lambda: keyboard_menu(btn, act, btn.menu(), lambda: renew_menu(split, ctx, btn))
     return btn
 
 
@@ -473,7 +522,7 @@ def split_button(split, ctx, parent):
         btn.setDefaultAction(act)
         btn.setMenu(menu)
         btn.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
-        btn.keyboard = lambda: keyboard_menu(btn, act, menu)
+        btn.keyboard = lambda: keyboard_menu(btn, act, btn.menu(), lambda: renew_menu(split, ctx, btn))
         btn.target = ctx.add_target(btn, act.text(), btn.keyboard, split.command)
     else:
         btn.setIcon(act.icon())

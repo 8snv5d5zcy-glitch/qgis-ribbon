@@ -22,6 +22,14 @@ aufgerufen. ``LayerTreeRadios.restore`` setzt ihn wieder ein. Ein Stylesheet
 am Hauptfenster (Gesamtbild, Hell/Dunkel) legt Qt selbst über den gesetzten
 Stil; der Stil bleibt dabei erhalten.
 
+Projekt laden: Jeder Aufruf des Stils geht durch Python. Während QGIS ein
+Projekt liest, zeichnet es die wachsende Layerliste immer wieder neu; mit dem
+Stil dauerte das Laden in QGIS 4 rund 13 % länger. ``LayerTreeRadios`` nimmt
+den Stil deshalb beim ersten ``layerLoaded`` des Projekts zurück und legt ihn
+bei ``readProject`` wieder an. Das meiste Zeichnen kommt nach dem letzten
+Layer (Layerliste aufbauen, rund 1.400 Einträge bei 70 Layern). Bricht das
+Lesen danach ab, kommt der Stil mit dem nächsten ``cleared`` zurück.
+
 Neu zeichnen: Wechsel über den Ribbon zeichnen selbst neu; für das
 Kontextmenü der Layerliste hängt sich ``LayerTreeRadios`` an dessen Signal
 ``contextMenuAboutToShow`` und zeichnet nach einem gewählten Eintrag neu.
@@ -196,6 +204,8 @@ class LayerTreeRadios(object):
         self.previous = None       # eigener Stil der Ansicht vorher (None: Stil der Anwendung)
         self.had_own = False
         self.style = None
+        self.suspended = False     # Projekt wird gelesen: Stil vorübergehend zurückgenommen
+        self._menu_watched = False
 
     def install(self):
         if self.style is not None or self.view is None:
@@ -206,9 +216,32 @@ class LayerTreeRadios(object):
         self.style = ExclusiveRadioStyle(base, self.is_exclusive)
         self.style.setParent(self.view)    # wie der QGIS-Stil: hinter der Stylesheet-Hülle auffindbar
         self.view.setStyle(self.style)
-        if self.hub is not None and hasattr(self.view, "contextMenuAboutToShow"):
+        if self.hub is not None and hasattr(self.view, "contextMenuAboutToShow") and not self._menu_watched:
             self.hub.connect(self.view, "contextMenuAboutToShow", self._watch_menu)
+            self._menu_watched = True
         self.update()
+
+    def watch_project(self, project):
+        """Während ``project`` gelesen wird, ohne Stil zeichnen (siehe Modulbeschreibung)."""
+        if self.hub is None:
+            return
+        self.hub.connect(project, "layerLoaded", self._on_layer_loaded)
+        self.hub.connect(project, "readProject", self.resume)
+        self.hub.connect(project, "cleared", self.resume)
+
+    def _on_layer_loaded(self, done, total):
+        if done == 0 and total > 0:
+            self.suspend()
+
+    def suspend(self):
+        if self.style is not None:
+            self.restore()
+            self.suspended = True
+
+    def resume(self, *_args):
+        if self.suspended:
+            self.suspended = False
+            self.install()
 
     def _watch_menu(self, menu):
         # Das Menü entsteht bei jedem Öffnen neu und stirbt danach; die Verbindung mit ihm

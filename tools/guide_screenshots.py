@@ -12,7 +12,9 @@ aus dem Profil (``[locale]`` in ``QGIS/QGIS3.ini``), die des Ribbons aus
     & "C:\\Program Files\\QGIS 3.44.15\\bin\\qgis-ltr-bin.exe" --profiles-path $p `
         --nologo --noversioncheck --noplugins --code tools\\guide_screenshots.py
 
-Für Deutsch ``de_DE`` und ``RIBBON_LANG = "de"``. Das QGIS-Fenster muss
+Für Deutsch ``de_DE`` und ``RIBBON_LANG = "de"``. Das Bild ``extensions`` braucht die Kern-Plugins
+(DB-Verwaltung, MetaSearch): dafür ohne ``--noplugins`` starten, z. B. nur mit ``RIBBON_SHOTS_ONLY = "extensions"``. Nur einzelne Bilder:
+``$env:RIBBON_SHOTS_ONLY = "tab_edit,header"``. Das QGIS-Fenster muss
 sichtbar sein (Menüs und Listen sind eigene Fenster und werden einzeln
 aufgenommen und über das Fensterbild gelegt).
 
@@ -246,6 +248,8 @@ def run():
 
         @shot("extensions")
         def _():
+            if not w.is_tab_visible("erweiterungen"):
+                raise RuntimeError("Tab Erweiterungen fehlt: dieses Bild mit den Kern-Plugins aufnehmen (ohne --noplugins)")
             w.select_tab("erweiterungen")
             settle()
             return save(bar.grab(), "extensions")
@@ -264,6 +268,64 @@ def run():
             settle(15)
             save(whole, "dark_window", jpg=True)
             return save(pix, "dark")
+
+        @shot("georeference")
+        def _():
+            # Bild ohne Georeferenz: ein Ausschnitt der Weltkarte als PNG, wie eine gescannte Karte.
+            # Die Datei wird direkt übergeben, damit kein Dateidialog aufgeht.
+            import shutil
+            from qgis.core import QgsRectangle
+            from qgis_ribbon.qgis_integration import georef_commands
+            canvas = iface.mapCanvas()
+            whole = canvas.extent()
+            folder = tempfile.mkdtemp(prefix="ribbon_georef_")
+            session = None
+            mw.resize(1600, HEIGHT)   # deutsch braucht der Kontext-Tab mehr Platz für Beschriftungen
+            settle(10)
+            try:
+                canvas.setExtent(QgsRectangle(-12.0, 34.0, 34.0, 62.0))
+                canvas.refresh()
+                settle(10)
+                canvas.waitWhileRendering()
+                settle(5)
+                ext = canvas.extent()
+                img = canvas.grab().toImage()
+                path = os.path.join(folder, "scan.png")
+                img.save(path, "PNG")
+                sx, sy = ext.width() / img.width(), ext.height() / img.height()
+                canvas.setExtent(QgsRectangle(-25.0, 25.0, 50.0, 70.0))
+                canvas.refresh()
+                settle(10)
+                session = georef_commands.start(plugin.resolver.env, path=path)
+                settle(15)
+                if session is None:
+                    raise RuntimeError("Georeferenzierung nicht gestartet")
+                # Tab vor den Passpunkten: sonst sind die Werkzeuge zum Einpassen grau
+                save(bar.grab(), "tab_georeference")
+                noise = [(0.04, -0.03), (-0.05, 0.02), (0.03, 0.05), (-0.02, -0.04)]
+                for (fx, fy), (dx, dy) in zip([(0.22, 0.25), (0.78, 0.3), (0.3, 0.78), (0.8, 0.72)], noise):
+                    col, row = fx * img.width(), fy * img.height()
+                    session.add_point(col, row, ext.xMinimum() + col * sx + dx, ext.yMaximum() - row * sy + dy)
+                settle(10)
+                # Das Bedienfeld Passpunkte öffnet die Sitzung selbst; nur zeigen, falls es fehlt
+                from qgis_ribbon.ui import georef_panel
+                ctl = georef_panel.controller()
+                if ctl is None or ctl.panel is None or not ctl.panel.isVisible():
+                    plugin.resolver.trigger(plugin.ribbon.commands["georef_tabelle"])
+                settle(20)
+                canvas.waitWhileRendering()
+                settle(5)
+                pix = mw.grab()
+            finally:
+                if session is not None:
+                    plugin.resolver.trigger(plugin.ribbon.commands["georef_abbrechen"])
+                    settle(15)
+                canvas.setExtent(whole)
+                canvas.refresh()
+                shutil.rmtree(folder, ignore_errors=True)
+                mw.resize(WIDTH, HEIGHT)
+                settle(10)
+            return save(pix, "georeference", jpg=True)
 
         def dialog_shot(name, dlg, size=None):
             if size is not None:
@@ -321,7 +383,10 @@ def run():
             guide.close_help()
             return save(pix, "guide")
 
+        only = set(filter(None, os.environ.get("RIBBON_SHOTS_ONLY", "").split(",")))
         for name, fn in shots:
+            if only and name not in only:
+                continue
             try:
                 log["bilder"].append(os.path.basename(fn()))
             except Exception:  # noqa: BLE001 - übrige Bilder trotzdem

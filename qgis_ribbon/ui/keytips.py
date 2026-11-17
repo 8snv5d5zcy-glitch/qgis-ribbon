@@ -30,6 +30,10 @@ from ..core import keytips
 from .controls.buttons import activate_button
 from ..core.i18n import tr
 from .qt_compat import APP_FILTER
+from . import theme
+
+# Mitte des Icons eines mittleren Buttons (Rand plus halbe Icongröße)
+MEDIUM_ICON_X = 4 + theme.SMALL_ICON // 2
 
 
 def tab_codes(rw, overrides=None):
@@ -235,7 +239,7 @@ class KeyTipController(QObject):
             item = Item(btn.defaultAction().text(), btn, lambda b=btn: activate_button(b))
             item.code = code
             items.append(item)
-        search = Item(tr("Search"), rw.search, self._focus_search)
+        search = Item(tr("Search"), rw.search_anchor(), self._focus_search)
         search.code = keytips.SEARCH_KEY
         items.append(search)
         return items
@@ -330,9 +334,7 @@ class KeyTipController(QObject):
         item.activate()
 
     def _focus_search(self):
-        self.rw.search.setFocus(Qt.FocusReason.ShortcutFocusReason)
-        self.rw.search.selectAll()
-        return True
+        return self.rw.open_search()
 
     # Beschriftungen
     def _parent_for(self, widget):
@@ -353,7 +355,7 @@ class KeyTipController(QObject):
             label.setMinimumWidth(max(label.width(), label.height()))
             label.resize(max(label.width(), label.height()), label.height())
             rect = item.rect if item.rect is not None else item.widget.rect()
-            bottom_center = item.widget.mapTo(parent, QPoint(rect.center().x(), rect.bottom()))
+            bottom_center = item.widget.mapTo(parent, QPoint(self._anchor_x(item, rect), rect.bottom()))
             x = bottom_center.x() - label.width() // 2
             y = bottom_center.y() - label.height() // 2
             area = QRect(0, 0, parent.width(), parent.height())
@@ -364,6 +366,14 @@ class KeyTipController(QObject):
             label.raise_()
             label.setProperty("ribbon_code", item.code)
             self.labels.append(label)
+
+    @staticmethod
+    def _anchor_x(item, rect):
+        """x der Marke: Mitte, bei mittleren Buttons (Icon neben Text) unter dem Icon statt auf dem Text."""
+        w = item.widget
+        if item.rect is None and w.property("ribbon_size") == "medium":
+            return rect.left() + MEDIUM_ICON_X
+        return rect.center().x()
 
     def _update_labels(self):
         for label in self.labels:

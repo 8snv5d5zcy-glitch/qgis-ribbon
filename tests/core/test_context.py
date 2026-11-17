@@ -80,8 +80,9 @@ def test_every_condition_declares_known_fields():
       "active_layer_is_editable", "active_layer_has_selection"}),
 ])
 def test_condition_values(snap, true):
-    # ohne Bericht gilt immer auch: Das Layout-Fenster zeigt ein Drucklayout
-    assert {n for n in conditions.CONDITIONS if conditions.evaluate(n, snap)} == true | {"layout_is_print"}
+    # ohne Bericht gilt immer auch: Das Layout-Fenster zeigt ein Drucklayout (und eines ist gezeigt)
+    assert {n for n in conditions.CONDITIONS if conditions.evaluate(n, snap)} == true | {"layout_is_print",
+                                                                                          "layout_shown"}
 
 
 def test_report_and_print_exclude_each_other():

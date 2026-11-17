@@ -10,6 +10,7 @@ extensions:
   menus: ["mPluginMenu", "mRasterMenu", "mVectorMenu", "mDatabaseMenu", "mWebMenu"]
   toolbars: ["mPluginToolBar", "mRasterToolBar", "mVectorToolBar", "mDatabaseToolBar", "mWebToolBar"]
   qgis_toolbars: ["mFileToolBar", "mLayerToolBar", "mDigitizeToolBar", "mAdvancedDigitizeToolBar", "mMapNavToolBar", "mAttributesToolBar", "mHelpToolBar", "mLabelToolBar", "mSnappingToolBar", "mDataSourceManagerToolBar", "mShapeDigitizeToolBar", "mSelectionToolBar", "mMeshToolBar", "mAnnotationsToolBar", "mGpsToolBar", "mBookmarkToolbar", "mBrowserToolbar", "mToolbar", "processingToolbar"]
+  skip_menus: ["processing"]
   hide: true
 
 quick_access: ["neues_projekt", "projekt_oeffnen", "projekt_speichern", "rueckgaengig", "wiederholen", "erkunden", "hineinzoomen", "suchen"]
@@ -143,6 +144,11 @@ tabs:
             gallery: "processing_galerie"
             items: ["analyse_galerie_anpassen"]
             size: "large"
+          - menu: "Scripts and Models"
+            key: "Skripte und Modelle"
+            icon: "/processingScript.svg"
+            items: ["skript_neu", "skript_aus_vorlage", "skript_oeffnen", "skript_hinzufuegen", "modell_neu", "modell_oeffnen", "modell_hinzufuegen"]
+            size: "large"
   - id: "ansicht"
     label: "View"
     groups:
@@ -195,6 +201,12 @@ tabs:
           - split: "einrasten"
             items: ["einrastoptionen"]
             size: "large"
+          - {command: "einrasten_modus", size: "medium"}
+          - menu: "Snapping Type"
+            key: "Einrasttyp"
+            items: ["einrasten_stuetzpunkt", "einrasten_segment", "einrasten_flaeche", "einrasten_schwerpunkt", "einrasten_mittelpunkt", "einrasten_endpunkt"]
+            size: "medium"
+          - {command: "einrasten_toleranz", size: "medium"}
           - row: ["spurverfolgung", "selbsteinrasten", "schnittpunkte_einrasten"]
       - id: "konstruktion"
         label: "Construction"
@@ -239,7 +251,9 @@ tabs:
       - id: "ausrichten"
         label: "Align"
         items:
-          - {command: "georeferenzieren", size: "large"}
+          - split: "georef_starten"
+            items: ["georeferenzieren"]
+            size: "large"
           - {command: "raster_transformieren", size: "large"}
           - {command: "raster_anpassen", size: "large"}
       - id: "analyse"
@@ -269,6 +283,7 @@ tabs:
             size: "large"
           - {command: "layout_oeffnen", size: "large"}
           - {command: "neu_aus_vorlage_layout", size: "large"}
+          - {command: "alle_layouts_exportieren", size: "large"}
           - {command: "drucken", size: "large"}
   - {id: "erweiterungen", label: "Extensions", dynamic: "erweiterungen"}
 
@@ -483,6 +498,50 @@ contextual_tabs:
           - {command: "raster_helligkeit", size: "medium"}
           - {command: "raster_kontrast", size: "medium"}
           - {command: "raster_gamma", size: "medium"}
+  - id: "georeferenzieren"
+    label: "Georeference"
+    context: "Raster Layer"
+    visible_when: ["georef_session"]
+    activate_on: ["georef_started"]
+    groups:
+      - id: "vorbereiten"
+        label: "Prepare"
+        items:
+          - {command: "georef_anpassen", size: "large"}
+          - {command: "georef_verschieben", size: "large"}
+          - {command: "georef_skalieren", size: "large"}
+          - {command: "georef_drehen", size: "large"}
+          - {command: "georef_links", size: "medium"}
+          - {command: "georef_rechts", size: "medium"}
+          - {command: "georef_waagerecht", size: "medium"}
+          - {command: "georef_senkrecht", size: "medium"}
+      - id: "passpunkte"
+        label: "Control Points"
+        items:
+          - {command: "georef_passpunkt", size: "large"}
+          - {command: "georef_tabelle", size: "large"}
+          - {command: "georef_punkte_laden", size: "medium"}
+          - {command: "georef_punkte_speichern", size: "medium"}
+      - id: "transformation"
+        label: "Transformation"
+        items:
+          - {command: "georef_verfahren", size: "medium"}
+      - id: "anzeige"
+        label: "Display"
+        items:
+          - {command: "georef_bild", size: "large"}
+          - {command: "georef_deckkraft", size: "medium"}
+      - id: "verlauf"
+        label: "History"
+        items:
+          - {command: "georef_rueckgaengig", size: "medium"}
+          - {command: "georef_wiederholen", size: "medium"}
+      - id: "abschliessen"
+        label: "Finish"
+        items:
+          - {command: "georef_speichern", size: "large"}
+          - {command: "georef_entzerren", size: "large"}
+          - {command: "georef_abbrechen", size: "large"}
   - id: "vektorkacheln_darstellung"
     label: "Appearance"
     context: "Vector Tiles"
@@ -1161,9 +1220,9 @@ commands:
       method: "showOptionsDialog"
     description: "Set the default Z value for new features in the digitizing options."
   georeferenzieren:
-    label: "Georeference"
+    label: "QGIS Georeferencer"
     source: {type: "qgis_action", object_name: "mActionShowGeoreferencer"}
-    description: "Open the georeferencer: locate a raster image or vector data with control points."
+    description: "Open the QGIS georeferencer: locate a raster image or vector data with control points."
   raster_transformieren:
     label: "Reproject Raster"
     source: {type: "processing", algorithm: "gdal:warpreproject"}
@@ -1692,6 +1751,91 @@ commands:
     label: "Snap to Intersections"
     source: {type: "qgis_action", object_name: "IntersectionSnappingAction"}
     description: "Snap to intersections of lines and edges."
+  einrasten_modus:
+    label: "Mode"
+    source: {type: "custom", id: "ribbon.einrasten_modus"}
+    kind: "control"
+    description: "Which layers to snap to: active layer, all layers or advanced configuration (per layer)."
+  einrasten_toleranz:
+    label: "Tolerance"
+    source: {type: "custom", id: "ribbon.einrasten_toleranz"}
+    kind: "control"
+    description: "Distance within which the cursor snaps, with its unit. With advanced configuration set per layer in the snapping options."
+  einrasten_einheit:
+    label: "Tolerance Unit"
+    source: {type: "custom", id: "ribbon.einrasten_einheit"}
+    kind: "control"
+    description: "Unit of the snapping tolerance: pixels, layer units or project units."
+  einrasten_massstab_modus:
+    label: "Scale-Dependent Snapping"
+    source: {type: "custom", id: "ribbon.einrasten_massstab_modus"}
+    kind: "control"
+    description: "Snap only within a scale range: no limit, one limit for all layers or per layer."
+  einrasten_massstab_min:
+    label: "Minimum Snapping Scale"
+    source: {type: "custom", id: "ribbon.einrasten_massstab_min"}
+    kind: "control"
+    description: "Most zoomed-out scale at which snapping still works. Only with one limit for all layers; empty = no limit."
+  einrasten_massstab_max:
+    label: "Maximum Snapping Scale"
+    source: {type: "custom", id: "ribbon.einrasten_massstab_max"}
+    kind: "control"
+    description: "Most zoomed-in scale at which snapping still works. Only with one limit for all layers; empty = no limit."
+  spurverfolgung_versatz:
+    label: "Tracing Offset"
+    source: {type: "custom", id: "ribbon.spurverfolgung_versatz"}
+    kind: "control"
+    description: "Distance at which tracing runs beside the edges; negative = on the other side. QGIS does not store it in the project."
+  einrasten_ueberschneidungen:
+    label: "Overlaps"
+    source: {type: "custom", id: "ribbon.einrasten_ueberschneidungen"}
+    description: "Whether new polygons may overlap others: allow, avoid on the active layer or follow the advanced configuration."
+  einrasten_erweitert:
+    label: "Advanced Snapping Configuration"
+    source: {type: "custom", id: "ribbon.einrasten_erweitert"}
+    description: "Switch to advanced configuration mode and open the snapping options with the layer table."
+  einrasten_stuetzpunkt:
+    label: "Snap to Vertices"
+    source:
+      type: "custom"
+      id: "ribbon.einrasttyp"
+      args: ["vertex"]
+    description: "Snap to vertices of existing features. Several snapping types apply at once."
+  einrasten_segment:
+    label: "Snap to Segments"
+    source:
+      type: "custom"
+      id: "ribbon.einrasttyp"
+      args: ["segment"]
+    description: "Snap to lines and polygon edges between the vertices."
+  einrasten_flaeche:
+    label: "Snap to Areas"
+    source:
+      type: "custom"
+      id: "ribbon.einrasttyp"
+      args: ["area"]
+    description: "Snap inside polygons."
+  einrasten_schwerpunkt:
+    label: "Snap to Centroids"
+    source:
+      type: "custom"
+      id: "ribbon.einrasttyp"
+      args: ["centroid"]
+    description: "Snap to the centroid of features."
+  einrasten_mittelpunkt:
+    label: "Snap to Middle of Segments"
+    source:
+      type: "custom"
+      id: "ribbon.einrasttyp"
+      args: ["middle"]
+    description: "Snap to the middle of segments."
+  einrasten_endpunkt:
+    label: "Snap to Line Endpoints"
+    source:
+      type: "custom"
+      id: "ribbon.einrasttyp"
+      args: ["endpoint"]
+    description: "Snap to the start and end points of lines."
   beschriftungen_ein_aus:
     label: "Show/Hide Labels"
     source: {type: "qgis_action", object_name: "mActionShowHideLabels"}
@@ -1918,6 +2062,11 @@ commands:
     label: "Layout from Template"
     source: {type: "custom", id: "ribbon.layout_aus_vorlage"}
     description: "Create a new print layout from a template (.qpt)."
+  alle_layouts_exportieren:
+    label: "Export All Layouts"
+    source: {type: "custom", id: "ribbon.alle_layouts_exportieren"}
+    icon: "/mActionSaveAsPDF.svg"
+    description: "Export the layouts of the project you check, as PDF or PNG, into one folder. An atlas becomes one PDF."
   projektmodelle:
     label: "Project Models"
     source: {type: "qgis_menu", object_name: "mMenuProjectModels"}
@@ -2877,3 +3026,125 @@ commands:
     source: {type: "qgis_action", object_name: "mActionTransformCoordinates"}
     description: "Change the coordinates of the vertices of the mesh being edited with expressions."
     qgis_min: 40000
+  skript_neu:
+    label: "New Script"
+    source: {type: "custom", id: "ribbon.skript_neu"}
+    icon: "/processingScript.svg"
+    description: "Open the Processing script editor with an empty Python script."
+  skript_aus_vorlage:
+    label: "Script from Template"
+    source: {type: "custom", id: "ribbon.skript_aus_vorlage"}
+    icon: "/processingScript.svg"
+    description: "Start a new script from the Processing template."
+  skript_oeffnen:
+    label: "Open Script"
+    source: {type: "custom", id: "ribbon.skript_oeffnen"}
+    icon: "/processingScript.svg"
+    description: "Open an existing script in the script editor."
+  skript_hinzufuegen:
+    label: "Add Script to Toolbox"
+    source: {type: "custom", id: "ribbon.skript_hinzufuegen"}
+    icon: "/processingScript.svg"
+    description: "Add a script file to the toolbox as a tool."
+  modell_neu:
+    label: "New Model"
+    source: {type: "custom", id: "ribbon.modell_neu"}
+    icon: "/processingModel.svg"
+    description: "Open the model designer with an empty model."
+  modell_oeffnen:
+    label: "Open Model"
+    source: {type: "custom", id: "ribbon.modell_oeffnen"}
+    icon: "/processingModel.svg"
+    description: "Open an existing model in the model designer."
+  modell_hinzufuegen:
+    label: "Add Model to Toolbox"
+    source: {type: "custom", id: "ribbon.modell_hinzufuegen"}
+    icon: "/processingModel.svg"
+    description: "Add a model file to the toolbox as a tool."
+  georef_starten:
+    label: "Georeference"
+    source: {type: "custom", id: "ribbon.georef_starten"}
+    description: "Locate an image directly in the map: the active raster layer or an image file. The image itself stays unchanged."
+  georef_anpassen:
+    label: "Fit to Display"
+    source: {type: "custom", id: "ribbon.georef_anpassen"}
+    description: "Place the image north up in the middle of the map view."
+  georef_verschieben:
+    label: "Move Image"
+    source: {type: "custom", id: "ribbon.georef_verschieben"}
+    description: "Drag the image with the mouse to another place in the map. Esc cancels the drag."
+  georef_skalieren:
+    label: "Scale Image"
+    source: {type: "custom", id: "ribbon.georef_skalieren"}
+    description: "Drag away from or towards the center of the image. Hold Shift to scale each image axis freely."
+  georef_drehen:
+    label: "Rotate Image"
+    source: {type: "custom", id: "ribbon.georef_drehen"}
+    description: "Drag around the center of the image. Hold Ctrl for steps of 15°."
+  georef_links:
+    label: "Rotate Left 90°"
+    source: {type: "custom", id: "ribbon.georef_links"}
+    description: "Rotate the image 90° counterclockwise."
+  georef_rechts:
+    label: "Rotate Right 90°"
+    source: {type: "custom", id: "ribbon.georef_rechts"}
+    description: "Rotate the image 90° clockwise."
+  georef_waagerecht:
+    label: "Flip Horizontally"
+    source: {type: "custom", id: "ribbon.georef_waagerecht"}
+    description: "Swap the left and right side of the image."
+  georef_senkrecht:
+    label: "Flip Vertically"
+    source: {type: "custom", id: "ribbon.georef_senkrecht"}
+    description: "Swap the top and bottom side of the image."
+  georef_bild:
+    label: "Show Image"
+    source: {type: "custom", id: "ribbon.georef_bild"}
+    description: "Show or hide the image to compare it with the map below."
+  georef_deckkraft:
+    label: "Opacity"
+    source: {type: "custom", id: "ribbon.georef_deckkraft"}
+    kind: "control"
+    icon: "/propertyicons/transparency.svg"
+    description: "Opacity of the image being georeferenced."
+  georef_rueckgaengig:
+    label: "Undo"
+    source: {type: "custom", id: "ribbon.georef_rueckgaengig"}
+    description: "Undo the last georeferencing step."
+  georef_wiederholen:
+    label: "Redo"
+    source: {type: "custom", id: "ribbon.georef_wiederholen"}
+    description: "Redo the undone georeferencing step."
+  georef_abbrechen:
+    label: "Cancel"
+    source: {type: "custom", id: "ribbon.georef_abbrechen"}
+    description: "End the georeferencing without saving anything. The image stays as it was."
+  georef_passpunkt:
+    label: "Add Control Point"
+    source: {type: "custom", id: "ribbon.georef_passpunkt"}
+    description: "Click on the image first, then on the target in the map (with snapping). Right-click or Esc cancels a half-set point."
+  georef_tabelle:
+    label: "Control Point Table"
+    source: {type: "custom", id: "ribbon.georef_tabelle"}
+    description: "Show or hide the panel with the control points: residuals, check, delete, zoom to a point."
+  georef_punkte_laden:
+    label: "Load Points"
+    source: {type: "custom", id: "ribbon.georef_punkte_laden"}
+    description: "Load control points from a points file of the QGIS georeferencer (.points); they replace the current ones."
+  georef_punkte_speichern:
+    label: "Save Points"
+    source: {type: "custom", id: "ribbon.georef_punkte_speichern"}
+    description: "Save the control points as a points file in the format of the QGIS georeferencer (.points)."
+  georef_verfahren:
+    label: "Transformation"
+    source: {type: "custom", id: "ribbon.georef_verfahren"}
+    kind: "control"
+    description: "How the position is computed from the control points. Automatic: 1 point translation, 2 points Helmert, 3 or more affine."
+  georef_speichern:
+    label: "Save Georeference"
+    source: {type: "custom", id: "ribbon.georef_speichern"}
+    description: "Write the position as a world file and an auxiliary file (.aux.xml) next to the image; the image itself stays unchanged. For translation, Helmert and affine."
+  georef_entzerren:
+    label: "Warp to New File"
+    source: {type: "custom", id: "ribbon.georef_entzerren"}
+    description: "Write the image in its current position as a new GeoTIFF (background task with progress); the result is loaded."

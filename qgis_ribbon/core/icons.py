@@ -9,8 +9,10 @@ Listen von SVG-Elementen im 24er-Raster, getrennt nach Rolle:
 
 Die Elemente tragen keine Farben; ``svg()`` setzt Farben und Strichstärke je
 Modus und Zustand ein. Dazu die Zuordnung Befehls-ID -> Motiv (``befehle``),
-Menü-Elemente ohne eigenen Befehl nach Beschriftung (``menues``) und Symbole
-der Oberfläche (``oberflaeche``: Launcher, Pfeile, Suche …).
+Menü-Elemente ohne eigenen Befehl nach Beschriftung (``menues``), Symbole
+der Oberfläche (``oberflaeche``: Launcher, Pfeile, Suche …) und Motive für
+Werkzeuge eines Anbieters ohne eigenes Icon (``laufzeit``: Anbieter-ID -> Motiv,
+z. B. eigene Skripte statt des Zahnrads von QGIS).
 
 ``check(data, command_ids)`` prüft Form und Zuordnung (bekannte Befehle,
 vorhandene Motive, erlaubte Elemente).
@@ -43,11 +45,12 @@ class IconError(ValueError):
 
 
 class IconSet(object):
-    def __init__(self, motifs, commands, menus, ui):
+    def __init__(self, motifs, commands, menus, ui, runtime=None):
         self.motifs = motifs        # Name -> {Rolle: [Element]}
         self.commands = commands    # Befehls-ID -> Motiv
         self.menus = menus          # Menü-Beschriftung -> Motiv
         self.ui = ui                # Oberflächen-Symbol -> Motiv
+        self.runtime = runtime or {}  # Anbieter-ID -> Motiv (Werkzeuge ohne eigenes Icon)
 
     def for_command(self, command_id):
         return self.commands.get(command_id)
@@ -57,6 +60,9 @@ class IconSet(object):
 
     def for_ui(self, name):
         return self.ui.get(name)
+
+    def for_provider(self, provider_id):
+        return self.runtime.get(provider_id)
 
 
 def svg(motif, contour, accent, fill=None, stroke=STROKE_LARGE):
@@ -82,7 +88,7 @@ def parse(data, command_ids=None):
         raise IconError(errors)
     motifs = {name: {r: list(m.get(r) or ()) for r in ROLES} for name, m in data["motive"].items()}
     return IconSet(motifs, dict(data.get("befehle") or {}), dict(data.get("menues") or {}),
-                   dict(data.get("oberflaeche") or {}))
+                   dict(data.get("oberflaeche") or {}), dict(data.get("laufzeit") or {}))
 
 
 def check(data, command_ids=None):
@@ -106,7 +112,7 @@ def check(data, command_ids=None):
                     errors.append(tr("Motif %s/%s: invalid element: %r") % (name, role, el))
                 elif _FORBIDDEN.search(el):
                     errors.append(tr("Motif %s/%s: color or style in element: %r") % (name, role, el))
-    for section in ("befehle", "menues", "oberflaeche"):
+    for section in ("befehle", "menues", "oberflaeche", "laufzeit"):
         mapping = data.get(section) or {}
         if not isinstance(mapping, dict):
             errors.append(tr("Section %s: not an object") % section)
@@ -114,6 +120,8 @@ def check(data, command_ids=None):
         for key, motif in mapping.items():
             if motif not in motifs:
                 errors.append(tr("%s: %s -> unknown motif %r") % (section, key, motif))
+            if section == "laufzeit" and not _ID.match(str(key)):
+                errors.append(tr("laufzeit: invalid provider id %r") % (key,))
             if section == "befehle" and command_ids is not None and key not in command_ids:
                 errors.append(tr("befehle: unknown command %r") % (key,))
     return errors

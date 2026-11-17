@@ -28,7 +28,7 @@ Designs, Gesamtbild und Menüleiste gelten für alle Fenster; das Plugin reicht
 
 from qgis.core import Qgis, QgsMessageLog, QgsPrintLayout
 from qgis.PyQt import sip
-from qgis.PyQt.QtCore import QTimer
+from qgis.PyQt.QtCore import QObject, QTimer
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QApplication, QToolBar
 
@@ -43,7 +43,7 @@ from .qgis_integration.custom_commands import CommandEnv
 from .qgis_integration.extensions import DesignerCatalog
 from .qgis_integration.layout_state import LayoutSelection
 from .qgis_integration.menu_bar import MenuBarHider, can_hide
-from .qgis_integration.signals import SignalHub
+from .qgis_integration.signals import SignalHub, keep_foreign_wrappers, keep_wrappers_from
 from .qgis_integration.toolbar_manager import ToolbarManager
 from .qgis_integration.user_settings import LAYOUT_SCOPE, UserSettings
 from .ui import theme
@@ -78,7 +78,7 @@ class DesignerRibbon(object):
         self.toolbars = ToolbarManager(self.window, remember=False)
         self.menubar = MenuBarHider(self.window)
         self.sheet = WindowSheet(self.window)
-        self.themes = theme.ThemeManager(self.user)
+        self.themes = theme.ThemeManager(self.user, watch=self.window)
         self.themes.lightness_override = host.lightness
         self.themes.refresh(emit=False)
         self.toolbar = None
@@ -102,6 +102,8 @@ class DesignerRibbon(object):
         self.selection = LayoutSelection(self._layout(), self.hub, self._on_context, report=self.report)
         self.env.items = self.selection
         self.selection.start()
+        # Feld „Zu Seite“ liest die gezeigte Seite neu
+        self.hub.connect(self.designer.view(), "pageChanged", self.selection.schedule)
         if self.report:
             self.hub.connect(self.designer.view(), "layoutSet", self.selection.set_layout)
         self.toolbar = QToolBar("Ribbon", self.window)
@@ -132,6 +134,7 @@ class DesignerRibbon(object):
             self.apply_whole()
         finally:
             self.window.setUpdatesEnabled(True)
+        self.catalog.replaced.connect(self.resolver.forget_extensions)
         self.catalog.start()
 
     def _layout(self):
@@ -151,7 +154,14 @@ class DesignerRibbon(object):
     def apply_whole(self):
         self.sheet.update(bool(self.themes.settings()["whole"]), theme.current())
 
-    def teardown(self):
+    def teardown(self, light=False):
+        """Abbauen. ``light``: Neuaufbau im offenen Fenster (Abschnitt im Bericht, Plugin geändert); dann
+        nur die Wrapper festhalten, die von diesem Ribbon aus erreichbar sind, statt alle Python-Objekte
+        abzulaufen (siehe signals.py)."""
+        if light:
+            keep_wrappers_from(self._wrapper_roots())
+        else:
+            keep_foreign_wrappers()
         if self.catalog is not None:
             self.catalog.stop()
         if self.selection is not None:
@@ -186,6 +196,13 @@ class DesignerRibbon(object):
         if self.catalog is not None:
             self.catalog.deleteLater()
             self.catalog = None
+
+    def _wrapper_roots(self):
+        roots = [self]
+        if self.toolbar is not None and not sip.isdeleted(self.toolbar):
+            roots.append(self.toolbar)
+            roots.extend(self.toolbar.findChildren(QObject))
+        return roots
 
 
 class DesignerRibbons(object):
@@ -280,9 +297,9 @@ class DesignerRibbons(object):
             QTimer.singleShot(0, self._rebuild)
 
     def _rebuild(self):
-        modal = QApplication.activeModalWidget()
+        modal = QApplication.activeModalWidget() or QApplication.activePopupWidget()
         if modal is not None:
-            # Nicht unter einem offenen Dialog abbauen (er kann aus dem Ribbon stammen)
+            # Nicht unter einem offenen Dialog oder Menü abbauen (es kann aus dem Ribbon stammen)
             if self._after_modal is None:
                 self._after_modal = AfterModal(modal, self._after_modal_closed)
             return
@@ -295,7 +312,7 @@ class DesignerRibbons(object):
             designer = ribbon.designer
             window.setUpdatesEnabled(False)
             try:
-                ribbon.teardown()
+                ribbon.teardown(light=True)
                 self.opened(designer)
                 built = self.ribbons.get(window)
                 if built is not None and tab in built.widget.tab_ids():

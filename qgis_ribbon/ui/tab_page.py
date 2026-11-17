@@ -118,7 +118,8 @@ class TabPage(QScrollArea):
         self._width = width
         widths = [g.widths() for g in self.groups]
         ideal = [g.ideal_index() for g in self.groups]
-        choice = adaptive.choose(widths, ideal, width, theme.GROUP_GAP)
+        soft = [g.soft_index() for g in self.groups]
+        choice = adaptive.choose(widths, ideal, width, theme.GROUP_GAP, soft)
         for g, i in zip(self.groups, choice):
             g.apply(i)
         if self.inner is not None:   # None nur während des Aufbaus

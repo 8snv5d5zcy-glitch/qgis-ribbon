@@ -175,6 +175,8 @@ class ExtensionSources:
     menus: Tuple[str, ...] = ()          # Plugin-Menüs (objectName), je Plugin ein Untermenü
     toolbars: Tuple[str, ...] = ()       # QGIS-Werkzeugleisten, in die Plugins Buttons legen
     qgis_toolbars: Tuple[str, ...] = ()  # übrige QGIS-Werkzeugleisten (keine Plugin-Leisten)
+    # Hauptmenüs aus Python, die kein Plugin-Menü sind (objectName, z. B. die Verarbeitung)
+    skip_menus: Tuple[str, ...] = ()
     hide: bool = True                    # Plugin-Werkzeugleisten ausblenden
 
     def plugin_toolbar(self, name):

@@ -17,8 +17,8 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import (QAction, QActionGroup, QApplication, QDialog, QDockWidget, QFileDialog,
                                  QInputDialog, QMenu, QMessageBox)
 
-from . import (compare, context_state, custom_commands, kontext_ops, layer_ops, layout_ops, menu_bar, raster_ops,
-               symbol_ops)
+from . import (compare, context_state, custom_commands, kontext_ops, layer_ops, layout_insert, layout_ops,
+               layout_output, menu_bar, raster_ops, snapping_ops, symbol_ops)
 from .custom_commands import GalleryEntry
 from .map_tools import SelectByLineTool
 from ..core import layer_pages
@@ -225,6 +225,41 @@ def qgis_menues(env, command):
     menu.setObjectName("ribbon_qgis_menues")
     menu.aboutToShow.connect(lambda: menu_bar.fill_menu(menu, env.iface.mainWindow()))
     return menu
+
+
+# Skripte und Modelle: Aktionen der Verarbeitung (sonst nur in der Leiste des
+# Bedienfelds Verarbeitungswerkzeuge), je Befehl Modul und Klasse
+PROCESSING_ACTIONS = {
+    "ribbon.skript_neu": ("processing.script.CreateNewScriptAction", "CreateNewScriptAction"),
+    "ribbon.skript_aus_vorlage": ("processing.script.AddScriptFromTemplateAction", "AddScriptFromTemplateAction"),
+    "ribbon.skript_oeffnen": ("processing.script.OpenScriptFromFileAction", "OpenScriptFromFileAction"),
+    "ribbon.skript_hinzufuegen": ("processing.script.AddScriptFromFileAction", "AddScriptFromFileAction"),
+    "ribbon.modell_neu": ("processing.modeler.CreateNewModelAction", "CreateNewModelAction"),
+    "ribbon.modell_oeffnen": ("processing.modeler.OpenModelFromFileAction", "OpenModelFromFileAction"),
+    "ribbon.modell_hinzufuegen": ("processing.modeler.AddModelFromFileAction", "AddModelFromFileAction"),
+}
+
+
+def processing_action(env, command):
+    """Aktion der Verarbeitung ausführen (``execute()``); ohne aktive Verarbeitung nicht verfügbar.
+
+    Die Aktion bleibt bis zum nächsten Klick erhalten: der Modell-Editor meldet
+    ein gespeichertes Modell an sie zurück.
+    """
+    from qgis import utils
+    if "processing" not in utils.plugins:
+        return custom_commands.Unavailable(tr("The Processing plugin is not active"))
+    module, name = PROCESSING_ACTIONS[command.source.get("id")]
+    kept = []
+
+    def run():
+        import importlib
+        action = getattr(importlib.import_module(module), name)()
+        action.setData(env.iface.mainWindow())
+        kept[:] = [action]
+        action.execute()
+
+    return run
 
 
 def grundkarte(env, command):
@@ -995,7 +1030,68 @@ def stil_speichern(env, command):
     return run
 
 
+class SnapTypeAction(StateAction):
+    """Ein Einrasttyp an/aus (mehrere zugleich); bei erweiterter Konfiguration je Layer, dann grau."""
+
+    def __init__(self, env, text, name):
+        self.name = name
+        StateAction.__init__(self, env, text, self._read_type, self._run_type)
+        if env.hub is not None:
+            env.hub.connect(snapping_ops.project(), "snappingConfigChanged", self._on_config)
+
+    def _read_type(self, _layer):
+        cfg = snapping_ops.config()
+        return not snapping_ops.advanced(cfg), snapping_ops.type_on(self.name, cfg)
+
+    def _run_type(self, _layer, checked):
+        snapping_ops.set_type(self.name, checked)
+
+    def _on_config(self, *_args):
+        self.refresh()
+
+
+def einrasttyp(env, command):
+    """Einrasttyp als Schalter. ``args``: [vertex|segment|area|centroid|middle|endpoint]."""
+    args = _args(command)
+    name = args[0] if args else ""
+    if name not in snapping_ops.TYPES:
+        raise ValueError(tr("Unknown snapping type: %s") % name)
+    return env.keep(SnapTypeAction(env, command.label, name))
+
+
+def einrasten_ueberschneidungen(env, command):
+    """Überschneidungen vermeiden: Dropdown mit genau einem Häkchen, gefüllt bei jedem Öffnen."""
+    menu = env.keep(QMenu(command.label))
+    menu.setObjectName("ribbon_einrasten_ueberschneidungen")
+
+    def fill():
+        menu.clear()
+        current = snapping_ops.avoid_mode()
+        for mode, label in snapping_ops.AVOID_MODES:
+            act = menu.addAction(label)
+            act.setCheckable(True)
+            act.setChecked(mode == current)
+            act.triggered.connect(lambda _c=False, m=mode: snapping_ops.set_avoid_mode(m))
+
+    menu.aboutToShow.connect(fill)
+    return menu
+
+
+def einrasten_erweitert(env, command):
+    """Modus „erweiterte Konfiguration“ setzen und die Einrastoptionen (Layertabelle) öffnen."""
+    def run():
+        snapping_ops.set_mode(Qgis.SnappingMode.AdvancedConfiguration)
+        options = env.iface.mainWindow().findChild(QAction, "mActionSnappingOptions")
+        if options is not None:
+            options.trigger()
+
+    return run
+
+
 BUTTONS = {
+    "ribbon.einrasttyp": einrasttyp,
+    "ribbon.einrasten_ueberschneidungen": einrasten_ueberschneidungen,
+    "ribbon.einrasten_erweitert": einrasten_erweitert,
     "ribbon.konstruktionshilfen": konstruktionshilfen,
     "ribbon.layer_eigenschaften": layer_eigenschaften,
     "ribbon.stil_speichern": stil_speichern,
@@ -1021,6 +1117,16 @@ BUTTONS = {
     "ribbon.item_karte_lesezeichen": layout_ops.map_bookmarks_menu,
     "ribbon.item_karte_thema": layout_ops.map_theme_menu,
     "ribbon.item_text_dynamisch": layout_ops.dynamic_text_menu,
+    "ribbon.seite_ausrichtung": layout_ops.toggle_orientation_command,
+    "ribbon.seite_loeschen": layout_ops.delete_page_command,
+    "ribbon.seite_raender": layout_ops.margin_guides_menu,
+    "ribbon.grundausstattung": layout_insert.basic_kit_command,
+    "ribbon.schnellexport_pdf": layout_output.quick_export_command,
+    "ribbon.schnellexport_ordner": layout_output.quick_folder_command,
+    "ribbon.alle_layouts_exportieren": layout_output.export_all_command,
+    "ribbon.atlas_aus_layer": layout_output.atlas_from_layer_command,
+    "ribbon.format_kopieren": layout_output.copy_format_command,
+    "ribbon.format_einfuegen": layout_output.paste_format_command,
     "ribbon.galerie_groesse": galerie_groesse,
     "ribbon.layerpfad_kopieren": layerpfad_kopieren,
     "ribbon.beschriftung_ausdruck": beschriftung_ausdruck,
@@ -1051,7 +1157,13 @@ GALLERIES = {
     "ribbon.raster_kanaele": raster_kanaele,
     "ribbon.aggregation_galerie": aggregation_galerie,
     "ribbon.punktwolke_renderer_galerie": punktwolke_renderer_galerie,
+    "ribbon.karte_galerie": layout_insert.map_gallery,
+    "ribbon.nordpfeil_galerie": layout_insert.north_arrow_gallery,
+    "ribbon.massstab_galerie": layout_insert.scale_bar_gallery,
 }
+
+
+BUTTONS.update({cid: processing_action for cid in PROCESSING_ACTIONS})
 
 
 def register_all():
@@ -1059,8 +1171,13 @@ def register_all():
         custom_commands.register(cid, factory, "button")
     for cid, factory in GALLERIES.items():
         custom_commands.register(cid, factory, "gallery")
+    # Georeferenzieren in der Karte: eigenes Modul (es baut auf StateAction und ToolAction von hier auf)
+    from . import georef_commands
+    georef_commands.register_all()
 
 
 def unregister_all():
     for cid in list(BUTTONS) + list(GALLERIES):
         custom_commands.unregister(cid)
+    from . import georef_commands
+    georef_commands.unregister_all()
